@@ -1,0 +1,2 @@
+# Python >=3.11; all Python runtime and test modules use the standard library.
+# Optional Node.js universe/periodic collection dependencies are in package-lock.json.

@@ -1,0 +1,26 @@
+[Unit]
+Description=COSMOS OpenDART rank 51-100 collection and HDFS archive
+Wants=network-online.target
+After=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=ubuntu
+# Example installation path: edit all three paths together for your deployment.
+WorkingDirectory=/opt/cosmos-crawling/disclosures/dart
+Environment=PYTHONUTF8=1
+Environment=JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+Environment=HADOOP_CONF_DIR=/opt/hadoop/etc/hadoop
+UMask=0077
+# Keep the chosen end date fixed when resuming the same collection.
+ExecStart=/usr/bin/python3 -u /opt/cosmos-crawling/disclosures/dart/scripts/run_dart_hdfs_service.py --project /opt/cosmos-crawling/disclosures/dart --key-file /etc/cosmos/opendart.env --end 20260909
+Restart=on-failure
+RestartSec=300
+TimeoutStopSec=40
+KillMode=mixed
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

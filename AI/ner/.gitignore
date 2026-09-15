@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.pyc
+# large local samples pulled from HDFS and derived review files (regenerate with spark/sample_news.py)
+data/sample_*.jsonl
+data/review_*.jsonl
+data/alias_candidates_*.csv
+# model weights and NER corpora (large; regenerate with train_ner.py / make_bio_dataset.py)
+models/
+data/ner_corpus_*.jsonl
+data/ner_corpus_*.stats.json
+# 검수·회귀용 기사 원문 (full200.jsonl 은 fetch_full_bodies.py 로 재생성)
+data/eval/v12_audit/*.jsonl

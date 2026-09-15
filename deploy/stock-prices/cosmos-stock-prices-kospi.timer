@@ -1,0 +1,11 @@
+[Unit]
+Description=KOSPI daily prices at 18:30 Asia/Seoul
+
+[Timer]
+OnCalendar=*-*-* 18:30:00 Asia/Seoul
+AccuracySec=1min
+Persistent=true
+Unit=cosmos-stock-prices@KOSPI.service
+
+[Install]
+WantedBy=timers.target

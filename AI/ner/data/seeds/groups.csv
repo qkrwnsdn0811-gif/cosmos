@@ -1,0 +1,38 @@
+alias,group_id,default_name_official,note
+삼성,SAMSUNG,,그룹명 단독. 계열사 없으면 미확정
+Samsung,SAMSUNG,,
+삼성그룹,SAMSUNG,,
+현대,HYUNDAI,,현대차/HD현대/현대건설 등 다수 그룹
+Hyundai,HYUNDAI,,
+현대차그룹,HYUNDAI_MOTOR,현대차,
+Hyundai Motor Group,HYUNDAI_MOTOR,현대차,
+HD현대그룹,HD_HYUNDAI,HD현대,
+LG,LG,LG,지주사 동일명
+LG그룹,LG,LG,
+LG Group,LG,LG,
+SK,SK,SK,지주사 동일명
+SK그룹,SK,SK,
+SK Group,SK,SK,
+GS,GS,GS,지주사 동일명
+GS그룹,GS,GS,
+LS,LS,LS,지주사 동일명
+LS그룹,LS,LS,
+한화,HANWHA,한화,지주사 동일명
+Hanwha,HANWHA,한화,
+한화그룹,HANWHA,한화,
+두산,DOOSAN,두산,지주사 동일명
+Doosan,DOOSAN,두산,
+두산그룹,DOOSAN,두산,
+포스코,POSCO,POSCO홀딩스,철강 자회사 POSCO(비상장)와 혼용
+포스코그룹,POSCO,POSCO홀딩스,
+미래에셋,MIRAE,미래에셋증권,
+카카오그룹,KAKAO,카카오,
+KB,KB,KB금융,
+신한,SHINHAN,신한지주,
+셀트리온그룹,CELLTRION,셀트리온,
+한진,HANJIN,한진칼,
+MS,MSFT,,영문 약어. 문맥 없으면 미확정
+Meta,META,,
+메타,META,,
+Arm,ARM,,
+알파벳,ALPHABET,,"한글 '알파벳'은 문자 의미와 충돌. 구글 동반 시 흡수, 단독은 미확정"

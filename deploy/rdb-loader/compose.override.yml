@@ -1,0 +1,15 @@
+# Optional: bind loopback for a same-host Loader, or a specific private address.
+# Merge with deploy/compose.yml in every deployment that reconciles PostgreSQL.
+# A private address requires an explicit Master-only firewall/forwarding rule.
+# Never set RDB_LOADER_PG_BIND_ADDRESS to 0.0.0.0 or ::.
+services:
+  postgres:
+    # Docker does not activate port bindings for an internal-only container.
+    # Keep app data isolation and add a separate publication bridge for this DB.
+    networks: [data, rdb_loader]
+    ports:
+      - '${RDB_LOADER_PG_BIND_ADDRESS:-127.0.0.1}:${RDB_LOADER_PG_HOST_PORT:-5432}:5432'
+
+networks:
+  rdb_loader:
+    driver: bridge

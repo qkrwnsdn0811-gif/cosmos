@@ -1,0 +1,948 @@
+market,stock_code,alias_name,alias_type,normalized_name
+KOSPI,005930,삼성전자,official,삼성전자
+KOSPI,005930,SAMSUNG ELECTRONICS,official_en,samsungelectronics
+KOSPI,005930,Samsung Electronics,en_rule,samsungelectronics
+KOSPI,005930,005930,ticker,005930
+KOSPI,000660,SK하이닉스,official,sk하이닉스
+KOSPI,000660,SK hynix,official_en,skhynix
+KOSPI,000660,SK Hynix,en_rule,skhynix
+KOSPI,000660,000660,ticker,000660
+KOSPI,402340,SK스퀘어,official,sk스퀘어
+KOSPI,402340,SK Square,official_en,sksquare
+KOSPI,402340,402340,ticker,402340
+KOSPI,009150,삼성전기,official,삼성전기
+KOSPI,009150,SAMSUNG ELECTRO-MECHANICS,official_en,samsungelectromechanics
+KOSPI,009150,Samsung Electro-mechanics,en_rule,samsungelectromechanics
+KOSPI,009150,009150,ticker,009150
+KOSPI,373220,LG에너지솔루션,official,lg에너지솔루션
+KOSPI,373220,LG ENERGY SOLUTION,official_en,lgenergysolution
+KOSPI,373220,LG Energy Solution,en_rule,lgenergysolution
+KOSPI,373220,373220,ticker,373220
+KOSPI,005380,현대차,official,현대차
+KOSPI,005380,HYUNDAI MOTOR CO,official_en,hyundaimotorco
+KOSPI,005380,Hyundai Motor CO,en_rule,hyundaimotorco
+KOSPI,005380,005380,ticker,005380
+KOSPI,207940,삼성바이오로직스,official,삼성바이오로직스
+KOSPI,207940,SAMSUNG BIOLOGICS,official_en,samsungbiologics
+KOSPI,207940,Samsung Biologics,en_rule,samsungbiologics
+KOSPI,207940,207940,ticker,207940
+KOSPI,105560,KB금융,official,kb금융
+KOSPI,105560,KB Financial,official_en,kbfinancial
+KOSPI,105560,105560,ticker,105560
+KOSPI,032830,삼성생명,official,삼성생명
+KOSPI,032830,Samsung Life Insurance,official_en,samsunglifeinsurance
+KOSPI,032830,032830,ticker,032830
+KOSPI,028260,삼성물산,official,삼성물산
+KOSPI,028260,SAMSUNG C&T,official_en,samsungct
+KOSPI,028260,Samsung C&T,en_rule,samsungct
+KOSPI,028260,028260,ticker,028260
+KOSPI,012450,한화에어로스페이스,official,한화에어로스페이스
+KOSPI,012450,HANWHA AEROSPACE,official_en,hanwhaaerospace
+KOSPI,012450,Hanwha Aerospace,en_rule,hanwhaaerospace
+KOSPI,012450,012450,ticker,012450
+KOSPI,055550,신한지주,official,신한지주
+KOSPI,055550,SHINHAN FINANCIAL,official_en,shinhanfinancial
+KOSPI,055550,Shinhan Financial,en_rule,shinhanfinancial
+KOSPI,055550,055550,ticker,055550
+KOSPI,034020,두산에너빌리티,official,두산에너빌리티
+KOSPI,034020,DOOSAN ENERBILITY,official_en,doosanenerbility
+KOSPI,034020,Doosan Enerbility,en_rule,doosanenerbility
+KOSPI,034020,034020,ticker,034020
+KOSPI,000270,기아,official,기아
+KOSPI,000270,KIA,official_en,kia
+KOSPI,000270,000270,ticker,000270
+KOSPI,329180,HD현대중공업,official,hd현대중공업
+KOSPI,329180,HD HYUNDAI HEAVY INDUSTRIES,official_en,hdhyundaiheavyindustries
+KOSPI,329180,HD Hyundai Heavy Industries,en_rule,hdhyundaiheavyindustries
+KOSPI,329180,329180,ticker,329180
+KOSPI,006400,삼성SDI,official,삼성sdi
+KOSPI,006400,SAMSUNG SDI,official_en,samsungsdi
+KOSPI,006400,Samsung SDI,en_rule,samsungsdi
+KOSPI,006400,006400,ticker,006400
+KOSPI,068270,셀트리온,official,셀트리온
+KOSPI,068270,Celltrion,official_en,celltrion
+KOSPI,068270,068270,ticker,068270
+KOSPI,034730,034730,ticker,034730
+KOSPI,012330,현대모비스,official,현대모비스
+KOSPI,012330,HYUNDAI MOBIS,official_en,hyundaimobis
+KOSPI,012330,Hyundai Mobis,en_rule,hyundaimobis
+KOSPI,012330,012330,ticker,012330
+KOSPI,086790,하나금융지주,official,하나금융지주
+KOSPI,086790,Hana Financial,official_en,hanafinancial
+KOSPI,086790,086790,ticker,086790
+KOSPI,066570,LG전자,official,lg전자
+KOSPI,066570,LG ELECTRONICS,official_en,lgelectronics
+KOSPI,066570,LG Electronics,en_rule,lgelectronics
+KOSPI,066570,066570,ticker,066570
+KOSPI,035420,NAVER,official,naver
+KOSPI,035420,Naver,en_rule,naver
+KOSPI,035420,035420,ticker,035420
+KOSPI,000810,삼성화재,official,삼성화재
+KOSPI,000810,SAMSUNG FIRE & MARINE INSURANCE,official_en,samsungfiremarineinsurance
+KOSPI,000810,Samsung Fire & Marine Insurance,en_rule,samsungfiremarineinsurance
+KOSPI,000810,000810,ticker,000810
+KOSPI,010120,LS ELECTRIC,official,lselectric
+KOSPI,010120,LS Electric,en_rule,lselectric
+KOSPI,010120,010120,ticker,010120
+KOSPI,005490,POSCO홀딩스,official,posco홀딩스
+KOSPI,005490,POSCO,official_en,posco
+KOSPI,005490,Posco,en_rule,posco
+KOSPI,005490,005490,ticker,005490
+KOSPI,042660,한화오션,official,한화오션
+KOSPI,042660,Hanwha Ocean,official_en,hanwhaocean
+KOSPI,042660,042660,ticker,042660
+KOSPI,267260,HD현대일렉트릭,official,hd현대일렉트릭
+KOSPI,267260,HD HYUNDAI ELECTRIC,official_en,hdhyundaielectric
+KOSPI,267260,HD Hyundai Electric,en_rule,hdhyundaielectric
+KOSPI,267260,267260,ticker,267260
+KOSPI,010130,고려아연,official,고려아연
+KOSPI,010130,KOREA Z,official_en,koreaz
+KOSPI,010130,Korea Z,en_rule,koreaz
+KOSPI,010130,010130,ticker,010130
+KOSPI,298040,효성중공업,official,효성중공업
+KOSPI,298040,Hyosung Heavy Industries,official_en,hyosungheavyindustries
+KOSPI,298040,298040,ticker,298040
+KOSPI,316140,우리금융지주,official,우리금융지주
+KOSPI,316140,Woori Financial,official_en,woorifinancial
+KOSPI,316140,316140,ticker,316140
+KOSPI,009540,HD한국조선해양,official,hd한국조선해양
+KOSPI,009540,HD KOREA SHIPBUILDING & OFFSHORE ENGINEERING,official_en,hdkoreashipbuildingoffshoreengineering
+KOSPI,009540,HD Korea Shipbuilding & Offshore Engineering,en_rule,hdkoreashipbuildingoffshoreengineering
+KOSPI,009540,009540,ticker,009540
+KOSPI,096770,SK이노베이션,official,sk이노베이션
+KOSPI,096770,SK Innovation,official_en,skinnovation
+KOSPI,096770,096770,ticker,096770
+KOSPI,042700,한미반도체,official,한미반도체
+KOSPI,042700,HANMI Semiconductor,official_en,hanmisemiconductor
+KOSPI,042700,Hanmi Semiconductor,en_rule,hanmisemiconductor
+KOSPI,042700,042700,ticker,042700
+KOSPI,015760,한국전력,official,한국전력
+KOSPI,015760,KOREA ELECTRIC POWER,official_en,koreaelectricpower
+KOSPI,015760,Korea Electric Power,en_rule,koreaelectricpower
+KOSPI,015760,015760,ticker,015760
+KOSPI,011200,HMM,official,hmm
+KOSPI,011200,011200,ticker,011200
+KOSPI,017670,SK텔레콤,official,sk텔레콤
+KOSPI,017670,SK TELECOM,official_en,sktelecom
+KOSPI,017670,SK Telecom,en_rule,sktelecom
+KOSPI,017670,017670,ticker,017670
+KOSPI,051910,LG화학,official,lg화학
+KOSPI,051910,LG CHEM,official_en,lgchem
+KOSPI,051910,LG Chem,en_rule,lgchem
+KOSPI,051910,051910,ticker,051910
+KOSPI,267250,HD현대,official,hd현대
+KOSPI,267250,HD HYUNDAI,official_en,hdhyundai
+KOSPI,267250,HD Hyundai,en_rule,hdhyundai
+KOSPI,267250,267250,ticker,267250
+KOSPI,010140,삼성중공업,official,삼성중공업
+KOSPI,010140,SAMSUNG HEAVY INDUSTRIES,official_en,samsungheavyindustries
+KOSPI,010140,Samsung Heavy Industries,en_rule,samsungheavyindustries
+KOSPI,010140,010140,ticker,010140
+KOSPI,006800,미래에셋증권,official,미래에셋증권
+KOSPI,006800,MIRAE ASSET SECURITIES,official_en,miraeassetsecurities
+KOSPI,006800,Mirae Asset Securities,en_rule,miraeassetsecurities
+KOSPI,006800,006800,ticker,006800
+KOSPI,010950,S-Oil,official,soil
+KOSPI,010950,S-oil,en_rule,soil
+KOSPI,010950,010950,ticker,010950
+KOSPI,003550,003550,ticker,003550
+KOSPI,018260,삼성에스디에스,official,삼성에스디에스
+KOSPI,018260,SAMSUNG SDS,official_en,samsungsds
+KOSPI,018260,Samsung SDS,en_rule,samsungsds
+KOSPI,018260,018260,ticker,018260
+KOSPI,000150,DOOSAN,official_en,doosan
+KOSPI,000150,Doosan,en_rule,doosan
+KOSPI,000150,000150,ticker,000150
+KOSPI,033780,KT&G,official,ktg
+KOSPI,033780,Kt&g,en_rule,ktg
+KOSPI,033780,033780,ticker,033780
+KOSPI,024110,기업은행,official,기업은행
+KOSPI,024110,INDUSTRIAL BANK OF KOREA,official_en,industrialbankofkorea
+KOSPI,024110,Industrial Bank OF Korea,en_rule,industrialbankofkorea
+KOSPI,024110,024110,ticker,024110
+KOSPI,003670,포스코퓨처엠,official,포스코퓨처엠
+KOSPI,003670,POSCO FUTURE M,official_en,poscofuturem
+KOSPI,003670,Posco Future M,en_rule,poscofuturem
+KOSPI,003670,003670,ticker,003670
+KOSPI,035720,카카오,official,카카오
+KOSPI,035720,Kakao,official_en,kakao
+KOSPI,035720,035720,ticker,035720
+KOSPI,086280,현대글로비스,official,현대글로비스
+KOSPI,086280,HYUNDAI GLOVIS,official_en,hyundaiglovis
+KOSPI,086280,Hyundai Glovis,en_rule,hyundaiglovis
+KOSPI,086280,086280,ticker,086280
+KOSPI,278470,에이피알,official,에이피알
+KOSPI,278470,APR,official_en,apr
+KOSPI,278470,278470,ticker,278470
+KOSPI,079550,LIG디펜스앤에어로스페이스,official,lig디펜스앤에어로스페이스
+KOSPI,079550,LIG Defense&Aerospace,official_en,ligdefenseaerospace
+KOSPI,079550,LIG Defense&aerospace,en_rule,ligdefenseaerospace
+KOSPI,079550,079550,ticker,079550
+KOSPI,064350,현대로템,official,현대로템
+KOSPI,064350,Hyundai-Rotem Co,official_en,hyundairotemco
+KOSPI,064350,Hyundai-rotem Co,en_rule,hyundairotemco
+KOSPI,064350,064350,ticker,064350
+KOSPI,030200,KT,official,kt
+KOSPI,030200,030200,ticker,030200
+KOSPI,000720,현대건설,official,현대건설
+KOSPI,000720,HYUNDAI ENGINEERING & CONSTRUCTION,official_en,hyundaiengineeringconstruction
+KOSPI,000720,Hyundai Engineering & Construction,en_rule,hyundaiengineeringconstruction
+KOSPI,000720,000720,ticker,000720
+KOSPI,011070,LG이노텍,official,lg이노텍
+KOSPI,011070,LG INNOTEK,official_en,lginnotek
+KOSPI,011070,LG Innotek,en_rule,lginnotek
+KOSPI,011070,011070,ticker,011070
+KOSPI,272210,한화시스템,official,한화시스템
+KOSPI,272210,HANWHA SYSTEMS,official_en,hanwhasystems
+KOSPI,272210,Hanwha Systems,en_rule,hanwhasystems
+KOSPI,272210,272210,ticker,272210
+KOSPI,005830,DB손해보험,official,db손해보험
+KOSPI,005830,DB INSURANCE,official_en,dbinsurance
+KOSPI,005830,DB Insurance,en_rule,dbinsurance
+KOSPI,005830,005830,ticker,005830
+KOSPI,047810,한국항공우주,official,한국항공우주
+KOSPI,047810,KOREA AEROSPACE INDUSTRIES,official_en,koreaaerospaceindustries
+KOSPI,047810,Korea Aerospace Industries,en_rule,koreaaerospaceindustries
+KOSPI,047810,047810,ticker,047810
+KOSPI,078930,078930,ticker,078930
+KOSPI,003490,대한항공,official,대한항공
+KOSPI,003490,KOREAN AIR LINES,official_en,koreanairlines
+KOSPI,003490,Korean AIR Lines,en_rule,koreanairlines
+KOSPI,003490,003490,ticker,003490
+KOSPI,307950,현대오토에버,official,현대오토에버
+KOSPI,307950,HYUNDAI AUTOEVER,official_en,hyundaiautoever
+KOSPI,307950,Hyundai Autoever,en_rule,hyundaiautoever
+KOSPI,307950,307950,ticker,307950
+KOSPI,071050,한국금융지주,official,한국금융지주
+KOSPI,071050,Korea Investment,official_en,koreainvestment
+KOSPI,071050,071050,ticker,071050
+KOSPI,003230,삼양식품,official,삼양식품
+KOSPI,003230,Samyang Foods,official_en,samyangfoods
+KOSPI,003230,003230,ticker,003230
+KOSPI,323410,카카오뱅크,official,카카오뱅크
+KOSPI,323410,KakaoBank,official_en,kakaobank
+KOSPI,323410,Kakaobank,en_rule,kakaobank
+KOSPI,323410,323410,ticker,323410
+KOSPI,259960,크래프톤,official,크래프톤
+KOSPI,259960,KRAFTON,official_en,krafton
+KOSPI,259960,Krafton,en_rule,krafton
+KOSPI,259960,259960,ticker,259960
+KOSPI,047050,포스코인터내셔널,official,포스코인터내셔널
+KOSPI,047050,POSCO INTERNATIONAL,official_en,poscointernational
+KOSPI,047050,Posco International,en_rule,poscointernational
+KOSPI,047050,047050,ticker,047050
+KOSPI,005940,NH투자증권,official,nh투자증권
+KOSPI,005940,NH INVESTMENT & SECURITIES,official_en,nhinvestmentsecurities
+KOSPI,005940,NH Investment & Securities,en_rule,nhinvestmentsecurities
+KOSPI,005940,005940,ticker,005940
+KOSPI,180640,한진칼,official,한진칼
+KOSPI,180640,HANJINKAL,official_en,hanjinkal
+KOSPI,180640,Hanjinkal,en_rule,hanjinkal
+KOSPI,180640,180640,ticker,180640
+KOSPI,443060,HD현대마린솔루션,official,hd현대마린솔루션
+KOSPI,443060,HD Hyundai Marine Solution,official_en,hdhyundaimarinesolution
+KOSPI,443060,443060,ticker,443060
+KOSPI,006260,006260,ticker,006260
+KOSPI,0126Z0,삼성에피스홀딩스,official,삼성에피스홀딩스
+KOSPI,0126Z0,SAMSUNG EPIS,official_en,samsungepis
+KOSPI,0126Z0,Samsung Epis,en_rule,samsungepis
+KOSPI,0126Z0,0126Z0,ticker,0126z0
+KOSPI,028050,삼성E&A,official,삼성ea
+KOSPI,028050,SAMSUNG E&A,official_en,samsungea
+KOSPI,028050,Samsung E&A,en_rule,samsungea
+KOSPI,028050,028050,ticker,028050
+KOSPI,090430,아모레퍼시픽,official,아모레퍼시픽
+KOSPI,090430,AMOREPACIFIC,official_en,amorepacific
+KOSPI,090430,Amorepacific,en_rule,amorepacific
+KOSPI,090430,090430,ticker,090430
+KOSPI,161390,한국타이어앤테크놀로지,official,한국타이어앤테크놀로지
+KOSPI,161390,HANKOOK TIRE & TECHNOLOGY,official_en,hankooktiretechnology
+KOSPI,161390,Hankook Tire & Technology,en_rule,hankooktiretechnology
+KOSPI,161390,161390,ticker,161390
+KOSPI,007660,이수페타시스,official,이수페타시스
+KOSPI,007660,ISUPETASYS,official_en,isupetasys
+KOSPI,007660,Isupetasys,en_rule,isupetasys
+KOSPI,007660,007660,ticker,007660
+KOSPI,016360,삼성증권,official,삼성증권
+KOSPI,016360,SAMSUNG SECURITIES,official_en,samsungsecurities
+KOSPI,016360,Samsung Securities,en_rule,samsungsecurities
+KOSPI,016360,016360,ticker,016360
+KOSPI,352820,하이브,official,하이브
+KOSPI,352820,HYBE,official_en,hybe
+KOSPI,352820,Hybe,en_rule,hybe
+KOSPI,352820,352820,ticker,352820
+KOSPI,000880,HANWHA,official_en,hanwha
+KOSPI,000880,Hanwha,en_rule,hanwha
+KOSPI,000880,000880,ticker,000880
+KOSPI,064400,LG씨엔에스,official,lg씨엔에스
+KOSPI,064400,LG CNS,official_en,lgcns
+KOSPI,064400,064400,ticker,064400
+KOSPI,021240,코웨이,official,코웨이
+KOSPI,021240,COWAY,official_en,coway
+KOSPI,021240,Coway,en_rule,coway
+KOSPI,021240,021240,ticker,021240
+KOSPI,039490,키움증권,official,키움증권
+KOSPI,039490,KIWOOM Securities,official_en,kiwoomsecurities
+KOSPI,039490,Kiwoom Securities,en_rule,kiwoomsecurities
+KOSPI,039490,039490,ticker,039490
+KOSPI,047040,대우건설,official,대우건설
+KOSPI,047040,DAEWOO ENGINEERING & CONSTRUCTION,official_en,daewooengineeringconstruction
+KOSPI,047040,Daewoo Engineering & Construction,en_rule,daewooengineeringconstruction
+KOSPI,047040,047040,ticker,047040
+KOSPI,009830,한화솔루션,official,한화솔루션
+KOSPI,009830,HANWHA SOLUTIONS,official_en,hanwhasolutions
+KOSPI,009830,Hanwha Solutions,en_rule,hanwhasolutions
+KOSPI,009830,009830,ticker,009830
+KOSPI,326030,SK바이오팜,official,sk바이오팜
+KOSPI,326030,SK biopharmaceuticals,official_en,skbiopharmaceuticals
+KOSPI,326030,SK Biopharmaceuticals,en_rule,skbiopharmaceuticals
+KOSPI,326030,326030,ticker,326030
+KOSPI,267270,HD건설기계,official,hd건설기계
+KOSPI,267270,HD Construction Equipment,official_en,hdconstructionequipment
+KOSPI,267270,267270,ticker,267270
+KOSPI,377300,카카오페이,official,카카오페이
+KOSPI,377300,kakaopay,official_en,kakaopay
+KOSPI,377300,Kakaopay,en_rule,kakaopay
+KOSPI,377300,377300,ticker,377300
+KOSPI,000500,가온전선,official,가온전선
+KOSPI,000500,GAON CABLE,official_en,gaoncable
+KOSPI,000500,Gaon Cable,en_rule,gaoncable
+KOSPI,000500,000500,ticker,000500
+KOSPI,032640,LG유플러스,official,lg유플러스
+KOSPI,032640,LG Uplus,official_en,lguplus
+KOSPI,032640,032640,ticker,032640
+KOSPI,241560,두산밥캣,official,두산밥캣
+KOSPI,241560,Doosan Bobcat,official_en,doosanbobcat
+KOSPI,241560,241560,ticker,241560
+KOSPI,000100,유한양행,official,유한양행
+KOSPI,000100,YUHAN,official_en,yuhan
+KOSPI,000100,Yuhan,en_rule,yuhan
+KOSPI,000100,000100,ticker,000100
+KOSPI,128940,한미약품,official,한미약품
+KOSPI,128940,Hanmi Pharm,official_en,hanmipharm
+KOSPI,128940,128940,ticker,128940
+KOSPI,062040,산일전기,official,산일전기
+KOSPI,062040,SANIL ELECTRIC,official_en,sanilelectric
+KOSPI,062040,Sanil Electric,en_rule,sanilelectric
+KOSPI,062040,062040,ticker,062040
+KOSPI,175330,JB금융지주,official,jb금융지주
+KOSPI,175330,JB FINANCIAL,official_en,jbfinancial
+KOSPI,175330,JB Financial,en_rule,jbfinancial
+KOSPI,175330,175330,ticker,175330
+KOSPI,029780,삼성카드,official,삼성카드
+KOSPI,029780,SAMSUNG CARD,official_en,samsungcard
+KOSPI,029780,Samsung Card,en_rule,samsungcard
+KOSPI,029780,029780,ticker,029780
+KOSPI,001440,대한전선,official,대한전선
+KOSPI,001440,Taihan Cable & Solution,official_en,taihancablesolution
+KOSPI,001440,001440,ticker,001440
+KOSPI,088350,한화생명,official,한화생명
+KOSPI,088350,HANWHA LIFE INSURANCE,official_en,hanwhalifeinsurance
+KOSPI,088350,Hanwha Life Insurance,en_rule,hanwhalifeinsurance
+KOSPI,088350,088350,ticker,088350
+KOSPI,271560,오리온,official,오리온
+KOSPI,271560,ORION,official_en,orion
+KOSPI,271560,Orion,en_rule,orion
+KOSPI,271560,271560,ticker,271560
+KOSPI,066970,엘앤에프,official,엘앤에프
+KOSPI,066970,L&F,official_en,lf
+KOSPI,066970,066970,ticker,066970
+KOSPI,353200,대덕전자,official,대덕전자
+KOSPI,353200,DAEDUCK ELECTRONICS,official_en,daeduckelectronics
+KOSPI,353200,Daeduck Electronics,en_rule,daeduckelectronics
+KOSPI,353200,353200,ticker,353200
+KOSPI,088980,맥쿼리인프라,official,맥쿼리인프라
+KOSPI,088980,Macquarie Korea Infrastructure Fund,official_en,macquariekoreainfrastructurefund
+KOSPI,088980,088980,ticker,088980
+NASDAQ,ADBE,Adobe Inc.,official,adobe
+NASDAQ,ADBE,AdobeInc.,official,adobeinc
+NASDAQ,ADBE,Adobe,en_rule,adobe
+NASDAQ,ADBE,ADBE,ticker,adbe
+NASDAQ,AMD,Advanced Micro Devices,official,advancedmicrodevices
+NASDAQ,AMD,AMD,ko_manual,amd
+NASDAQ,ABNB,Airbnb,official,airbnb
+NASDAQ,ABNB,ABNB,ticker,abnb
+NASDAQ,ALNY,Alnylam Pharmaceuticals,official,alnylampharmaceuticals
+NASDAQ,ALNY,ALNY,ticker,alny
+NASDAQ,GOOGL,Alphabet Inc. (Class A),official,alphabetclassa
+NASDAQ,GOOGL,AlphabetInc.(ClassA),official,alphabetincclassa
+NASDAQ,GOOGL,GOOGL,ticker,googl
+NASDAQ,GOOG,Alphabet Inc. (Class C),official,alphabetclassc
+NASDAQ,GOOG,AlphabetInc.(ClassC),official,alphabetincclassc
+NASDAQ,GOOG,GOOG,ticker,goog
+NASDAQ,AMZN,Amazon,official,amazon
+NASDAQ,AMZN,AMZN,ticker,amzn
+NASDAQ,AEP,American Electric Power,official,americanelectricpower
+NASDAQ,AEP,AEP,ticker,aep
+NASDAQ,AMGN,Amgen,official,amgen
+NASDAQ,AMGN,AMGN,ticker,amgn
+NASDAQ,ADI,Analog Devices,official,analogdevices
+NASDAQ,ADI,ADI,ticker,adi
+NASDAQ,AAPL,Apple Inc.,official,apple
+NASDAQ,AAPL,AppleInc.,official,appleinc
+NASDAQ,AAPL,Apple,en_rule,apple
+NASDAQ,AAPL,AAPL,ticker,aapl
+NASDAQ,AMAT,Applied Materials,official,appliedmaterials
+NASDAQ,AMAT,AMAT,ticker,amat
+NASDAQ,APP,AppLovin,official,applovin
+NASDAQ,APP,APP,ticker,app
+NASDAQ,ARM,Arm Holdings,official,armholdings
+NASDAQ,ARM,ARM,ticker,arm
+NASDAQ,ASML,ASML Holding,official,asmlholding
+NASDAQ,ASML,ASML,en_rule,asml
+NASDAQ,ALAB,Astera Labs,official,asteralabs
+NASDAQ,ALAB,ALAB,ticker,alab
+NASDAQ,ADSK,Autodesk,official,autodesk
+NASDAQ,ADSK,ADSK,ticker,adsk
+NASDAQ,ADP,Automatic Data Processing,official,automaticdataprocessing
+NASDAQ,ADP,ADP,ticker,adp
+NASDAQ,AXON,Axon Enterprise,official,axonenterprise
+NASDAQ,AXON,AXON,ticker,axon
+NASDAQ,BKR,Baker Hughes,official,bakerhughes
+NASDAQ,BKR,BKR,ticker,bkr
+NASDAQ,BKNG,Booking Holdings,official,bookingholdings
+NASDAQ,BKNG,BKNG,ticker,bkng
+NASDAQ,AVGO,Broadcom,official,broadcom
+NASDAQ,AVGO,AVGO,ticker,avgo
+NASDAQ,CDNS,Cadence Design Systems,official,cadencedesignsystems
+NASDAQ,CDNS,CDNS,ticker,cdns
+NASDAQ,CTAS,Cintas,official,cintas
+NASDAQ,CTAS,CTAS,ticker,ctas
+NASDAQ,CSCO,Cisco,official,cisco
+NASDAQ,CSCO,CSCO,ticker,csco
+NASDAQ,CCEP,Coca-Cola Europacific Partners,official,cocacolaeuropacificpartners
+NASDAQ,CCEP,CCEP,ticker,ccep
+NASDAQ,CMCSA,Comcast,official,comcast
+NASDAQ,CMCSA,CMCSA,ticker,cmcsa
+NASDAQ,CEG,Constellation Energy,official,constellationenergy
+NASDAQ,CEG,CEG,ticker,ceg
+NASDAQ,CPRT,Copart,official,copart
+NASDAQ,CPRT,CPRT,ticker,cprt
+NASDAQ,CRWV,CoreWeave,official,coreweave
+NASDAQ,CRWV,CRWV,ticker,crwv
+NASDAQ,COST,Costco,official,costco
+NASDAQ,COST,COST,ticker,cost
+NASDAQ,CRWD,CrowdStrike,official,crowdstrike
+NASDAQ,CRWD,CRWD,ticker,crwd
+NASDAQ,CSX,CSX Corporation,official,csxcorporation
+NASDAQ,CSX,CSX,en_rule,csx
+NASDAQ,DDOG,Datadog,official,datadog
+NASDAQ,DDOG,DDOG,ticker,ddog
+NASDAQ,DXCM,DexCom,official,dexcom
+NASDAQ,DXCM,DXCM,ticker,dxcm
+NASDAQ,FANG,Diamondback Energy,official,diamondbackenergy
+NASDAQ,FANG,FANG,ticker,fang
+NASDAQ,DASH,DoorDash,official,doordash
+NASDAQ,DASH,DASH,ticker,dash
+NASDAQ,EXC,Exelon,official,exelon
+NASDAQ,EXC,EXC,ticker,exc
+NASDAQ,FAST,Fastenal,official,fastenal
+NASDAQ,FAST,FAST,ticker,fast
+NASDAQ,FER,Ferrovial,official,ferrovial
+NASDAQ,FER,FER,ticker,fer
+NASDAQ,FTNT,Fortinet,official,fortinet
+NASDAQ,FTNT,FTNT,ticker,ftnt
+NASDAQ,GEHC,GE HealthCare,official,gehealthcare
+NASDAQ,GEHC,GEHC,ticker,gehc
+NASDAQ,GILD,Gilead Sciences,official,gileadsciences
+NASDAQ,GILD,GILD,ticker,gild
+NASDAQ,HONA,Honeywell Aerospace,official,honeywellaerospace
+NASDAQ,HONA,HONA,ticker,hona
+NASDAQ,HON,Honeywell Technologies,official,honeywelltechnologies
+NASDAQ,HON,HON,ticker,hon
+NASDAQ,IDXX,Idexx Laboratories,official,idexxlaboratories
+NASDAQ,IDXX,IDXX,ticker,idxx
+NASDAQ,INTC,Intel,official,intel
+NASDAQ,INTC,INTC,ticker,intc
+NASDAQ,INTU,Intuit,official,intuit
+NASDAQ,INTU,INTU,ticker,intu
+NASDAQ,ISRG,Intuitive Surgical,official,intuitivesurgical
+NASDAQ,ISRG,ISRG,ticker,isrg
+NASDAQ,KDP,Keurig Dr Pepper,official,keurigdrpepper
+NASDAQ,KDP,KDP,ticker,kdp
+NASDAQ,KLAC,KLA Corporation,official,klacorporation
+NASDAQ,KLAC,KLA,en_rule,kla
+NASDAQ,KLAC,KLAC,ticker,klac
+NASDAQ,KHC,Kraft Heinz,official,kraftheinz
+NASDAQ,KHC,KHC,ticker,khc
+NASDAQ,LRCX,Lam Research,official,lamresearch
+NASDAQ,LRCX,LRCX,ticker,lrcx
+NASDAQ,LIN,Linde plc,official,linde
+NASDAQ,LIN,Lindeplc,official,lindeplc
+NASDAQ,LIN,Linde,en_rule,linde
+NASDAQ,LIN,LIN,ticker,lin
+NASDAQ,LITE,Lumentum,official,lumentum
+NASDAQ,LITE,LITE,ticker,lite
+NASDAQ,MAR,Marriott International,official,marriottinternational
+NASDAQ,MAR,MAR,ticker,mar
+NASDAQ,MRVL,Marvell Technology,official,marvelltechnology
+NASDAQ,MRVL,MRVL,ticker,mrvl
+NASDAQ,MELI,Mercado Libre,official,mercadolibre
+NASDAQ,MELI,MELI,ticker,meli
+NASDAQ,META,Meta Platforms,official,metaplatforms
+NASDAQ,META,META,ticker,meta
+NASDAQ,MCHP,Microchip Technology,official,microchiptechnology
+NASDAQ,MCHP,MCHP,ticker,mchp
+NASDAQ,MU,Micron Technology,official,microntechnology
+NASDAQ,MU,MU,ticker,mu
+NASDAQ,MSFT,Microsoft,official,microsoft
+NASDAQ,MSFT,MSFT,ticker,msft
+NASDAQ,MSTR,MicroStrategy,official,microstrategy
+NASDAQ,MSTR,MSTR,ticker,mstr
+NASDAQ,MDLZ,Mondelez International,official,mondelezinternational
+NASDAQ,MDLZ,MDLZ,ticker,mdlz
+NASDAQ,MPWR,Monolithic Power Systems,official,monolithicpowersystems
+NASDAQ,MPWR,MPWR,ticker,mpwr
+NASDAQ,MNST,Monster Beverage,official,monsterbeverage
+NASDAQ,MNST,MNST,ticker,mnst
+NASDAQ,NBIS,Nebius Group,official,nebiusgroup
+NASDAQ,NBIS,Nebius,en_rule,nebius
+NASDAQ,NBIS,NBIS,ticker,nbis
+NASDAQ,NFLX,"Netflix, Inc.",official,netflix
+NASDAQ,NFLX,Netflix,en_rule,netflix
+NASDAQ,NFLX,NFLX,ticker,nflx
+NASDAQ,NVDA,Nvidia,official,nvidia
+NASDAQ,NVDA,NVDA,ticker,nvda
+NASDAQ,NXPI,NXP Semiconductors,official,nxpsemiconductors
+NASDAQ,NXPI,NXPI,ticker,nxpi
+NASDAQ,ORLY,O'Reilly Automotive,official,oreillyautomotive
+NASDAQ,ORLY,ORLY,ticker,orly
+NASDAQ,ODFL,Old Dominion Freight Line,official,olddominionfreightline
+NASDAQ,ODFL,ODFL,ticker,odfl
+NASDAQ,PCAR,Paccar,official,paccar
+NASDAQ,PCAR,PCAR,ticker,pcar
+NASDAQ,PLTR,Palantir Technologies,official,palantirtechnologies
+NASDAQ,PLTR,PLTR,ticker,pltr
+NASDAQ,PANW,Palo Alto Networks,official,paloaltonetworks
+NASDAQ,PANW,PANW,ticker,panw
+NASDAQ,PAYX,Paychex,official,paychex
+NASDAQ,PAYX,PAYX,ticker,payx
+NASDAQ,PYPL,PayPal,official,paypal
+NASDAQ,PYPL,PYPL,ticker,pypl
+NASDAQ,PDD,PDD Holdings,official,pddholdings
+NASDAQ,PDD,PDD,en_rule,pdd
+NASDAQ,PEP,PepsiCo,official,pepsico
+NASDAQ,PEP,PEP,ticker,pep
+NASDAQ,QCOM,Qualcomm,official,qualcomm
+NASDAQ,QCOM,QCOM,ticker,qcom
+NASDAQ,REGN,Regeneron Pharmaceuticals,official,regeneronpharmaceuticals
+NASDAQ,REGN,REGN,ticker,regn
+NASDAQ,RKLB,Rocket Lab,official,rocketlab
+NASDAQ,RKLB,RKLB,ticker,rklb
+NASDAQ,ROP,Roper Technologies,official,ropertechnologies
+NASDAQ,ROP,ROP,ticker,rop
+NASDAQ,ROST,Ross Stores,official,rossstores
+NASDAQ,ROST,ROST,ticker,rost
+NASDAQ,SNDK,Sandisk,official,sandisk
+NASDAQ,SNDK,SNDK,ticker,sndk
+NASDAQ,STX,Seagate Technology,official,seagatetechnology
+NASDAQ,STX,STX,ticker,stx
+NASDAQ,SHOP,Shopify,official,shopify
+NASDAQ,SHOP,SHOP,ticker,shop
+NASDAQ,SPCX,SpaceX,official,spacex
+NASDAQ,SPCX,SPCX,ticker,spcx
+NASDAQ,SBUX,Starbucks,official,starbucks
+NASDAQ,SBUX,SBUX,ticker,sbux
+NASDAQ,SNPS,Synopsys,official,synopsys
+NASDAQ,SNPS,SNPS,ticker,snps
+NASDAQ,TMUS,T-Mobile US,official,tmobileus
+NASDAQ,TMUS,TMUS,ticker,tmus
+NASDAQ,TTWO,Take-Two Interactive,official,taketwointeractive
+NASDAQ,TTWO,TTWO,ticker,ttwo
+NASDAQ,TER,Teradyne,official,teradyne
+NASDAQ,TER,TER,ticker,ter
+NASDAQ,TSLA,"Tesla, Inc.",official,tesla
+NASDAQ,TSLA,Tesla,en_rule,tesla
+NASDAQ,TSLA,TSLA,ticker,tsla
+NASDAQ,TXN,Texas Instruments,official,texasinstruments
+NASDAQ,TXN,TXN,ticker,txn
+NASDAQ,TRI,Thomson Reuters,official,thomsonreuters
+NASDAQ,TRI,TRI,ticker,tri
+NASDAQ,VRTX,Vertex Pharmaceuticals,official,vertexpharmaceuticals
+NASDAQ,VRTX,VRTX,ticker,vrtx
+NASDAQ,WMT,Walmart,official,walmart
+NASDAQ,WMT,WMT,ticker,wmt
+NASDAQ,WBD,Warner Bros. Discovery,official,warnerbrosdiscovery
+NASDAQ,WBD,WBD,ticker,wbd
+NASDAQ,WDC,Western Digital,official,westerndigital
+NASDAQ,WDC,WDC,ticker,wdc
+NASDAQ,WDAY,"Workday, Inc.",official,workday
+NASDAQ,WDAY,Workday,en_rule,workday
+NASDAQ,WDAY,WDAY,ticker,wday
+NASDAQ,XEL,Xcel Energy,official,xcelenergy
+NASDAQ,XEL,XEL,ticker,xel
+NASDAQ,ADBE,어도비,ko_manual,어도비
+NASDAQ,AMD,에이엠디,ko_manual,에이엠디
+NASDAQ,AMD,어드밴스드마이크로디바이시스,ko_manual,어드밴스드마이크로디바이시스
+NASDAQ,ABNB,에어비앤비,ko_manual,에어비앤비
+NASDAQ,ALNY,앨나일램,ko_manual,앨나일램
+NASDAQ,ALNY,알나일람,ko_manual,알나일람
+NASDAQ,GOOGL,구글,ko_manual,구글
+NASDAQ,GOOGL,Google,ko_manual,google
+NASDAQ,GOOGL,Alphabet Inc,ko_manual,alphabet
+NASDAQ,GOOGL,AlphabetInc,ko_manual,alphabetinc
+NASDAQ,AMZN,아마존,ko_manual,아마존
+NASDAQ,AEP,아메리칸일렉트릭파워,ko_manual,아메리칸일렉트릭파워
+NASDAQ,AMGN,암젠,ko_manual,암젠
+NASDAQ,ADI,아나로그디바이스,ko_manual,아나로그디바이스
+NASDAQ,ADI,아날로그디바이스,ko_manual,아날로그디바이스
+NASDAQ,AAPL,애플,ko_manual,애플
+NASDAQ,AMAT,어플라이드머티어리얼즈,ko_manual,어플라이드머티어리얼즈
+NASDAQ,AMAT,어플라이드 머티리얼즈,ko_manual,어플라이드머티리얼즈
+NASDAQ,APP,앱러빈,ko_manual,앱러빈
+NASDAQ,ARM,암홀딩스,ko_manual,암홀딩스
+NASDAQ,ARM,ARM홀딩스,ko_manual,arm홀딩스
+NASDAQ,ASML,에이에스엠엘,ko_manual,에이에스엠엘
+NASDAQ,ALAB,아스테라랩스,ko_manual,아스테라랩스
+NASDAQ,ADSK,오토데스크,ko_manual,오토데스크
+NASDAQ,ADP,오토매틱데이터프로세싱,ko_manual,오토매틱데이터프로세싱
+NASDAQ,AXON,액손엔터프라이즈,ko_manual,액손엔터프라이즈
+NASDAQ,BKR,베이커휴즈,ko_manual,베이커휴즈
+NASDAQ,BKR,비케이알,ko_manual,비케이알
+NASDAQ,BKNG,부킹홀딩스,ko_manual,부킹홀딩스
+NASDAQ,BKNG,부킹닷컴,ko_manual,부킹닷컴
+NASDAQ,BKNG,Booking.com,ko_manual,bookingcom
+NASDAQ,AVGO,브로드컴,ko_manual,브로드컴
+NASDAQ,CDNS,케이던스,ko_manual,케이던스
+NASDAQ,CDNS,케이던스디자인시스템즈,ko_manual,케이던스디자인시스템즈
+NASDAQ,CTAS,신타스,ko_manual,신타스
+NASDAQ,CSCO,시스코,ko_manual,시스코
+NASDAQ,CSCO,시스코시스템즈,ko_manual,시스코시스템즈
+NASDAQ,CCEP,코카콜라유로퍼시픽,ko_manual,코카콜라유로퍼시픽
+NASDAQ,CCEP,코카콜라유로퍼시픽파트너스,ko_manual,코카콜라유로퍼시픽파트너스
+NASDAQ,CMCSA,컴캐스트,ko_manual,컴캐스트
+NASDAQ,CEG,콘스텔레이션에너지,ko_manual,콘스텔레이션에너지
+NASDAQ,CPRT,코파트,ko_manual,코파트
+NASDAQ,CRWV,코어위브,ko_manual,코어위브
+NASDAQ,COST,코스트코,ko_manual,코스트코
+NASDAQ,CRWD,크라우드스트라이크,ko_manual,크라우드스트라이크
+NASDAQ,DDOG,데이터독,ko_manual,데이터독
+NASDAQ,DXCM,덱스컴,ko_manual,덱스컴
+NASDAQ,FANG,다이아몬드백에너지,ko_manual,다이아몬드백에너지
+NASDAQ,DASH,도어대시,ko_manual,도어대시
+NASDAQ,EXC,엑셀론,ko_manual,엑셀론
+NASDAQ,FAST,패스널,ko_manual,패스널
+NASDAQ,FAST,파스널,ko_manual,파스널
+NASDAQ,FER,페로비알,ko_manual,페로비알
+NASDAQ,FTNT,포티넷,ko_manual,포티넷
+NASDAQ,GEHC,GE헬스케어,ko_manual,ge헬스케어
+NASDAQ,GILD,길리어드,ko_manual,길리어드
+NASDAQ,GILD,길리어드사이언스,ko_manual,길리어드사이언스
+NASDAQ,GILD,길리어드사이언시스,ko_manual,길리어드사이언시스
+NASDAQ,GILD,Gilead,ko_manual,gilead
+NASDAQ,HONA,하니웰에어로스페이스,ko_manual,하니웰에어로스페이스
+NASDAQ,HON,하니웰,ko_manual,하니웰
+NASDAQ,HON,허니웰,ko_manual,허니웰
+NASDAQ,IDXX,아이덱스,ko_manual,아이덱스
+NASDAQ,IDXX,아이덱스래버러토리스,ko_manual,아이덱스래버러토리스
+NASDAQ,INTC,인텔,ko_manual,인텔
+NASDAQ,INTU,인튜이트,ko_manual,인튜이트
+NASDAQ,ISRG,인튜이티브서지컬,ko_manual,인튜이티브서지컬
+NASDAQ,KDP,큐리그닥터페퍼,ko_manual,큐리그닥터페퍼
+NASDAQ,KLAC,케이엘에이,ko_manual,케이엘에이
+NASDAQ,KLAC,KLA코퍼레이션,ko_manual,kla코퍼레이션
+NASDAQ,KHC,크래프트하인즈,ko_manual,크래프트하인즈
+NASDAQ,LRCX,램리서치,ko_manual,램리서치
+NASDAQ,LIN,린데,ko_manual,린데
+NASDAQ,LITE,루멘텀,ko_manual,루멘텀
+NASDAQ,MAR,메리어트,ko_manual,메리어트
+NASDAQ,MAR,메리어트인터내셔널,ko_manual,메리어트인터내셔널
+NASDAQ,MRVL,마벨,ko_manual,마벨
+NASDAQ,MRVL,마벨테크놀로지,ko_manual,마벨테크놀로지
+NASDAQ,MELI,메르카도리브레,ko_manual,메르카도리브레
+NASDAQ,META,메타플랫폼스,ko_manual,메타플랫폼스
+NASDAQ,META,메타플랫폼,ko_manual,메타플랫폼
+NASDAQ,MCHP,마이크로칩테크놀로지,ko_manual,마이크로칩테크놀로지
+NASDAQ,MU,마이크론,ko_manual,마이크론
+NASDAQ,MU,마이크론테크놀로지,ko_manual,마이크론테크놀로지
+NASDAQ,MSFT,마이크로소프트,ko_manual,마이크로소프트
+NASDAQ,MSTR,마이크로스트래티지,ko_manual,마이크로스트래티지
+NASDAQ,MSTR,마이크로스트레티지,ko_manual,마이크로스트레티지
+NASDAQ,MSTR,스트래티지,ko_manual,스트래티지
+NASDAQ,MSTR,Strategy Inc,ko_manual,strategy
+NASDAQ,MSTR,StrategyInc,ko_manual,strategyinc
+NASDAQ,MDLZ,몬델리즈,ko_manual,몬델리즈
+NASDAQ,MDLZ,몬델리즈인터내셔널,ko_manual,몬델리즈인터내셔널
+NASDAQ,MPWR,모놀리식파워시스템즈,ko_manual,모놀리식파워시스템즈
+NASDAQ,MNST,몬스터베버리지,ko_manual,몬스터베버리지
+NASDAQ,NBIS,네비우스,ko_manual,네비우스
+NASDAQ,NBIS,네비우스그룹,ko_manual,네비우스그룹
+NASDAQ,NFLX,넷플릭스,ko_manual,넷플릭스
+NASDAQ,NVDA,엔비디아,ko_manual,엔비디아
+NASDAQ,NVDA,NVIDIA,ko_manual,nvidia
+NASDAQ,NXPI,NXP,ko_manual,nxp
+NASDAQ,NXPI,NXP반도체,ko_manual,nxp반도체
+NASDAQ,NXPI,NXP세미컨덕터,ko_manual,nxp세미컨덕터
+NASDAQ,ORLY,오라일리오토모티브,ko_manual,오라일리오토모티브
+NASDAQ,ODFL,올드도미니언,ko_manual,올드도미니언
+NASDAQ,ODFL,올드도미니언프레이트라인,ko_manual,올드도미니언프레이트라인
+NASDAQ,PCAR,팩카,ko_manual,팩카
+NASDAQ,PCAR,파카,ko_manual,파카
+NASDAQ,PLTR,팔란티어,ko_manual,팔란티어
+NASDAQ,PLTR,팔란티어테크놀로지스,ko_manual,팔란티어테크놀로지스
+NASDAQ,PANW,팰로앨토네트웍스,ko_manual,팰로앨토네트웍스
+NASDAQ,PANW,팔로알토네트웍스,ko_manual,팔로알토네트웍스
+NASDAQ,PANW,팰로앨토네트워크스,ko_manual,팰로앨토네트워크스
+NASDAQ,PAYX,페이첵스,ko_manual,페이첵스
+NASDAQ,PYPL,페이팔,ko_manual,페이팔
+NASDAQ,PDD,PDD홀딩스,ko_manual,pdd홀딩스
+NASDAQ,PDD,핀둬둬,ko_manual,핀둬둬
+NASDAQ,PDD,핀두오두오,ko_manual,핀두오두오
+NASDAQ,PDD,테무,ko_manual,테무
+NASDAQ,PDD,Temu,ko_manual,temu
+NASDAQ,PDD,Pinduoduo,ko_manual,pinduoduo
+NASDAQ,PEP,펩시코,ko_manual,펩시코
+NASDAQ,PEP,펩시,ko_manual,펩시
+NASDAQ,QCOM,퀄컴,ko_manual,퀄컴
+NASDAQ,REGN,리제네론,ko_manual,리제네론
+NASDAQ,REGN,리제네론파마슈티컬스,ko_manual,리제네론파마슈티컬스
+NASDAQ,RKLB,로켓랩,ko_manual,로켓랩
+NASDAQ,ROP,로퍼테크놀로지스,ko_manual,로퍼테크놀로지스
+NASDAQ,ROST,로스스토어즈,ko_manual,로스스토어즈
+NASDAQ,SNDK,샌디스크,ko_manual,샌디스크
+NASDAQ,STX,시게이트,ko_manual,시게이트
+NASDAQ,STX,씨게이트,ko_manual,씨게이트
+NASDAQ,STX,시게이트테크놀로지,ko_manual,시게이트테크놀로지
+NASDAQ,SHOP,쇼피파이,ko_manual,쇼피파이
+NASDAQ,SPCX,스페이스X,ko_manual,스페이스x
+NASDAQ,SPCX,스페이스엑스,ko_manual,스페이스엑스
+NASDAQ,SBUX,스타벅스,ko_manual,스타벅스
+NASDAQ,SNPS,시놉시스,ko_manual,시놉시스
+NASDAQ,TMUS,T모바일,ko_manual,t모바일
+NASDAQ,TMUS,티모바일,ko_manual,티모바일
+NASDAQ,TMUS,T-Mobile,ko_manual,tmobile
+NASDAQ,TTWO,테이크투,ko_manual,테이크투
+NASDAQ,TTWO,테이크투인터랙티브,ko_manual,테이크투인터랙티브
+NASDAQ,TER,테라다인,ko_manual,테라다인
+NASDAQ,TSLA,테슬라,ko_manual,테슬라
+NASDAQ,TXN,텍사스인스트루먼트,ko_manual,텍사스인스트루먼트
+NASDAQ,TXN,텍사스인스트루먼츠,ko_manual,텍사스인스트루먼츠
+NASDAQ,TRI,톰슨로이터,ko_manual,톰슨로이터
+NASDAQ,VRTX,버텍스파마슈티컬스,ko_manual,버텍스파마슈티컬스
+NASDAQ,VRTX,버텍스제약,ko_manual,버텍스제약
+NASDAQ,WMT,월마트,ko_manual,월마트
+NASDAQ,WBD,워너브라더스디스커버리,ko_manual,워너브라더스디스커버리
+NASDAQ,WBD,워너브러더스디스커버리,ko_manual,워너브러더스디스커버리
+NASDAQ,WBD,워너브라더스,ko_manual,워너브라더스
+NASDAQ,WBD,워너브러더스,ko_manual,워너브러더스
+NASDAQ,WBD,Warner Bros,ko_manual,warnerbros
+NASDAQ,WDC,웨스턴디지털,ko_manual,웨스턴디지털
+NASDAQ,WDAY,워크데이,ko_manual,워크데이
+NASDAQ,XEL,엑셀에너지,ko_manual,엑셀에너지
+KOSPI,005930,삼전,ko_manual,삼전
+KOSPI,000660,하닉,ko_manual,하닉
+KOSPI,000660,하이닉스,ko_manual,하이닉스
+KOSPI,000660,SK HYNIX,en_manual,skhynix
+KOSPI,009150,Samsung Electro-Mechanics,en_manual,samsungelectromechanics
+KOSPI,373220,LG엔솔,ko_manual,lg엔솔
+KOSPI,373220,엘지에너지솔루션,ko_manual,엘지에너지솔루션
+KOSPI,373220,LGES,en_manual,lges
+KOSPI,005380,현대자동차,ko_manual,현대자동차
+KOSPI,005380,Hyundai Motor,en_manual,hyundaimotor
+KOSPI,005380,Hyundai Motor Company,en_manual,hyundaimotorcompany
+KOSPI,005380,Hyundai Motor Co,en_manual,hyundaimotorco
+KOSPI,207940,삼바,ko_manual,삼바
+KOSPI,207940,삼성바이오,ko_manual,삼성바이오
+KOSPI,105560,KB금융지주,ko_manual,kb금융지주
+KOSPI,105560,KB금융그룹,ko_manual,kb금융그룹
+KOSPI,105560,KB국민은행,ko_manual,kb국민은행
+KOSPI,105560,국민은행,ko_manual,국민은행
+KOSPI,105560,KB Financial Group,en_manual,kbfinancialgroup
+KOSPI,032830,삼성생명보험,ko_manual,삼성생명보험
+KOSPI,032830,Samsung Life,en_manual,samsunglife
+KOSPI,012450,한화에어로,ko_manual,한화에어로
+KOSPI,055550,신한금융지주,ko_manual,신한금융지주
+KOSPI,055550,신한금융지주회사,ko_manual,신한금융지주회사
+KOSPI,055550,신한금융그룹,ko_manual,신한금융그룹
+KOSPI,055550,신한금융,ko_manual,신한금융
+KOSPI,055550,신한은행,ko_manual,신한은행
+KOSPI,055550,Shinhan Financial Group,en_manual,shinhanfinancialgroup
+KOSPI,034020,두산에너빌,ko_manual,두산에너빌
+KOSPI,000270,기아차,ko_manual,기아차
+KOSPI,000270,기아자동차,ko_manual,기아자동차
+KOSPI,000270,Kia,en_manual,kia
+KOSPI,000270,Kia Corporation,en_manual,kiacorporation
+KOSPI,000270,Kia Motors,en_manual,kiamotors
+KOSPI,329180,현대중공업,ko_manual,현대중공업
+KOSPI,329180,HD Hyundai Heavy,en_manual,hdhyundaiheavy
+KOSPI,006400,삼성에스디아이,ko_manual,삼성에스디아이
+KOSPI,012330,모비스,ko_manual,모비스
+KOSPI,086790,하나금융,ko_manual,하나금융
+KOSPI,086790,하나금융그룹,ko_manual,하나금융그룹
+KOSPI,086790,하나은행,ko_manual,하나은행
+KOSPI,086790,Hana Financial Group,en_manual,hanafinancialgroup
+KOSPI,066570,엘지전자,ko_manual,엘지전자
+KOSPI,035420,네이버,ko_manual,네이버
+KOSPI,000810,삼성화재해상보험,ko_manual,삼성화재해상보험
+KOSPI,000810,Samsung Fire & Marine,en_manual,samsungfiremarine
+KOSPI,000810,Samsung Fire,en_manual,samsungfire
+KOSPI,267270,HD현대건설기계,ko_manual,hd현대건설기계
+KOSPI,267270,현대건설기계,ko_manual,현대건설기계
+KOSPI,267270,HD현대인프라코어,ko_manual,hd현대인프라코어
+KOSPI,267270,HD Hyundai Construction Equipment,en_manual,hdhyundaiconstructionequipment
+KOSPI,267270,HD Hyundai Infracore,en_manual,hdhyundaiinfracore
+KOSPI,010120,LS일렉트릭,ko_manual,ls일렉트릭
+KOSPI,010120,LS산전,ko_manual,ls산전
+KOSPI,005490,포스코홀딩스,ko_manual,포스코홀딩스
+KOSPI,005490,POSCO Holdings,en_manual,poscoholdings
+KOSPI,042660,대우조선해양,ko_manual,대우조선해양
+KOSPI,267260,현대일렉트릭,ko_manual,현대일렉트릭
+KOSPI,010130,Korea Zinc,en_manual,koreazinc
+KOSPI,316140,우리금융,ko_manual,우리금융
+KOSPI,316140,우리금융그룹,ko_manual,우리금융그룹
+KOSPI,316140,우리은행,ko_manual,우리은행
+KOSPI,316140,Woori Financial Group,en_manual,woorifinancialgroup
+KOSPI,009540,한국조선해양,ko_manual,한국조선해양
+KOSPI,009540,HD Korea Shipbuilding,en_manual,hdkoreashipbuilding
+KOSPI,009540,HD KSOE,en_manual,hdksoe
+KOSPI,096770,SK이노,ko_manual,sk이노
+KOSPI,015760,한전,ko_manual,한전
+KOSPI,015760,한국전력공사,ko_manual,한국전력공사
+KOSPI,015760,KEPCO,en_manual,kepco
+KOSPI,011200,현대상선,ko_manual,현대상선
+KOSPI,017670,SKT,en_manual,skt
+KOSPI,051910,엘지화학,ko_manual,엘지화학
+KOSPI,010140,Samsung Heavy,en_manual,samsungheavy
+KOSPI,010950,에쓰오일,ko_manual,에쓰오일
+KOSPI,010950,에스오일,ko_manual,에스오일
+KOSPI,010950,S-OIL,en_manual,soil
+KOSPI,003550,LG Corp,en_manual,lg
+KOSPI,018260,삼성SDS,ko_manual,삼성sds
+KOSPI,000150,Doosan Corp,en_manual,doosan
+KOSPI,033780,케이티앤지,ko_manual,케이티앤지
+KOSPI,024110,IBK기업은행,ko_manual,ibk기업은행
+KOSPI,024110,IBK,en_manual,ibk
+KOSPI,024110,Industrial Bank of Korea,en_manual,industrialbankofkorea
+KOSPI,003670,포스코케미칼,ko_manual,포스코케미칼
+KOSPI,003670,POSCO Future M,en_manual,poscofuturem
+KOSPI,035720,Kakao Corp,en_manual,kakao
+KOSPI,086280,글로비스,ko_manual,글로비스
+KOSPI,079550,LIG넥스원,ko_manual,lig넥스원
+KOSPI,079550,LIG Nex1,en_manual,lignex1
+KOSPI,064350,Hyundai Rotem,en_manual,hyundairotem
+KOSPI,030200,KT Corp,en_manual,kt
+KOSPI,030200,KT Corporation,en_manual,ktcorporation
+KOSPI,030200,Korea Telecom,en_manual,koreatelecom
+KOSPI,000720,Hyundai E&C,en_manual,hyundaiec
+KOSPI,005830,DB손보,ko_manual,db손보
+KOSPI,047810,KAI,en_manual,kai
+KOSPI,047810,한국항공우주산업,ko_manual,한국항공우주산업
+KOSPI,078930,GS Holdings,en_manual,gsholdings
+KOSPI,003490,Korean Air,en_manual,koreanair
+KOSPI,307950,Hyundai AutoEver,en_manual,hyundaiautoever
+KOSPI,071050,한국투자증권,ko_manual,한국투자증권
+KOSPI,071050,한투,ko_manual,한투
+KOSPI,071050,한국투자금융지주,ko_manual,한국투자금융지주
+KOSPI,071050,Korea Investment Holdings,en_manual,koreainvestmentholdings
+KOSPI,071050,Korea Investment & Securities,en_manual,koreainvestmentsecurities
+KOSPI,323410,카뱅,ko_manual,카뱅
+KOSPI,323410,Kakao Bank,en_manual,kakaobank
+KOSPI,047050,포스코인터,ko_manual,포스코인터
+KOSPI,047050,POSCO International,en_manual,poscointernational
+KOSPI,180640,Hanjin KAL,en_manual,hanjinkal
+KOSPI,006260,LS Corp,en_manual,ls
+KOSPI,0126Z0,삼성에피스,ko_manual,삼성에피스
+KOSPI,0126Z0,삼성바이오에피스,ko_manual,삼성바이오에피스
+KOSPI,0126Z0,Samsung Epis Holdings,en_manual,samsungepisholdings
+KOSPI,0126Z0,Samsung Bioepis,en_manual,samsungbioepis
+KOSPI,028050,삼성이앤에이,ko_manual,삼성이앤에이
+KOSPI,028050,삼성엔지니어링,ko_manual,삼성엔지니어링
+KOSPI,090430,아모레,ko_manual,아모레
+KOSPI,090430,AmorePacific,en_manual,amorepacific
+KOSPI,161390,한국타이어,ko_manual,한국타이어
+KOSPI,161390,Hankook Tire,en_manual,hankooktire
+KOSPI,007660,Isu Petasys,en_manual,isupetasys
+KOSPI,352820,빅히트,ko_manual,빅히트
+KOSPI,352820,빅히트엔터테인먼트,ko_manual,빅히트엔터테인먼트
+KOSPI,000880,Hanwha Corp,en_manual,hanwha
+KOSPI,000880,㈜한화,ko_manual,한화
+KOSPI,064400,LGCNS,en_manual,lgcns
+KOSPI,064400,엘지씨엔에스,ko_manual,엘지씨엔에스
+KOSPI,047040,Daewoo E&C,en_manual,daewooec
+KOSPI,326030,SK Biopharm,en_manual,skbiopharm
+KOSPI,377300,KakaoPay,en_manual,kakaopay
+KOSPI,032640,LGU+,en_manual,lgu+
+KOSPI,032640,엘지유플러스,ko_manual,엘지유플러스
+KOSPI,000100,Yuhan Corporation,en_manual,yuhancorporation
+KOSPI,128940,Hanmi Pharmaceutical,en_manual,hanmipharmaceutical
+KOSPI,175330,JB금융,ko_manual,jb금융
+KOSPI,175330,전북은행,ko_manual,전북은행
+KOSPI,175330,광주은행,ko_manual,광주은행
+KOSPI,088350,한화생명보험,ko_manual,한화생명보험
+KOSPI,088350,Hanwha Life,en_manual,hanwhalife
+KOSPI,271560,Orion Corp,en_manual,orion
+KOSPI,088980,맥쿼리한국인프라투융자회사,ko_manual,맥쿼리한국인프라투융자회사
+KOSPI,088980,Macquarie Korea Infrastructure,en_manual,macquariekoreainfrastructure
+KOSPI,005380,현대차그룹,group,현대차그룹
+KOSPI,005380,Hyundai Motor Group,group,hyundaimotorgroup
+KOSPI,267250,HD현대그룹,group,hd현대그룹
+KOSPI,003550,LG,group,lg
+KOSPI,003550,LG그룹,group,lg그룹
+KOSPI,003550,LG Group,group,lggroup
+KOSPI,034730,SK,group,sk
+KOSPI,034730,SK그룹,group,sk그룹
+KOSPI,034730,SK Group,group,skgroup
+KOSPI,078930,GS,group,gs
+KOSPI,078930,GS그룹,group,gs그룹
+KOSPI,006260,LS,group,ls
+KOSPI,006260,LS그룹,group,ls그룹
+KOSPI,000880,한화,group,한화
+KOSPI,000880,한화그룹,group,한화그룹
+KOSPI,000150,두산,group,두산
+KOSPI,000150,두산그룹,group,두산그룹
+KOSPI,005490,포스코,group,포스코
+KOSPI,005490,포스코그룹,group,포스코그룹
+KOSPI,006800,미래에셋,group,미래에셋
+KOSPI,035720,카카오그룹,group,카카오그룹
+KOSPI,105560,KB,group,kb
+KOSPI,055550,신한,group,신한
+KOSPI,068270,셀트리온그룹,group,셀트리온그룹
+KOSPI,180640,한진,group,한진
+NASDAQ,MSFT,MS,group,ms
+NASDAQ,META,Meta,group,meta
+NASDAQ,META,메타,group,메타
+NASDAQ,ARM,Arm,group,arm
+NASDAQ,META,페이스북,product,페이스북
+NASDAQ,META,Facebook,product,facebook
+NASDAQ,META,인스타그램,product,인스타그램
+NASDAQ,META,Instagram,product,instagram
+NASDAQ,META,인스타,product,인스타
+NASDAQ,META,왓츠앱,product,왓츠앱
+NASDAQ,META,WhatsApp,product,whatsapp
+NASDAQ,META,스레드,product,스레드
+NASDAQ,GOOGL,유튜브,product,유튜브
+NASDAQ,GOOGL,YouTube,product,youtube
+NASDAQ,GOOGL,안드로이드,product,안드로이드
+NASDAQ,GOOGL,Android,product,android
+NASDAQ,GOOGL,크롬,product,크롬
+NASDAQ,GOOGL,지메일,product,지메일
+NASDAQ,AAPL,아이폰,product,아이폰
+NASDAQ,AAPL,iPhone,product,iphone
+NASDAQ,AAPL,아이패드,product,아이패드
+NASDAQ,AAPL,iPad,product,ipad
+NASDAQ,AAPL,맥북,product,맥북
+NASDAQ,AAPL,MacBook,product,macbook
+NASDAQ,AAPL,애플워치,product,애플워치
+NASDAQ,AAPL,에어팟,product,에어팟
+NASDAQ,AAPL,앱스토어,product,앱스토어
+NASDAQ,MSFT,윈도우,product,윈도우
+NASDAQ,MSFT,Windows,product,windows
+NASDAQ,MSFT,엑스박스,product,엑스박스
+NASDAQ,MSFT,Xbox,product,xbox
+NASDAQ,MSFT,링크드인,product,링크드인
+NASDAQ,MSFT,LinkedIn,product,linkedin
+NASDAQ,MSFT,챗GPT,product,챗gpt
+KOSPI,005930,갤럭시,product,갤럭시
+KOSPI,005930,Galaxy,product,galaxy
+KOSPI,035720,카카오톡,product,카카오톡
+KOSPI,035720,카톡,product,카톡
+KOSPI,035720,카카오T,product,카카오t
+KOSPI,259960,배틀그라운드,product,배틀그라운드
+KOSPI,259960,PUBG,product,pubg
+NASDAQ,AMZN,알렉사,product,알렉사
+NASDAQ,AMZN,AWS,product,aws
+NASDAQ,AMZN,Amazon Web Services,product,amazonwebservices
+NASDAQ,AMZN,프라임비디오,product,프라임비디오
+NASDAQ,AMZN,Prime Video,product,primevideo
+NASDAQ,NFLX,넷플릭스 오리지널,product,넷플릭스오리지널
+NASDAQ,MSFT,Bing,product,bing

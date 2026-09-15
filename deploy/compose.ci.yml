@@ -1,0 +1,36 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: cosmos_test
+      POSTGRES_USER: cosmos_test
+      POSTGRES_PASSWORD: ci-test-only
+    tmpfs: ['/var/lib/postgresql/data']
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U cosmos_test -d cosmos_test']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  test:
+    image: cosmos-backend-build:${IMAGE_TAG:?IMAGE_TAG is required}
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/cosmos_test
+      DB_USERNAME: cosmos_test
+      DB_PASSWORD: ci-test-only
+      REDIS_HOST: redis
+      REDIS_PORT: '6379'
+      REDIS_PASSWORD: ''
+      GRADLE_OPTS: '-Dorg.gradle.jvmargs=-Xmx1536m'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    mem_limit: 3g

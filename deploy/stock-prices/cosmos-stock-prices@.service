@@ -1,0 +1,16 @@
+[Unit]
+Description=Collect completed %i daily stock prices and publish a verified HDFS snapshot
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+Group=ubuntu
+EnvironmentFile=/etc/cosmos/stock-prices.env
+ExecStart=/bin/bash /opt/cosmos/stock-prices/current/deploy/stock-prices/run-daily.sh %i
+TimeoutStartSec=6h
+UMask=0027
+NoNewPrivileges=true
+PrivateTmp=true
+# No Restart: a failed collection/publication requires review or the next daily run.

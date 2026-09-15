@@ -1,0 +1,38 @@
+.me-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+.me-card {
+  padding: 22px 24px;
+}
+.me-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 13px;
+}
+.me-item b {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+}
+.weight-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.weight-bar input[type="range"] {
+  width: 100%;
+  accent-color: var(--primary);
+}
+@media (max-width: 900px) {
+  .me-grid {
+    grid-template-columns: 1fr;
+  }
+}

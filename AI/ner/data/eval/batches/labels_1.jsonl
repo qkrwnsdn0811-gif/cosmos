@@ -1,0 +1,40 @@
+{"eval_id": "E001", "gold": [], "note": "SK쉴더스 is the subject but not in the 202 list; article is not about SK스퀘어(minority holder) or SK Inc. business"}
+{"eval_id": "E002", "gold": [], "note": ""}
+{"eval_id": "E003", "gold": [{"ticker": "005380", "alias": "현대자동차"}, {"ticker": "000270", "alias": "기아"}, {"ticker": "373220", "alias": "LG에너지솔루션"}, {"ticker": "006400", "alias": "삼성SDI"}], "note": "SK온 named as one of battery 3사 but not in list and article not about SK이노베이션 business -> excluded; '현대차그룹 홈페이지' is group reference"}
+{"eval_id": "E004", "gold": [], "note": ""}
+{"eval_id": "E005", "gold": [], "note": "인스타그램/유튜브 mentioned only as platforms"}
+{"eval_id": "E006", "gold": [], "note": "blog.naver.com appears only as footer link, not a NAVER company mention"}
+{"eval_id": "E007", "gold": [], "note": ""}
+{"eval_id": "E008", "gold": [], "note": ""}
+{"eval_id": "E009", "gold": [], "note": "유튜브 channel credit only (platform)"}
+{"eval_id": "E010", "gold": [{"ticker": "017670", "alias": "SK텔레콤"}], "note": "also 'SKT' in title; 리벨리온/펭귄 솔루션스 not in list"}
+{"eval_id": "E011", "gold": [], "note": "이마트/신세계포인트 not in list"}
+{"eval_id": "E012", "gold": [], "note": "교촌에프앤비/비에이치앤바이오 not in list"}
+{"eval_id": "E013", "gold": [], "note": "롯데/스타필드 not in list; photo caption roundup"}
+{"eval_id": "E014", "gold": [{"ticker": "035720", "alias": "카카오"}], "note": "오픈AI not in list; 카카오톡/카카오맵/멜론 are products of 카카오"}
+{"eval_id": "E015", "gold": [], "note": "부영그룹 not in list"}
+{"eval_id": "E016", "gold": [], "note": "인스타그램 as platform only"}
+{"eval_id": "E017", "gold": [], "note": "skip"}
+{"eval_id": "E018", "gold": [], "note": "GS25 (GS리테일 brand) and CJ올리브영 appear only as distribution channels; article is not about GS holding's business -> not labelled as GS(078930)"}
+{"eval_id": "E019", "gold": [{"ticker": "005380", "alias": "현대차"}], "note": "현대차 is a passing comparison mention ('토요타, 현대차 등 다른 제조사들이 유럽 내 생산 및 판매 거점을 강화') in analyst commentary; included as the firm itself. Footer related-article about 현대자동차 아이오닉5 excluded. 지리/볼보/폴스타 not in list"}
+{"eval_id": "E020", "gold": [], "note": ""}
+{"eval_id": "E021", "gold": [], "note": ""}
+{"eval_id": "E022", "gold": [], "note": "YG엔터테인먼트 not in list"}
+{"eval_id": "E023", "gold": [], "note": ""}
+{"eval_id": "E024", "gold": [], "note": ""}
+{"eval_id": "E025", "gold": [], "note": ""}
+{"eval_id": "E026", "gold": [], "note": "트루스소셜 platform; no listed company"}
+{"eval_id": "E027", "gold": [], "note": "YouTube credit only"}
+{"eval_id": "E028", "gold": [], "note": ""}
+{"eval_id": "E029", "gold": [], "note": ""}
+{"eval_id": "E030", "gold": [], "note": "쇼박스/브레인샤워 not in list"}
+{"eval_id": "E031", "gold": [], "note": "다쏘시스템/그런포스 not in list"}
+{"eval_id": "E032", "gold": [], "note": ""}
+{"eval_id": "E033", "gold": [{"ticker": "047040", "alias": "㈜대우건설"}], "note": "대우건설 named as co-developer of the TPS 공법 (with 대표이사 박창민); 케이피지/선공 not in list"}
+{"eval_id": "E034", "gold": [], "note": "피네이션 not in list"}
+{"eval_id": "E035", "gold": [], "note": "일동제약 not in list"}
+{"eval_id": "E036", "gold": [], "note": ""}
+{"eval_id": "E037", "gold": [], "note": "무하유/EBS not in list"}
+{"eval_id": "E038", "gold": [], "note": "이디야커피 not in list"}
+{"eval_id": "E039", "gold": [], "note": ""}
+{"eval_id": "E040", "gold": [], "note": "sports article; teams only"}

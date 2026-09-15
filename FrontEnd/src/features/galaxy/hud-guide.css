@@ -1,0 +1,126 @@
+/* ReadBar · LegendCard 전용 스타일 — 기존 hud/card/legend-card/chip/toggle 는 galaxy.css 것을 그대로 쓴다 */
+
+/* ---- ReadBar (P0-1) — 하단 중앙 상시 "읽는 법" 1행 ---- */
+.hud-readbar {
+  left: 0;
+  right: 0;
+  bottom: 22px;
+  display: flex;
+  justify-content: center;
+}
+.readbar {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  height: 32px;
+  padding: 0 16px;
+  border-radius: 16px;
+  background: rgba(9, 13, 24, 0.72);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(10px);
+  color: var(--text-3);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.readbar:hover {
+  border-color: var(--border-strong);
+  color: var(--text-2);
+}
+.readbar-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.readbar-item + .readbar-item::before {
+  content: "·";
+  margin-right: 12px;
+  opacity: 0.5;
+}
+.readbar-glyph {
+  display: block;
+  flex: none;
+}
+.readbar-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 5px;
+  height: 13px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-2);
+  font-size: 11px;
+  line-height: 1;
+}
+.readbar-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.readbar-dots i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: block;
+}
+
+/* ---- LegendCard (P0-10) ---- */
+.legend-sec {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.legend-sub {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-4);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.legend-types-plain .chip {
+  gap: 6px;
+}
+.legend-types-plain .chip i.dot {
+  display: none;
+}
+.legend-adv-toggle {
+  align-self: flex-start;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-3);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 0;
+}
+.legend-adv-toggle:hover {
+  color: var(--text);
+}
+.legend-adv-toggle svg {
+  transition: transform 0.15s;
+}
+.legend-adv-toggle.open svg {
+  transform: rotate(180deg);
+}
+.legend-adv {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 2px;
+  border-top: 1px dashed var(--border);
+}
+.legend-adv .row-ctl {
+  grid-template-columns: 1fr auto;
+}
+
+@media (max-width: 900px) {
+  /* 좁은 화면에서는 좌하단 상태 카드(bottom 14px, 폭 ~280px)와 가운데 바가 같은 구간에 놓인다 — 바를 그 위로 올린다 */
+  .hud-readbar {
+    bottom: 64px;
+  }
+  .readbar-item.readbar-hide-narrow {
+    display: none;
+  }
+  .readbar-item + .readbar-item.readbar-hide-narrow::before {
+    display: none;
+  }
+}

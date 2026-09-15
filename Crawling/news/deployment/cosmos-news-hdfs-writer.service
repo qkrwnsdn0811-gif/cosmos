@@ -1,0 +1,29 @@
+[Unit]
+Description=COSMOS Kafka news.raw to verified HDFS batches
+Wants=network-online.target
+After=network-online.target kafka.service
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/news-kafka/app
+EnvironmentFile=/etc/cosmos/news.env
+ExecStart=/home/ubuntu/news-kafka/app/deployment/run-writer.sh
+Restart=on-failure
+RestartSec=60
+TimeoutStopSec=180
+KillMode=control-group
+UMask=0077
+Nice=5
+CPUQuota=100%
+MemoryHigh=1G
+MemoryMax=1536M
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/ubuntu/news-kafka/writer-state
+
+[Install]
+WantedBy=multi-user.target

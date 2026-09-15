@@ -1,0 +1,350 @@
+.news-page {
+  display: grid;
+  grid-template-columns: minmax(0, 400px) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+.news-rail {
+  padding: 20px;
+  position: sticky;
+  top: calc(var(--header-h) + 16px);
+  max-height: calc(100vh - var(--header-h) - 32px);
+  display: flex;
+  flex-direction: column;
+}
+.news-rail .search-field {
+  width: 100%;
+  margin-bottom: 14px;
+}
+/*
+ * 산업 필터 — 칩 여러 개가 차지하던 자리를 눈에 덜 띄는 셀렉트 하나로 줄인다.
+ * 배경을 불투명하게 지정해야 한다 — 옅은 반투명 배경만 주면 브라우저 기본(흰색) select 배경이
+ * 그대로 비쳐서, 펼쳤을 때 옵션 목록이 흰 바탕에 옅은 글자로 표시되어 마우스를 올려야만 보이던 문제가 있었다.
+ */
+.news-rail .industry-select {
+  flex: none;
+  background: var(--field);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 8px;
+  font-size: 12px;
+  color: var(--text-3);
+  max-width: 130px;
+}
+.news-rail .industry-select:hover,
+.news-rail .industry-select:focus {
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+.news-rail .industry-select option {
+  background: var(--panel-solid);
+  color: var(--text-2);
+}
+.news-rail .list {
+  flex: 1;
+  overflow-y: auto;
+  margin-top: 14px;
+  padding-right: 2px;
+}
+.news-rail .news-card {
+  cursor: pointer;
+}
+/* 뉴스 제목이 목록에서 가장 눈에 먼저 들어오도록 요약보다 크고 굵게 둔다 */
+.news-rail .news-card .title {
+  font-size: 16.5px;
+  font-weight: 700;
+  line-height: 1.4;
+  margin-top: 2px;
+}
+.news-rail .news-card .summary {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-4);
+}
+/* 뉴스 상세 모달 */
+.dialog.news-detail {
+  width: min(640px, 100%);
+  max-height: 82vh;
+  overflow-y: auto;
+}
+.crumbs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-3);
+}
+.crumbs button {
+  color: var(--text-3);
+  font-weight: 600;
+}
+.crumbs button:hover {
+  color: var(--text);
+}
+.crumbs b {
+  color: var(--text);
+}
+.crumbs .reset {
+  margin-left: auto;
+  color: var(--primary-2);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.company-ctx {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+.company-ctx .nm {
+  font-size: 17px;
+  font-weight: 700;
+}
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.map-card {
+  margin-top: 14px;
+  overflow: hidden;
+}
+.map-head {
+  padding: 18px 20px 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.map-head .ttl {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.4;
+  margin-top: 6px;
+}
+.map-tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 20px 0;
+  flex-wrap: wrap;
+}
+.map-stage {
+  position: relative;
+  margin-top: 14px;
+  padding: 16px;
+  border-radius: 14px;
+  background: #05070f;
+  overflow: hidden;
+}
+/*
+ * 뉴스 관계 지도 — 은하 뷰가 이미 은하 페이지에 있어 여기서 다시 그릴 이유가 없다는 팀 합의로 3D를
+ * 걷어냈다. 이어서 시도한 2열 화살표 다이어그램도 관련 기업이 수십 개로 늘면 선이 한 점에 뭉쳐 오히려
+ * 안 읽혔다 — 허브 하나·위성 다수 구조엔 노드-링크 다이어그램 자체가 안 맞는다고 보고, 관계 유형별로
+ * 묶어 점수순으로 나열하는 목록으로 바꿨다. '1홉 관계까지 확장' 기능도 목록이 지나치게 길어지고
+ * '뉴스가 실제로 언급한 기업'만 보는 편이 명확하다는 팀 합의로 없앴다 — 그래서 이 목록에 나오는 관계는
+ * 항상 선택된 뉴스가 직접 언급한 기업들 사이의 관계뿐이다.
+ */
+.rel2d-wrap {
+  max-height: 480px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+/*
+ * 관계(또는 관계가 없을 때의 언급 기업) 한 줄이 카드 전체 폭(900px+)에 혼자 놓여 내용은 왼쪽에
+ * 뭉치고 오른쪽은 텅 비어 보이던 문제가 있었다 — 여러 줄을 폭에 맞게 그리드로 나란히 배치한다.
+ * 헤더(.rel2d-group-head)만 전체 폭을 차지하도록 별도 지정한다.
+ */
+.rel2d-group {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  column-gap: 20px;
+}
+.rel2d-group + .rel2d-group {
+  margin-top: 18px;
+}
+.rel2d-group-head {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 0 2px;
+}
+.rel2d-group-head .kick {
+  font-size: 12px;
+}
+.rel2d-group-head .meta {
+  margin-left: auto;
+}
+.rel2d-sibling {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  flex-wrap: wrap;
+}
+.rel2d-chip {
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 13px;
+  font-weight: 600;
+}
+.rel2d-chip:hover {
+  border-color: rgba(198, 165, 255, 0.5);
+  color: var(--text);
+}
+.rel2d-chip.on {
+  border-color: rgba(109, 140, 255, 0.55);
+  background: rgba(109, 140, 255, 0.12);
+  color: var(--primary-2);
+}
+.map-foot {
+  padding: 12px 20px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  flex-wrap: wrap;
+}
+/*
+ * 랭킹·경로 카드가 각각 전체 폭(full)을 혼자 쓰며 세로로 쌓이던 것을, 데스크톱 폭에서는 이미
+ * 정의돼 있던 2열 그리드를 실제로 활용해 나란히 배치하도록 바꿨다 — 랭킹 목록의 점수 막대가
+ * 900px 가까이 늘어나던 것도 카드 폭이 절반으로 줄면서 자연스럽게 해소된다.
+ * align-items:start 로 두 카드 높이가 다를 때 짧은 카드가 억지로 늘어나지 않게 한다.
+ * 1100px 이하에서는 기존과 동일하게 1fr(세로 쌓기)로 접힌다.
+ */
+.analysis {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+  align-items: start;
+}
+.analysis .card {
+  padding: 20px 22px;
+}
+.analysis .full {
+  grid-column: 1 / -1;
+}
+/*
+ * hop>0(간접 전이) 행 아래에 "왜 이어지는지" 한 줄(.rank-why)을 추가로 보여주기 위해, 기존
+ * 한 줄짜리 가로 flex 행을 .rank-row로 감싸고 .rank 자체는 세로로 쌓는 컨테이너로 바꿨다.
+ */
+.rank {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 13px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  width: 100%;
+  text-align: left;
+  border-radius: 8px;
+}
+.rank:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+.rank-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+}
+.rank .idx {
+  width: 22px;
+}
+.rank .nm {
+  width: 150px;
+  flex: none;
+}
+.rank .nm b {
+  font-size: 15px;
+  font-weight: 600;
+  display: block;
+}
+.rank .sc {
+  width: 74px;
+  text-align: right;
+}
+.rank .sc b {
+  font-size: 20px;
+  font-weight: 700;
+  display: block;
+}
+.rank-why {
+  margin-top: 4px;
+  margin-left: 82px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-4);
+}
+/*
+ * "산업 분포"·"관계 유형 분포" — 예전 "주요 경로" 카드가 2홉 이상일 때만 의미가 있어 실제로는
+ * 거의 항상 비다시피 했던 것을, 기사 길이와 무관하게 항상 채워지는 요약으로 바꿨다.
+ */
+.dist-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.dist-col .lab {
+  display: block;
+  margin-bottom: 8px;
+}
+.dist-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.dist-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 12px;
+  font-weight: 600;
+}
+@media (max-width: 480px) {
+  .dist-row {
+    grid-template-columns: 1fr;
+  }
+}
+.path-chain-chip:hover {
+  border-color: rgba(198, 165, 255, 0.5);
+  color: var(--text);
+}
+.ev-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+@media (max-width: 1100px) {
+  .news-page {
+    grid-template-columns: 1fr;
+  }
+  .news-rail {
+    position: static;
+    max-height: none;
+  }
+  .news-rail .list {
+    max-height: 60vh;
+  }
+  .kpi-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .analysis {
+    grid-template-columns: 1fr;
+  }
+  .rel2d-wrap {
+    max-height: 380px;
+  }
+}

@@ -1,0 +1,18 @@
+data/edges_*.csv
+data/ownership_*.csv
+data/prices_raw/
+data/prices_daily.parquet
+data/prices_manifest.json
+# 관계추출 중간 산출물 (기사 본문 포함, 서버에서 재생성 가능)
+data/relation_*.jsonl
+data/rel_hits.jsonl
+
+# 스토리3 영향도 분석 산출물 (스크립트로 재생성 가능)
+data/event_study_*.csv
+data/baseline_onehop.csv
+data/edges_co_mention_pre2024.csv
+data/impact_gnn_*.csv
+data/impact_gnn_*.log
+data/impact_coefficients*.csv
+data/impact_scores_eval.csv
+artifacts/

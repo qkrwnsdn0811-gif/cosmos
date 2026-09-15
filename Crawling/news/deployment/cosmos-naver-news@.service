@@ -1,0 +1,29 @@
+[Unit]
+Description=COSMOS Naver KOSPI 100 news %i worker
+Wants=network-online.target
+After=network-online.target kafka.service cosmos-news-hdfs-writer.service
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/news-kafka/naver-app
+EnvironmentFile=/etc/cosmos/naver-news.env
+ExecStart=/bin/bash /home/ubuntu/news-kafka/naver-app/deployment/run-naver.sh %i
+Restart=on-failure
+RestartSec=60
+TimeoutStopSec=180
+KillMode=control-group
+UMask=0077
+Nice=10
+CPUQuota=100%
+MemoryHigh=512M
+MemoryMax=768M
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/ubuntu/news-kafka/naver-state
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,40 @@
+{"eval_id": "E121", "gold": [], "note": ""}
+{"eval_id": "E122", "gold": [{"ticker": "ABNB", "alias": "에어비앤비"}, {"ticker": "META", "alias": "메타"}], "note": "에어비앤비는 스트라바와 런케이션 서비스 공동 출시 파트너, 메타는 스마트안경 공동개발 파트너로 회사 자체 언급. 골드만삭스/JP모건/모건스탠리/오클리는 목록 외. 유튜브·인스타그램·트위터는 플랫폼 언급이라 제외."}
+{"eval_id": "E123", "gold": [], "note": "skip"}
+{"eval_id": "E124", "gold": [], "note": ""}
+{"eval_id": "E125", "gold": [{"ticker": "030200", "alias": "KT"}], "note": "애매: 드라마가 '지니 TV 오리지널'이고 'KT 지니 TV에서 무료 VOD 독점 공개'로 KT가 제작·유통 주체로 직접 명시됨. 단순 플랫폼 언급으로 볼 여지도 있어 불확실하지만 포함."}
+{"eval_id": "E126", "gold": [], "note": "라피치, 서경엔씨에스는 목록 외."}
+{"eval_id": "E127", "gold": [], "note": ""}
+{"eval_id": "E128", "gold": [], "note": ""}
+{"eval_id": "E129", "gold": [{"ticker": "000880", "alias": "㈜한화"}, {"ticker": "012450", "alias": "한화에어로스페이스"}, {"ticker": "042660", "alias": "한화오션"}], "note": "한화에어로스페이스는 '한화에어로'로도 표기. 한화에너지는 비상장/목록 외. '한화그룹'은 그룹 언급이지만 ㈜한화가 별도로 명시되어 있음."}
+{"eval_id": "E130", "gold": [], "note": "하나대체투자운용(하나금융지주 자회사)이 민간 출자자로 언급되지만 지주사 사업에 관한 기사가 아니어서 미표기. 한국산업은행, 코람코자산운용, 한국성장금융은 목록 외."}
+{"eval_id": "E131", "gold": [], "note": ""}
+{"eval_id": "E132", "gold": [], "note": ""}
+{"eval_id": "E133", "gold": [{"ticker": "071050", "alias": "한국투자증권"}], "note": "한국투자증권 리포트 기사 → 지주사 한국금융지주로 라벨. 제목의 '한국투자'도 동일 회사. 한국은행은 목록 외."}
+{"eval_id": "E134", "gold": [], "note": ""}
+{"eval_id": "E135", "gold": [], "note": "skip"}
+{"eval_id": "E136", "gold": [], "note": ""}
+{"eval_id": "E137", "gold": [{"ticker": "005940", "alias": "NH투자증권"}, {"ticker": "051910", "alias": "LG화학"}, {"ticker": "373220", "alias": "LG에너지솔루션"}], "note": "제목의 'NH'는 NH투자증권. 팰리서 캐피털은 목록 외."}
+{"eval_id": "E138", "gold": [{"ticker": "000270", "alias": "기아"}], "note": "오토랜드 화성의 '기아 PBV 전용 생산공장 EVO 플랜트' 준공 언급 — 기아의 공장·사업에 대한 언급으로 판단. 우정사업본부 등 정부기관은 제외."}
+{"eval_id": "E139", "gold": [], "note": ""}
+{"eval_id": "E140", "gold": [], "note": "skip"}
+{"eval_id": "E141", "gold": [], "note": ""}
+{"eval_id": "E142", "gold": [], "note": ""}
+{"eval_id": "E143", "gold": [], "note": ""}
+{"eval_id": "E144", "gold": [], "note": ""}
+{"eval_id": "E145", "gold": [], "note": ""}
+{"eval_id": "E146", "gold": [], "note": ""}
+{"eval_id": "E147", "gold": [], "note": "아플리버셉트(리제네론 제품)만 성분명으로 언급되고 회사명은 없음 → 미표기."}
+{"eval_id": "E148", "gold": [], "note": ""}
+{"eval_id": "E149", "gold": [], "note": "MBC는 목록 외, 유튜브는 플랫폼 언급."}
+{"eval_id": "E150", "gold": [], "note": "롯데관광개발, 코스타 크루즈는 목록 외."}
+{"eval_id": "E151", "gold": [], "note": "LEM Holding, TDK, Experia(Nexperia)는 목록 외."}
+{"eval_id": "E152", "gold": [], "note": "Fortrea, LabCorp는 목록 외."}
+{"eval_id": "E153", "gold": [], "note": "F5는 목록 외."}
+{"eval_id": "E154", "gold": [], "note": ""}
+{"eval_id": "E155", "gold": [], "note": ""}
+{"eval_id": "E156", "gold": [], "note": "iRobot는 목록 외."}
+{"eval_id": "E157", "gold": [], "note": "CVS, Cigna는 목록 외."}
+{"eval_id": "E158", "gold": [], "note": "'posted on X'는 플랫폼 언급. 'Jeff Bezos-backed startup', 'Moxy Hotels'는 광고 링크 문구이며 아마존/메리어트 회사명 자체는 없음."}
+{"eval_id": "E159", "gold": [], "note": ""}
+{"eval_id": "E160", "gold": [], "note": "Trimble, Barclays, Berenberg는 목록 외."}

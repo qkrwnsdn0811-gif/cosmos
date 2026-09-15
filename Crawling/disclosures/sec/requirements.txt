@@ -1,0 +1,2 @@
+# Python 3.11 or newer. Collection, resume, and tests use the standard library.
+# HDFS helper scripts additionally require Bash, GNU coreutils, Java, and Hadoop CLI.

@@ -1,0 +1,167 @@
+/**
+ * 관계 툴팁 3단(SceneTip) · 자동 추출 고지·근거 타임라인(RelationshipPanel) 전용 클래스.
+ * 기존 galaxy.css 의 .scene-tip/.panel 구조 위에 얹어 쓴다 — 색·타이포는 global.css 토큰을 그대로 따른다.
+ */
+
+/* ---- SceneTip 1행(설명) ---- */
+.ev-desc {
+  color: var(--text-2);
+  line-height: 1.5;
+}
+
+/* ---- 뜻밖 배지·설명 줄 (공용) ---- */
+.ev-surprise-badge {
+  background: var(--warn-soft, rgba(245, 166, 35, 0.14));
+  color: var(--warn-fg);
+}
+.ev-surprise-line {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--warn-fg);
+}
+
+/* ---- SceneTip 2행(관계 요약) ---- */
+.ev-detail {
+  line-height: 1.6;
+}
+.ev-warn {
+  color: var(--warn-fg);
+}
+
+/* ---- SceneTip 3행(대표 근거) — 고정 높이로 스켈레톤과 자리를 맞바꿔도 카드가 튀지 않는다 ---- */
+.ev-quote-row {
+  min-height: 34px;
+}
+.ev-quote {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-2);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.ev-quote q,
+.ev-item-quote q {
+  quotes: "\201C" "\201D";
+}
+.ev-more {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--text-4);
+}
+.ev-no-evidence {
+  font-size: 12px;
+  color: var(--text-4);
+}
+
+/* ---- RelationshipPanel: 자동 추출 고지 ---- */
+.ev-low-confidence {
+  font-size: 11px;
+  color: var(--warn-fg);
+  white-space: nowrap;
+}
+
+/* ---- RelationshipPanel: 왜 뜻밖인가 — 이 제품의 핵심 메시지라 눈에 띄게 ---- */
+.ev-why {
+  border-left: 3px solid var(--warn);
+  background: rgba(245, 166, 35, 0.07);
+  border-radius: 0 10px 10px 0;
+  padding: 10px 14px;
+}
+.ev-why-title {
+  color: var(--warn-fg);
+  margin-bottom: 6px;
+}
+.ev-why-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.ev-why-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ev-why-list b {
+  font-size: 13px;
+  color: var(--text);
+}
+.ev-why-list span {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+/* ---- RelationshipPanel: 근거 타임라인 ---- */
+.ev-timeline-summary {
+  margin-top: 4px;
+}
+.ev-timeline {
+  display: flex;
+  flex-direction: column;
+}
+.ev-item {
+  display: flex;
+  gap: 12px;
+  padding-bottom: 20px;
+}
+.ev-item:last-child {
+  padding-bottom: 0;
+}
+.ev-item-rail {
+  width: 10px;
+  flex: none;
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+.ev-item-dot {
+  width: 8px;
+  height: 8px;
+  margin-top: 4px;
+  border-radius: 50%;
+  background: var(--primary-2);
+  flex: none;
+}
+.ev-item-rail::after {
+  content: "";
+  position: absolute;
+  top: 14px;
+  bottom: -20px;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.12);
+}
+.ev-item:last-child .ev-item-rail::after {
+  display: none;
+}
+.ev-item-body {
+  flex: 1;
+  min-width: 0;
+}
+.ev-item-bar {
+  margin-top: 6px;
+  display: flex;
+}
+.ev-rep-badge {
+  display: inline-flex;
+  margin-top: 6px;
+  background: rgba(130, 156, 255, 0.14);
+  color: var(--primary-2);
+  font-size: 10px;
+  padding: 2px 8px;
+}
+.ev-item-quote {
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-2);
+}
+.ev-item-actions {
+  margin-top: 8px;
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}

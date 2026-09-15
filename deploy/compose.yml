@@ -1,0 +1,92 @@
+name: cosmos
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: '10m'
+    max-file: '3'
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: cosmos
+      POSTGRES_USER: cosmos
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      TZ: UTC
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks: [data]
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U cosmos -d cosmos']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    mem_limit: 1536m
+    logging: *logging
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+    command: ['sh', '-ec', 'exec redis-server --port 16379 --appendonly yes --requirepass "$$REDIS_PASSWORD"']
+    volumes:
+      - redis_data:/data
+    networks: [data]
+    healthcheck:
+      test: ['CMD-SHELL', 'REDISCLI_AUTH="$$REDIS_PASSWORD" redis-cli -p 16379 ping | grep -q PONG']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    mem_limit: 384m
+    logging: *logging
+
+  backend:
+    image: cosmos-backend:${IMAGE_TAG:?IMAGE_TAG is required}
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SERVER_PORT: '18081'
+      DB_URL: jdbc:postgresql://postgres:5432/cosmos
+      DB_USERNAME: cosmos
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      REDIS_HOST: redis
+      REDIS_PORT: '16379'
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      CORS_ALLOWED_ORIGINS: ${PUBLIC_URL:?PUBLIC_URL is required}
+      JAVA_TOOL_OPTIONS: '-XX:MaxRAMPercentage=65.0'
+      TZ: UTC
+    ports:
+      - '127.0.0.1:18081:18081'
+    networks: [app, data]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    stop_grace_period: 40s
+    mem_limit: 1536m
+    logging: *logging
+
+  frontend:
+    image: cosmos-frontend:${IMAGE_TAG:?IMAGE_TAG is required}
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:18080:80'
+    networks: [app]
+    mem_limit: 256m
+    logging: *logging
+
+networks:
+  app: {}
+  data:
+    internal: true
+
+volumes:
+  postgres_data:
+    name: cosmos_postgres_data
+  redis_data:
+    name: cosmos_redis_data

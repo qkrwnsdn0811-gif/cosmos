@@ -1,0 +1,21 @@
+{
+  "name": "cosmos-news-crawlers",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.13.0 <25"
+  },
+  "scripts": {
+    "build": "node scripts/build-domestic.mjs",
+    "test": "node --experimental-strip-types --test tests/news-kafka-domestic.test.mjs tests/news-article-extractor.test.mjs tests/robots-policy.test.mjs tests/naver-fetch.test.mjs",
+    "package": "python scripts/package-news.py"
+  },
+  "dependencies": {
+    "@mozilla/readability": "0.6.0",
+    "linkedom": "0.18.13"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
+}

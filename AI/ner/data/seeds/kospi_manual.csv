@@ -1,0 +1,98 @@
+name_official,aliases,note
+삼성전자,삼전;Samsung Electronics;SAMSUNG ELECTRONICS,
+SK하이닉스,하닉;하이닉스;SK hynix;SK Hynix;SK HYNIX,
+SK스퀘어,SK Square,
+삼성전기,Samsung Electro-Mechanics,
+LG에너지솔루션,LG엔솔;엘지에너지솔루션;LG Energy Solution;LGES,
+현대차,현대자동차;Hyundai Motor;Hyundai Motor Company;Hyundai Motor Co,
+삼성바이오로직스,삼바;삼성바이오;Samsung Biologics,
+KB금융,KB금융지주;KB금융그룹;KB국민은행;국민은행;KB Financial;KB Financial Group,자회사 은행 포함
+삼성생명,삼성생명보험;Samsung Life;Samsung Life Insurance,
+삼성물산,Samsung C&T,
+한화에어로스페이스,한화에어로;Hanwha Aerospace,
+신한지주,신한금융지주;신한금융지주회사;신한금융그룹;신한금융;신한은행;Shinhan Financial;Shinhan Financial Group,자회사 은행 포함
+두산에너빌리티,두산에너빌;Doosan Enerbility,
+기아,기아차;기아자동차;Kia;Kia Corp;Kia Corporation;Kia Motors,
+HD현대중공업,현대중공업;HD Hyundai Heavy Industries;HD Hyundai Heavy,
+삼성SDI,삼성에스디아이;Samsung SDI,
+셀트리온,Celltrion,
+현대모비스,모비스;Hyundai Mobis,
+하나금융지주,하나금융;하나금융그룹;하나은행;Hana Financial;Hana Financial Group,자회사 은행 포함
+LG전자,엘지전자;LG Electronics,
+NAVER,네이버;Naver,
+삼성화재,삼성화재해상보험;Samsung Fire & Marine;Samsung Fire,
+HD건설기계,HD현대건설기계;현대건설기계;HD현대인프라코어;HD Hyundai Construction Equipment;HD Hyundai Infracore,합병 전 사명 포함
+LS ELECTRIC,LS일렉트릭;LS 일렉트릭;LS산전;LS Electric,
+POSCO홀딩스,포스코홀딩스;POSCO Holdings;POSCO,
+한화오션,대우조선해양;Hanwha Ocean,구사명 포함
+HD현대일렉트릭,현대일렉트릭;HD Hyundai Electric,
+고려아연,Korea Zinc,
+효성중공업,Hyosung Heavy Industries,
+우리금융지주,우리금융;우리금융그룹;우리은행;Woori Financial;Woori Financial Group,자회사 은행 포함
+HD한국조선해양,한국조선해양;HD Korea Shipbuilding;HD KSOE,
+SK이노베이션,SK이노;SK Innovation,
+한미반도체,Hanmi Semiconductor,
+한국전력,한전;한국전력공사;KEPCO;Korea Electric Power,
+HMM,현대상선,구사명 포함
+SK텔레콤,SKT;SK Telecom,
+LG화학,엘지화학;LG Chem,
+HD현대,HD Hyundai,
+삼성중공업,Samsung Heavy Industries;Samsung Heavy,
+미래에셋증권,Mirae Asset Securities,
+S-Oil,에쓰오일;에스오일;S-OIL;S-oil;에쓰-오일,
+LG,LG Corp,그룹 동일명 지주사
+삼성에스디에스,삼성SDS;Samsung SDS,
+두산,Doosan Corp,그룹 동일명 지주사
+KT&G,케이티앤지,
+기업은행,IBK기업은행;IBK;Industrial Bank of Korea,
+포스코퓨처엠,포스코케미칼;POSCO Future M,구사명 포함
+카카오,Kakao;Kakao Corp,
+현대글로비스,글로비스;Hyundai Glovis,
+에이피알,APR,영문 약어는 needs_context 처리
+LIG디펜스앤에어로스페이스,LIG넥스원;LIG Nex1,구사명 포함
+현대로템,Hyundai Rotem,
+KT,KT Corp;KT Corporation;Korea Telecom,"케이티"는 인명(케이티 맥낼리)과 충돌해 제외
+현대건설,Hyundai E&C;Hyundai Engineering & Construction,
+LG이노텍,LG Innotek,
+한화시스템,Hanwha Systems,
+DB손해보험,DB손보;DB Insurance,
+한국항공우주,KAI;한국항공우주산업;Korea Aerospace Industries,
+GS,GS Holdings,그룹 동일명 지주사
+대한항공,Korean Air,
+현대오토에버,Hyundai AutoEver,
+한국금융지주,한국투자증권;한투;한국투자금융지주;Korea Investment Holdings;Korea Investment & Securities,자회사 포함
+삼양식품,Samyang Foods,
+카카오뱅크,카뱅;KakaoBank;Kakao Bank,
+크래프톤,Krafton;KRAFTON,
+포스코인터내셔널,포스코인터;POSCO International,
+NH투자증권,NH Investment & Securities,
+한진칼,Hanjin KAL,
+HD현대마린솔루션,HD Hyundai Marine Solution,
+LS,LS Corp,그룹 동일명 지주사
+삼성에피스홀딩스,삼성에피스;삼성바이오에피스;Samsung Epis Holdings;Samsung Bioepis,
+삼성E&A,삼성이앤에이;삼성엔지니어링;Samsung E&A,구사명 포함
+아모레퍼시픽,아모레;Amorepacific;AmorePacific,
+한국타이어앤테크놀로지,한국타이어;Hankook Tire,
+이수페타시스,Isu Petasys,
+삼성증권,Samsung Securities,
+하이브,HYBE;빅히트;빅히트엔터테인먼트,구사명 포함
+한화,Hanwha Corp;㈜한화;(주)한화;한화 주식회사,그룹 동일명 지주사. ㈜ 표기는 지주사 자체를 가리킴
+LG씨엔에스,LG CNS;LGCNS;엘지씨엔에스,
+코웨이,Coway,
+키움증권,Kiwoom Securities,
+대우건설,Daewoo E&C,
+한화솔루션,Hanwha Solutions,
+SK바이오팜,SK Biopharmaceuticals;SK Biopharm,
+카카오페이,KakaoPay;Kakao Pay,
+가온전선,Gaon Cable,
+LG유플러스,LGU+;LG U+;엘지유플러스;LG Uplus,
+두산밥캣,Doosan Bobcat,
+유한양행,Yuhan;Yuhan Corporation,
+한미약품,Hanmi Pharmaceutical;Hanmi Pharm,
+JB금융지주,JB금융;전북은행;광주은행;JB Financial,자회사 은행 포함
+삼성카드,Samsung Card,
+한화생명,한화생명보험;Hanwha Life,
+오리온,Orion Corp,
+엘앤에프,L&F,
+대덕전자,Daeduck Electronics,
+맥쿼리인프라,맥쿼리한국인프라투융자회사;Macquarie Korea Infrastructure,

@@ -1,0 +1,40 @@
+{"eval_id": "E161", "gold": [], "note": "Lloyds Bank, Santander not in target list"}
+{"eval_id": "E162", "gold": [{"ticker": "MSFT", "alias": "Microsoft"}], "note": "Microsoft (NASDAQ:MSFT) named as OpenAI's backer with ticker; article is about OpenAI, Microsoft only a passing identifier - included as unsure"}
+{"eval_id": "E163", "gold": [], "note": "Petrobras not in list"}
+{"eval_id": "E164", "gold": [{"ticker": "WDC", "alias": "Western Digital"}], "note": "Nvidia appears only in StockStory closing boilerplate (Top 5 Growth Stocks list) - excluded; Accel, Dover not in list"}
+{"eval_id": "E165", "gold": [], "note": "ADNOC Distribution not in list"}
+{"eval_id": "E166", "gold": [{"ticker": "GOOGL", "alias": "Alphabet"}, {"ticker": "AMZN", "alias": "Amazon"}, {"ticker": "MSFT", "alias": "Microsoft"}], "note": "Hyperscalers Alphabet/Amazon/Microsoft named as dominating data-capacity demand; Google also cited as investing in Visakhapatnam - passing mentions, included as unsure"}
+{"eval_id": "E167", "gold": [], "note": "Danone not in list"}
+{"eval_id": "E168", "gold": [{"ticker": "GOOGL", "alias": "Google Cloud"}], "note": "Google Cloud / Google / 'The Alphabet subsidiary' - whole article about Google's business"}
+{"eval_id": "E169", "gold": [], "note": "Trump Media (DJT) not in list; APPLE (AAPL) / TESLA (TSLA) appear only in Benzinga footer boilerplate - excluded"}
+{"eval_id": "E170", "gold": [], "note": ""}
+{"eval_id": "E171", "gold": [{"ticker": "000270", "alias": "Kia"}], "note": "Kia (000270.KS), Kia America"}
+{"eval_id": "E172", "gold": [], "note": "ISS, Glass Lewis, Vanguard, BlackRock not in list"}
+{"eval_id": "E173", "gold": [], "note": "Uflex not in list"}
+{"eval_id": "E174", "gold": [], "note": "Caesars, MGM Resorts, Resorts World not in list"}
+{"eval_id": "E175", "gold": [], "note": "Eastman Chemical, Citigroup not in list"}
+{"eval_id": "E176", "gold": [], "note": "AMD / Netflix (NFLX) / Meta appear only as inserted related-article headlines in a Euro-futures piece, not article body - excluded"}
+{"eval_id": "E177", "gold": [], "note": "Underdog, Crypto.com, Fanatics, FanDuel, DraftKings not in list"}
+{"eval_id": "E178", "gold": [], "note": "Zhen Ding Resources not in list"}
+{"eval_id": "E179", "gold": [], "note": "mDR not in list"}
+{"eval_id": "E180", "gold": [], "note": "Freddie Mac, MBA not in list"}
+{"eval_id": "E181", "gold": [], "note": "Krispy Kreme not in list; Netflix and Nvidia appear only in Motley Fool Stock Advisor boilerplate - excluded"}
+{"eval_id": "E182", "gold": [{"ticker": "INTC", "alias": "Intel Corp"}], "note": "Intel Corp (NASDAQ:INTC) earnings call"}
+{"eval_id": "E183", "gold": [{"ticker": "QCOM", "alias": "Qualcomm"}], "note": "Qualcomm (QCOM) / QUALCOMM; Humain not in list"}
+{"eval_id": "E184", "gold": [], "note": "Universal Health Services not in list; Bank of America only as analyst affiliation"}
+{"eval_id": "E185", "gold": [], "note": "Telkom SA not in list"}
+{"eval_id": "E186", "gold": [], "note": "Cardano / Input Output Global not in list"}
+{"eval_id": "E187", "gold": [{"ticker": "TSLA", "alias": "Tesla Inc."}, {"ticker": "SPCX", "alias": "SpaceX"}], "note": "SpaceX discussed as company (tender offer, valuation, IPO); 'Google co-founder Larry Page' is only a person identifier - GOOGL excluded; 'Missed Nvidia and Tesla? RAD Intel' is sponsored link and APPLE (AAPL) footer boilerplate - excluded"}
+{"eval_id": "E188", "gold": [], "note": "Regal Rexnord not in list"}
+{"eval_id": "E189", "gold": [], "note": "Bank of Korea, FSC are institutions not listed companies"}
+{"eval_id": "E190", "gold": [], "note": "MAAS Group not in list"}
+{"eval_id": "E191", "gold": [], "note": "LSI, Thermon, Atkore, Whirlpool not in list"}
+{"eval_id": "E192", "gold": [{"ticker": "GILD", "alias": "Gilead"}], "note": "Vir Biotechnology not in list; Gilead named as competitor launching Bulvertide (company business) - included, moderately unsure"}
+{"eval_id": "E193", "gold": [{"ticker": "MSFT", "alias": "Microsoft"}], "note": "Microsoft (MSFT) $10B Portugal data center; Start Campus, Nscale not in list"}
+{"eval_id": "E194", "gold": [], "note": "Sonic Automotive not in list"}
+{"eval_id": "E195", "gold": [{"ticker": "AVGO", "alias": "Broadcom Inc."}, {"ticker": "GOOGL", "alias": "Alphabet Inc"}], "note": "Broadcom earnings/stock; Alphabet Inc. (GOOGL) as maker of Gemini in content-rights dispute; Disney, OpenAI not in list"}
+{"eval_id": "E196", "gold": [], "note": "onsemi (ON) not in list; 'Intel's Black Friday Breakout: Apple Rumors' and 'NVIDIA's 13F' are inserted related-article links (arrow bullets), not body - excluded"}
+{"eval_id": "E197", "gold": [], "note": "Primerica not in list"}
+{"eval_id": "E198", "gold": [], "note": ""}
+{"eval_id": "E199", "gold": [], "note": "SGX and clearing members not in list"}
+{"eval_id": "E200", "gold": [], "note": "Ethereum / Token Terminal / Uniswap / Aave not in list"}

@@ -1,0 +1,1513 @@
+.galaxy {
+  position: relative;
+  height: calc(100vh - var(--header-h));
+  min-height: 560px;
+  overflow: hidden;
+  background: #05070f;
+}
+.galaxy .stage {
+  position: absolute;
+  inset: 0;
+}
+.galaxy .stage canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.hud {
+  position: absolute;
+  z-index: 5;
+  pointer-events: none;
+}
+.hud > * {
+  pointer-events: auto;
+}
+
+/* 상단 한 줄: 검색 · 은하 범위 · 산업 선택판. 산업 드롭다운이 이 행 아래에 뜨므로 다른 HUD(경로 스트립 등)보다 한 층 위 */
+.hud-top {
+  left: 0;
+  right: 0;
+  top: 22px;
+  z-index: 6;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 0 24px;
+}
+.search-trigger {
+  flex: 0 1 490px;
+  min-width: 260px;
+  height: 48px;
+  padding: 0 10px 0 16px;
+  cursor: text;
+  color: var(--text-4);
+  background: rgba(3, 9, 20, 0.78);
+  backdrop-filter: blur(10px);
+}
+.search-trigger span {
+  flex: 1;
+  text-align: left;
+  font-size: 14px;
+}
+/* 단축키 배지는 안내 문구처럼 늘어나면 안 된다 — 글자 폭만큼만 차지한다 */
+.search-trigger .kbd {
+  flex: none;
+  text-align: center;
+  font-size: 12px;
+  min-width: 26px;
+}
+.kbd {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-3);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 7px;
+  padding: 4px 8px;
+}
+/* 산업 선택판 — 요약 칩(트리거) + 묶음별 드롭다운. 넓은 화면에서는 트리거 오른쪽 끝에 맞춰 왼쪽으로 펼쳐진다
+   (트리거가 행의 오른쪽 끝이라 항상 화면 안에 들어온다). 좁은 화면은 아래 미디어 쿼리에서 행 가운데로 바꾼다 */
+.industry-picker {
+  position: relative;
+}
+.industry-trigger {
+  height: 48px;
+  padding: 0 12px 0 14px;
+  gap: 8px;
+  cursor: pointer;
+  color: var(--text-2);
+  white-space: nowrap;
+  background: rgba(3, 9, 20, 0.78);
+  backdrop-filter: blur(10px);
+}
+.industry-trigger:hover {
+  border-color: rgba(109, 140, 255, 0.45);
+}
+.industry-trigger.on {
+  border-color: rgba(109, 140, 255, 0.45);
+  background: rgba(109, 140, 255, 0.14);
+}
+.industry-trigger i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: none;
+}
+.industry-trigger .lab {
+  font-size: 12px;
+  color: var(--text-4);
+}
+.industry-trigger b {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+.industry-trigger .num {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary-2);
+}
+.industry-trigger svg {
+  color: var(--text-4);
+  transition: transform 0.15s;
+}
+.industry-trigger[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+.industry-pop {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 7;
+  width: min(760px, calc(100vw - 48px));
+  padding: 14px 16px 16px;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.industry-pop-head {
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.industry-sec .lab {
+  font-size: 12px;
+  color: var(--text-4);
+  margin-bottom: 8px;
+}
+.industry-sec-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.industry-pop .chip {
+  background: rgba(10, 14, 24, 0.55);
+}
+.industry-pop .chip.on {
+  background: rgba(109, 140, 255, 0.22);
+}
+
+/* 상단: 은하 범위 토글 (전체 / 내 은하) */
+.scope-seg {
+  background: rgba(3, 9, 20, 0.78);
+  backdrop-filter: blur(10px);
+}
+.scope-seg button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 7px 18px;
+}
+.scope-seg button .num {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary-2);
+}
+
+/* 내 은하 도구 줄 — 산업 칩 자리에 들어간다 */
+.my-galaxy-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: 1100px;
+}
+.my-galaxy-bar .chip {
+  backdrop-filter: blur(8px);
+  background: rgba(10, 14, 24, 0.55);
+}
+.my-galaxy-bar .chip.on {
+  background: rgba(109, 140, 255, 0.22);
+}
+.mg-sum {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.mg-sum .num {
+  font-weight: 700;
+  color: var(--text);
+}
+.mg-missing {
+  position: relative;
+}
+.mg-missing-pop {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 6;
+  width: 248px;
+  padding: 10px;
+  border-radius: 13px;
+  text-align: left;
+}
+.mg-missing-pop .hint {
+  padding: 2px 4px 8px;
+}
+.mg-missing-pop button {
+  display: block;
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 9px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-2);
+  text-align: left;
+}
+.mg-missing-pop button:hover {
+  background: rgba(109, 140, 255, 0.12);
+  color: var(--text);
+}
+
+/* 내 은하가 비었을 때 — 무대 한가운데 안내 카드 (상단 HUD 보다는 아래) */
+.mg-empty {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  pointer-events: none;
+}
+.mg-empty > * {
+  pointer-events: auto;
+}
+.mg-empty-card {
+  width: min(430px, 100%);
+  padding: 26px 28px;
+  border-radius: 16px;
+  text-align: center;
+}
+.mg-empty-card h2 {
+  font-size: 19px;
+  font-weight: 700;
+  margin-top: 8px;
+}
+.mg-empty-card .hint {
+  margin-top: 10px;
+}
+.mg-empty-card .row {
+  gap: 8px;
+  justify-content: center;
+}
+
+/* 좌상단: 기업 중심 뷰 브레드크럼 */
+.hud-crumb {
+  left: 24px;
+  top: 22px;
+  /* 브레드크럼 · 검색 · 카메라 프리셋이 한 줄에 안 들어가면 접는다 — 우측 인텔리전스 패널(약 420px) 자리는 남긴다 */
+  max-width: calc(100% - 24px - 440px);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.crumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-3);
+  background: rgba(10, 14, 24, 0.7);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+}
+.crumb b {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+}
+.crumb button {
+  color: var(--text-3);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+.crumb button:hover {
+  color: var(--text);
+}
+
+/* 브레드크럼 아래: 1홉 역할 요약 스트립 */
+.hud-hop {
+  left: 24px;
+  top: 74px;
+  max-width: min(720px, calc(100vw - 460px));
+}
+.hop-strip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 6px 8px;
+  border-radius: 12px;
+  background: rgba(10, 14, 24, 0.55);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+}
+.hop-strip .role-badge {
+  backdrop-filter: none;
+  transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+}
+.hop-strip .role-badge b {
+  color: var(--text-3);
+}
+.hop-strip .role-badge.on b {
+  color: var(--text);
+}
+.hop-total {
+  padding: 0 6px 0 8px;
+  white-space: nowrap;
+}
+
+/* 상단 중앙: 최단 경로 스트립 — Shift+클릭 핀(은하 뷰) 또는 depth≥2 호버(기업 중심 뷰) */
+.hud-path {
+  left: 50%;
+  top: 132px;
+  transform: translateX(-50%);
+  max-width: min(760px, calc(100vw - 480px));
+}
+/* 기업 중심 뷰에서는 브레드크럼(hud-crumb)·1홉 요약(hud-hop)이 왼쪽 상단에 쌓이므로 그 아래로 더 내린다 */
+.hud-path.with-crumb {
+  top: 146px;
+}
+.path-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  color: var(--text-2);
+  background: rgba(10, 14, 24, 0.72);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+}
+.path-seg {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.path-node {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+}
+.path-edge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.path-sum {
+  padding-left: 4px;
+  white-space: nowrap;
+}
+.path-empty {
+  color: var(--text-4);
+}
+.pin-chip i {
+  font-style: normal;
+  margin-left: 2px;
+  opacity: 0.75;
+}
+
+/* 씬 툴팁 — 포인터 옆 어두운 카드. 클릭·호버를 가로채지 않는다 */
+.scene-tip {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 260px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(16, 22, 34, 0.92);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-card);
+  font-size: 12px;
+  color: var(--text-2);
+  pointer-events: none;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  will-change: transform;
+}
+.scene-tip .tip-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.scene-tip .tip-head b {
+  font-size: 14px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.scene-tip .tip-roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+.scene-tip .tip-role {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.scene-tip .tip-pair {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+.scene-tip .tip-pair span:first-child {
+  text-align: right;
+}
+.scene-tip .tip-pair .arrow {
+  color: var(--text-3);
+  font-size: 15px;
+}
+.scene-tip .tip-score {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.scene-tip .tip-score b {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -1px;
+  line-height: 1;
+  color: var(--text);
+}
+/* 지연 필드 — 스켈레톤과 텍스트가 같은 높이를 차지해 도착해도 카드가 튀지 않는다 */
+.scene-tip .tip-ev {
+  min-height: 14px;
+  display: flex;
+  align-items: center;
+}
+/* 노드 툴팁 하단 힌트 — Shift+클릭 발견성이 낮아 한 줄로 알려준다 */
+.scene-tip .tip-hint {
+  font-size: 11px;
+  color: var(--text-4);
+  border-top: 1px dashed var(--border);
+  padding-top: 6px;
+}
+
+/* 좌하단: 상태 카드 */
+.hud-status {
+  left: 24px;
+  bottom: 22px;
+}
+.status-card {
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-radius: 14px;
+}
+.status-card .t {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.status-card .t .dot {
+  background: var(--pos);
+}
+.status-card .t .dot.warn {
+  background: var(--warn);
+}
+.status-card button {
+  color: var(--text-3);
+  display: inline-flex;
+  padding: 6px;
+  border-radius: 8px;
+}
+.status-card button:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text);
+}
+
+/* 우하단: 범례 */
+.hud-legend {
+  right: 24px;
+  bottom: 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+.legend-card {
+  padding: 14px 16px;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 340px;
+}
+.legend-head {
+  align-items: center;
+}
+.legend-head .kick {
+  white-space: nowrap;
+}
+.legend-actions {
+  gap: 6px;
+  flex: none;
+  flex-wrap: nowrap;
+}
+.legend-actions .toggle {
+  white-space: nowrap;
+}
+/* 관계 유형 칩을 2×2 격자로 — 줄바꿈으로 들쭉날쭉하지 않게 */
+.legend-types .row.wrap {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+.legend-types .chip {
+  justify-content: flex-start;
+  padding: 7px 12px;
+}
+.legend-hint {
+  font-size: 12px;
+  color: var(--text-4);
+  margin-top: -4px;
+}
+/* 영향 색 범례 — 한 줄, 항목 사이 가운뎃점은 CSS 로 넣어 마크업에 의미 없는 문자가 끼지 않게 */
+.legend-impact {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-4);
+  margin-top: -8px;
+}
+.legend-impact span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.legend-impact span + span::before {
+  content: "·";
+  margin-right: 3px;
+  opacity: 0.6;
+}
+.legend-card .row-ctl {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+}
+/* 주가 고도 — 토글과 기간 세그먼트를 한 줄에 (세그먼트가 남는 폭을 채운다) */
+.legend-card .alt-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 10px;
+}
+.legend-card .alt-row .seg {
+  padding: 3px;
+}
+.legend-card .alt-row .seg button {
+  padding: 5px 8px;
+  font-size: 12px;
+}
+.legend-card input[type="range"] {
+  width: 100%;
+  accent-color: var(--primary);
+}
+.legend-card .toggle {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-3);
+  padding: 4px 8px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+}
+.legend-card .toggle.on {
+  color: var(--text);
+  border-color: rgba(109, 140, 255, 0.5);
+  background: rgba(109, 140, 255, 0.16);
+}
+/* 접힌 HUD 요소의 꼬리표 */
+.hud-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-2);
+  background: rgba(16, 22, 34, 0.86);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-card);
+  backdrop-filter: blur(12px);
+  transition: background 0.15s, border-color 0.15s;
+}
+.hud-tag:hover {
+  background: rgba(109, 140, 255, 0.18);
+  border-color: rgba(109, 140, 255, 0.5);
+  color: var(--text);
+}
+.hud-tag.vertical {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  padding: 16px 10px;
+  border-radius: 12px 0 0 12px;
+  border-right: 0;
+  letter-spacing: 0.04em;
+}
+.hud-panel-tag {
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.legend-card .toggle svg {
+  display: block;
+}
+
+/* 우측: 인텔리전스 패널 */
+.hud-panel {
+  right: 24px;
+  top: 14px;
+  bottom: 14px;
+  width: 390px;
+  max-width: calc(100vw - 48px);
+}
+.panel {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: panel-in 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes panel-in {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px 0;
+}
+.panel-head .icon-btn {
+  color: var(--text-3);
+  display: inline-flex;
+  padding: 6px;
+  border-radius: 8px;
+}
+.panel-head .icon-btn:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text);
+}
+.panel-id {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px 16px;
+}
+.panel-id .name {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+}
+.panel-id .sub {
+  margin-top: 3px;
+  font-size: 13px;
+}
+.panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px;
+}
+.panel-foot {
+  padding: 12px 18px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+/* 뉴스 카드 */
+.news-card {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.news-card:hover {
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.035);
+}
+.news-card.on {
+  border-color: rgba(109, 140, 255, 0.45);
+  background: rgba(109, 140, 255, 0.08);
+}
+.news-card .title {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+.news-card .summary {
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--text-3);
+}
+.news-card .foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.news-card .co {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.news-card .co button {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary-2);
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(130, 156, 255, 0.1);
+}
+.news-card .co button:hover {
+  background: rgba(130, 156, 255, 0.2);
+}
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.more-btn {
+  margin-top: 14px;
+  width: 100%;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 10px;
+}
+.more-btn:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* 주가 */
+.price-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-top: 18px;
+}
+.price-head .v {
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-top: 4px;
+}
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.stat {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 13px 14px;
+}
+.stat .v {
+  margin-top: 4px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+/* 게시판(댓글) */
+.comment {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 13px;
+  padding: 13px 14px;
+}
+.comment .who {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.comment .who b {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-2);
+}
+.comment .body {
+  margin-top: 7px;
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--text-2);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.comment .acts {
+  display: flex;
+  gap: 4px;
+}
+.comment .acts button {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-4);
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+.comment .acts button:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.07);
+}
+.notice {
+  padding: 12px 14px;
+  border: 1px solid rgba(245, 166, 35, 0.28);
+  background: rgba(245, 166, 35, 0.07);
+  border-radius: 12px;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--warn-fg);
+}
+
+/* 관계 패널 */
+.rel-pair {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 10px;
+}
+.rel-pair .end {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  padding: 12px 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+}
+.rel-pair .end:hover {
+  border-color: rgba(109, 140, 255, 0.45);
+}
+.rel-pair .end b {
+  font-size: 14px;
+  line-height: 1.3;
+}
+.rel-pair .arrow {
+  font-size: 20px;
+  color: var(--text-3);
+}
+.score-big {
+  font-size: 40px;
+  font-weight: 700;
+  letter-spacing: -1.5px;
+  line-height: 1;
+}
+.evidence {
+  border-left: 3px solid rgba(109, 140, 255, 0.5);
+  padding: 4px 0 4px 14px;
+}
+.evidence q {
+  quotes: "“" "”";
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-2);
+}
+
+/* 검색 팔레트 */
+.palette {
+  width: min(640px, 100%);
+  align-self: flex-start;
+  margin-top: 10vh;
+  padding: 10px;
+  border-radius: 18px;
+  background: var(--panel-solid);
+}
+.palette .field {
+  min-height: 52px;
+  font-size: 15px;
+  background: rgba(255, 255, 255, 0.03);
+}
+.palette ul {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+.palette li button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  text-align: left;
+}
+.palette li button:hover,
+.palette li.on button {
+  background: rgba(109, 140, 255, 0.12);
+}
+.palette .nm {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* 로딩 */
+.stage-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  pointer-events: none;
+  color: var(--text-3);
+  font-size: 13px;
+}
+.stage-loading b {
+  font-size: 22px;
+  letter-spacing: 0.32em;
+  font-weight: 800;
+  color: var(--text);
+}
+.stage-loading i {
+  width: 120px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--primary-2), transparent);
+  animation: scan 1.4s infinite;
+}
+@keyframes scan {
+  from {
+    transform: translateX(-60px);
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 1;
+  }
+  to {
+    transform: translateX(60px);
+    opacity: 0.2;
+  }
+}
+
+/* 모바일: 우측 패널 → 바텀시트, 범례 숨김 */
+@media (max-width: 900px) {
+  .galaxy {
+    min-height: 480px;
+  }
+  .hud-top {
+    top: 14px;
+    padding: 0 16px;
+    gap: 10px;
+  }
+  .my-galaxy-bar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    justify-content: flex-start;
+    width: 100%;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+  /* 행이 접히면 트리거 위치가 들쭉날쭉하므로 드롭다운은 행(.hud-top) 가운데에 띄운다 */
+  .industry-picker {
+    position: static;
+  }
+  .industry-pop {
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 32px);
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+  .hud-legend,
+  .hud-path {
+    display: none;
+  }
+  .hud-panel-tag {
+    top: auto;
+    bottom: 0;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+  }
+  .hud-tag.vertical {
+    writing-mode: horizontal-tb;
+    padding: 10px 18px;
+    border-radius: 12px 12px 0 0;
+    border-right: 1px solid var(--border-strong);
+    border-bottom: 0;
+  }
+  .hud-status {
+    left: 16px;
+    bottom: 14px;
+  }
+  .hud-crumb {
+    left: 16px;
+    top: 74px;
+  }
+  .hud-hop {
+    left: 16px;
+    top: 126px;
+    max-width: calc(100vw - 32px);
+  }
+  .scene-tip {
+    display: none;
+  }
+  .hud-panel {
+    left: 0;
+    right: 0;
+    top: auto;
+    bottom: 0;
+    width: 100%;
+    max-width: none;
+    height: 58vh;
+  }
+  .panel {
+    border-radius: 20px 20px 0 0;
+    background: #0e1420;
+    animation: sheet-in 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  @keyframes sheet-in {
+    from {
+      transform: translateY(40px);
+      opacity: 0;
+    }
+    to {
+      transform: none;
+      opacity: 1;
+    }
+  }
+  .panel::before {
+    content: "";
+    display: block;
+    width: 38px;
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.22);
+    margin: 9px auto 0;
+  }
+}
+
+/* ------------------------------ 첫 방문 투어 ------------------------------ */
+/* 딤은 캔버스 위·HUD 아래(z 4) — HUD 는 그대로 쓰고, 포인터를 통과시켜 3단계에서 실제로 빔을 호버해 진짜 툴팁이 뜨게 한다.
+   구멍은 CSS 변수 --x --y --r 로 뚫는다 (Tour 가 rAF 로 갱신, 리렌더 없음) */
+.tour-dim {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  background: rgba(5, 7, 15, 0.62);
+  --x: -999px;
+  --y: -999px;
+  --r: 0px;
+  -webkit-mask-image: radial-gradient(circle at var(--x) var(--y), transparent var(--r), rgba(0, 0, 0, 0.92) calc(var(--r) + 56px));
+  mask-image: radial-gradient(circle at var(--x) var(--y), transparent var(--r), rgba(0, 0, 0, 0.92) calc(var(--r) + 56px));
+}
+.tour-dim.full {
+  -webkit-mask-image: none;
+  mask-image: none;
+  background: rgba(5, 7, 15, 0.72);
+}
+/* intro — 제품 정의 1문장. 씬 인트로 비행 위에 stage-loading 과 같은 자리·같은 결로 */
+.tour-intro {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  transform: translate(-50%, -50%);
+  z-index: 7;
+  width: min(560px, calc(100% - 48px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+  color: var(--text-2);
+  font-size: 15px;
+}
+.tour-intro .kick {
+  color: var(--text-4);
+  margin-bottom: 4px;
+}
+.tour-intro b {
+  font-size: 30px;
+  letter-spacing: 0.32em;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.tour-intro p {
+  margin: 0;
+  line-height: 1.6;
+}
+.tour-intro p:first-of-type {
+  color: var(--text);
+  font-size: 16.5px;
+  font-weight: 600;
+}
+.tour-skip {
+  margin-top: 16px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  color: var(--text-4);
+}
+.tour-skip:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+}
+/* 단계 캡션 — 하단 중앙, 상태 카드·범례 카드 사이 */
+.tour-card {
+  position: absolute;
+  left: 50%;
+  bottom: 96px;
+  transform: translateX(-50%);
+  z-index: 7;
+  width: min(460px, calc(100% - 48px));
+  padding: 16px 18px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.tour-card .kick {
+  color: var(--primary-2);
+}
+.tour-card b {
+  font-size: 15px;
+  color: var(--text);
+}
+.tour-card p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text-2);
+}
+.tour-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin-top: 4px;
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+.tour-keys kbd {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--text-2);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 1px 6px;
+}
+.tour-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+/* 3단계 커서 고스트 — 앵커 자리로 미끄러져 들어와 "여기에 커서를" 을 보여 준다 */
+.tour-ghost {
+  position: absolute;
+  z-index: 7;
+  pointer-events: none;
+  color: #fff;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.6));
+}
+.tour-ghost span {
+  display: block;
+  animation: ghost-nudge 1.6s ease-in-out infinite;
+}
+@keyframes ghost-nudge {
+  0% {
+    transform: translate(46px, 46px);
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  70% {
+    transform: translate(0, 0);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tour-ghost span {
+    animation: none;
+  }
+}
+
+/* ------------------------------ ? 도움말 허브 ------------------------------ */
+/* 비모달 — 오른쪽에 떠 있고 씬은 뒤에서 계속 움직인다. 인텔리전스 패널(z 7)보다 한 층 위 */
+.help-hub {
+  position: absolute;
+  right: 24px;
+  top: 22px;
+  bottom: 22px;
+  z-index: 8;
+  width: min(640px, calc(100% - 48px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.help-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.help-head .kick {
+  color: var(--primary-2);
+}
+.help-head b {
+  flex: 1;
+  font-size: 15px;
+}
+.help-close {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  color: var(--text-3);
+}
+.help-close:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+}
+.help-grid {
+  display: grid;
+  grid-template-columns: 176px minmax(0, 1fr);
+  min-height: 0;
+  flex: 1;
+}
+.help-toc {
+  border-right: 1px solid var(--border);
+  padding: 10px 8px;
+  overflow-y: auto;
+}
+.help-toc ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+.help-toc button {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  gap: 6px;
+  text-align: left;
+  padding: 7px 8px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: var(--text-3);
+}
+.help-toc button .n {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-4);
+  padding-top: 1px;
+}
+.help-toc button:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+}
+.help-toc button.on {
+  background: rgba(109, 140, 255, 0.14);
+  color: var(--text);
+}
+.help-body {
+  overflow-y: auto;
+  padding: 8px 18px 24px;
+  outline: none;
+}
+.help-body section {
+  padding: 14px 0 16px;
+  border-bottom: 1px solid var(--border);
+}
+.help-body section:last-child {
+  border-bottom: 0;
+}
+.help-body h3 {
+  margin: 0 0 2px;
+  font-size: 14.5px;
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+.help-body h3 .n {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--primary-2);
+}
+.help-body .meta {
+  margin-bottom: 8px;
+}
+.help-body ul {
+  margin: 0 0 10px;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-2);
+}
+.help-body li {
+  margin: 3px 0;
+}
+
+/* ------------------------------ 카메라 프리셋 ------------------------------ */
+/* 한 줄 설명은 세그먼트 아래에 떠 있다(absolute) — 검색바와 같은 높이로 가운데 맞춰지고, 행 높이를 키우지 않는다 */
+.cam-presets {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.cam-seg button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.cam-hint {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 5px;
+  font-size: 11.5px;
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--text-4);
+  pointer-events: none;
+}
+/* 기업 중심 뷰 브레드크럼 줄에서는 한 줄 설명을 접는다 */
+.hud-crumb .cam-presets .cam-hint {
+  display: none;
+}
+/* 상단 한 줄이 좁아지면 라벨을 접고 아이콘만 남긴다 (title 로 읽힌다) — 검색·범위·산업이 한 줄에 남도록 */
+@media (max-width: 1180px) {
+  .cam-seg button span {
+    display: none;
+  }
+  .cam-seg button {
+    padding-left: 9px;
+    padding-right: 9px;
+  }
+}
+/* 투어 중에는 수동적인 HUD(상태·범례·경로 스트립·1홉 요약·패널 꼬리표)를 뒤로 물린다 — 캡션과 겹치지 않고, 딤 위에서 혼자 밝게 남지 않게.
+   사용자가 직접 연 것(상단 검색·산업, 관계·기업 패널)은 그대로 둔다 — 그건 투어가 가리킨 행동의 결과다 */
+.galaxy:has(.tour-dim) .hud-legend,
+.galaxy:has(.tour-dim) .hud-status,
+.galaxy:has(.tour-dim) .hud-path,
+.galaxy:has(.tour-dim) .hud-hop,
+.galaxy:has(.tour-dim) .hud-panel-tag,
+.galaxy:has(.tour-dim) .hud-surprise,
+.galaxy:has(.tour-dim) .hud-readbar {
+  opacity: 0.22;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+/* 프리셋 버튼을 누른 표시 — 세그먼트가 key=nonce 로 다시 마운트될 때 켜진 버튼이 한 번 번쩍인다 */
+.cam-seg button.on {
+  animation: cam-flash 0.45s ease-out;
+}
+@keyframes cam-flash {
+  0% {
+    box-shadow: 0 0 0 0 rgba(109, 140, 255, 0.9);
+  }
+  100% {
+    box-shadow: 0 0 0 7px rgba(109, 140, 255, 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cam-seg button.on {
+    animation: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .help-hub {
+    left: 12px;
+    right: 12px;
+    top: 12px;
+    bottom: 12px;
+    width: auto;
+  }
+  .help-grid {
+    grid-template-columns: 1fr;
+  }
+  .help-toc {
+    display: none;
+  }
+  .cam-hint {
+    display: none;
+  }
+  .tour-card {
+    bottom: 84px;
+  }
+}
+
+/* ------------------------------ HUD 사이의 자리 다툼 ------------------------------ */
+/* 우측 인텔리전스/관계 패널(390px)이 열려 있으면 범례 카드는 그 왼쪽으로 비켜 선다 — 두 뷰 모두 상시 노출이라 패널 뒤에 숨으면 안 된다 */
+.galaxy:has(.hud-panel) .hud-legend {
+  right: calc(24px + 390px + 12px);
+}
+/* 기업 중심 뷰의 1홉 요약 스트립(top 74px) 아래로 뜻밖의 관계 카드를 내린다 */
+.galaxy:has(.hud-hop) .hud-surprise {
+  top: 130px;
+}
+
+@media (max-width: 900px) {
+  /* 모바일에서는 1홉 요약 스트립이 top 126px 로 내려오므로 뜻밖의 관계 꼬리표도 그 아래로 */
+  .galaxy:has(.hud-hop) .hud-surprise {
+    top: 172px;
+  }
+}
+
+/* ------------------------------ 기업 미리보기 · 연결 단계 ------------------------------ */
+.panel-steps {
+  padding: 12px 18px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.steps-role {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  font-size: 12.5px;
+}
+.steps-role-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-3);
+  padding-top: 3px;
+  white-space: nowrap;
+}
+.steps-role-name b {
+  color: var(--text);
+}
+.steps-role-names {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.steps-role-names .chip {
+  padding: 2px 8px;
+  font-size: 12px;
+}
+
+/* 은하 뷰에서 미리보기 패널(우측 390px)이 열리면 상단 한 줄(검색·범위·산업)은 그 왼쪽에서 접힌다 — 기업 중심 뷰에는 상단 줄이 없어 해당 없음 */
+.galaxy:has(.hud-panel) .hud-top {
+  padding-right: calc(24px + 390px + 16px);
+}

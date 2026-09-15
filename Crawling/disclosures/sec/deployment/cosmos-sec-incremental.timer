@@ -1,0 +1,12 @@
+[Unit]
+Description=Run COSMOS SEC incremental collection every five minutes
+
+[Timer]
+OnBootSec=1min
+OnUnitInactiveSec=5min
+RandomizedDelaySec=15s
+AccuracySec=1s
+Unit=cosmos-sec-incremental.service
+
+[Install]
+WantedBy=timers.target

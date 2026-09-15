@@ -1,0 +1,38 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: cosmos-postgres
+    environment:
+      POSTGRES_DB: cosmos
+      POSTGRES_USER: cosmos
+      POSTGRES_PASSWORD: cosmos1234
+      TZ: UTC
+    command: ["postgres", "-c", "timezone=UTC"]
+    ports:
+      - "5432:5432"
+    volumes:
+      - cosmos-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cosmos -d cosmos"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Refresh Token 보관용 (14일 TTL). 캐시 용도로도 함께 사용한다.
+  redis:
+    image: redis:7-alpine
+    container_name: cosmos-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - cosmos-redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  cosmos-pgdata:
+  cosmos-redisdata:

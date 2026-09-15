@@ -1,0 +1,29 @@
+[Unit]
+Description=COSMOS domestic and overseas news collector to Kafka
+Wants=network-online.target
+After=network-online.target kafka.service cosmos-news-hdfs-writer.service
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/news-kafka/app
+EnvironmentFile=/etc/cosmos/news.env
+ExecStart=/home/ubuntu/news-kafka/app/deployment/run-collector.sh
+Restart=on-failure
+RestartSec=60
+TimeoutStopSec=300
+KillMode=control-group
+UMask=0077
+Nice=10
+CPUQuota=100%
+MemoryHigh=768M
+MemoryMax=1G
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/ubuntu/news-kafka/state
+
+[Install]
+WantedBy=multi-user.target

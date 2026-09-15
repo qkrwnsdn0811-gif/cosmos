@@ -1,0 +1,861 @@
+/* ------------------------------------------------------------------ */
+/* 토큰 — 화면구성도(COSMOS 화면 구성도)에서 실측한 값                       */
+/* ------------------------------------------------------------------ */
+:root {
+  color-scheme: dark;
+  --bg: #070a12;
+  --bg-2: #0b101c;
+  --panel: rgba(16, 22, 34, 0.86);
+  --panel-solid: #101622;
+  --field: rgba(3, 9, 20, 0.74);
+  --border: rgba(255, 255, 255, 0.09);
+  --border-strong: rgba(255, 255, 255, 0.14);
+  --text: #f7f9fc;
+  --text-2: #d7deea;
+  --text-3: #c9d1de;
+  --text-4: #a2acba;
+  --primary: #6d8cff;
+  --primary-2: #829cff;
+  --primary-3: #a8baff;
+  --accent: #c6a5ff;
+  --pos: #2ac769;
+  --pos-fg: #5be08c;
+  --neg: #ff5c7a;
+  --neg-fg: #ff8fa3;
+  --warn: #f5a623;
+  --warn-fg: #f5c065;
+  --r-card: 18px;
+  --r-md: 12px;
+  --r-sm: 10px;
+  --shadow-card: 0 20px 58px rgba(0, 0, 0, 0.18);
+  --font: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", "Apple SD Gothic Neo", Arial, sans-serif;
+  --mono: ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
+  --header-h: 60px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html,
+body,
+#root {
+  height: 100%;
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.5;
+  letter-spacing: -0.2px;
+  -webkit-font-smoothing: antialiased;
+  text-wrap: pretty;
+  overflow-x: hidden;
+}
+a {
+  color: var(--primary-2);
+  text-decoration: none;
+}
+a:hover {
+  color: var(--primary-3);
+}
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+}
+button {
+  cursor: pointer;
+  background: none;
+  border: 0;
+  padding: 0;
+}
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+::selection {
+  background: rgba(109, 140, 255, 0.35);
+}
+.scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+}
+.scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 3px;
+}
+:focus-visible {
+  outline: 2px solid rgba(130, 156, 255, 0.7);
+  outline-offset: 2px;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------ */
+/* 프리미티브 (12px 최소 · 본문 14px 규칙)                                  */
+/* ------------------------------------------------------------------ */
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-card);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+/* components/ui.tsx 의 <Kpi> 는 여러 화면에서 재사용되므로 스타일도 전역에 둔다 */
+.kpi {
+  padding: 16px 18px;
+  border-radius: 14px;
+}
+.kpi .kpi-v {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -1px;
+  margin-top: 6px;
+  line-height: 1.1;
+}
+/* onClick 이 있는 <Kpi> 는 button 으로 렌더링된다 — 값 근거를 보여주는 모달을 여는 용도 */
+.kpi-click {
+  display: block;
+  width: 100%;
+  text-align: left;
+  transition: border-color 0.15s, transform 0.15s;
+}
+.kpi-click:hover {
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
+}
+.kpi-hint {
+  color: var(--primary-2);
+  opacity: 0.7;
+}
+.kick {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-4);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+.meta {
+  font-size: 12px;
+  color: var(--text-4);
+  letter-spacing: 0;
+}
+.lab {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-3);
+  letter-spacing: 0;
+}
+.num {
+  font-variant-numeric: tabular-nums;
+}
+.sect {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  margin: 0;
+}
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(99, 215, 255, 0.1);
+  color: var(--primary-2);
+  border-radius: 999px;
+  padding: 5px 11px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-radius: var(--r-sm);
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s, transform 0.08s;
+}
+.btn:active {
+  transform: translateY(1px);
+}
+.btn-p {
+  background: var(--primary);
+  color: #fff;
+}
+.btn-p:hover {
+  background: #7a97ff;
+}
+.btn-g {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-weight: 600;
+}
+.btn-g:hover {
+  background: rgba(255, 255, 255, 0.09);
+}
+.btn-sm {
+  padding: 8px 13px;
+  font-size: 12px;
+}
+.btn-xs {
+  padding: 6px 10px;
+  font-size: 12px;
+  border-radius: 8px;
+}
+.btn-danger {
+  color: var(--neg-fg);
+  border-color: rgba(255, 92, 122, 0.3);
+}
+.field {
+  background: var(--field);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  min-height: 44px;
+  color: var(--text);
+}
+.field:focus-within {
+  border-color: rgba(109, 140, 255, 0.55);
+}
+.field input,
+.field textarea {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: 0;
+  outline: 0;
+  font-size: 14px;
+  color: var(--text);
+  padding: 0;
+}
+.field input::placeholder,
+.field textarea::placeholder {
+  color: var(--text-4);
+}
+.field textarea {
+  resize: vertical;
+  padding: 12px 0;
+  line-height: 1.65;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-3);
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.chip:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text);
+}
+.chip.on {
+  background: rgba(109, 140, 255, 0.16);
+  border-color: rgba(109, 140, 255, 0.45);
+  color: var(--text);
+}
+.chip b {
+  font-size: 12px;
+  font-weight: 700;
+}
+.chip i,
+.dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: none;
+}
+.chip-sm {
+  padding: 6px 11px;
+  font-size: 12px;
+}
+.chip .edge-glyph {
+  display: block;
+  flex: none;
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+  border-radius: 999px;
+  padding: 4px 10px;
+  white-space: nowrap;
+}
+.bar {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+.bar > i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary-2), var(--accent));
+  border-radius: 999px;
+}
+.seg {
+  display: flex;
+  gap: 4px;
+  background: rgba(3, 9, 20, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 4px;
+}
+.seg button {
+  flex: 1;
+  text-align: center;
+  padding: 7px 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-3);
+  border-radius: 7px;
+  white-space: nowrap;
+}
+.seg button.on {
+  color: var(--text);
+  background: rgba(109, 140, 255, 0.2);
+  font-weight: 700;
+}
+.tabs {
+  display: flex;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.tabs button {
+  flex: 1;
+  text-align: center;
+  padding: 13px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.tabs button b {
+  font-size: 12px;
+  opacity: 0.75;
+}
+.tabs button.on {
+  color: var(--text);
+  box-shadow: inset 0 -2px 0 0 var(--primary);
+  background: rgba(109, 140, 255, 0.1);
+}
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  font-weight: 800;
+  color: #fff;
+  flex: none;
+  overflow: hidden;
+  background: #1a2540;
+}
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #fff;
+}
+.divider {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.empty {
+  padding: 28px 16px;
+  text-align: center;
+  color: var(--text-4);
+  font-size: 13px;
+  line-height: 1.7;
+}
+.skeleton {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.04));
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 8px;
+}
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+.link-btn {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary-2);
+}
+.link-btn:hover {
+  color: var(--primary-3);
+}
+.clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.between {
+  justify-content: space-between;
+}
+.wrap {
+  flex-wrap: wrap;
+}
+.grow {
+  flex: 1;
+  min-width: 0;
+}
+.mt-8 {
+  margin-top: 8px;
+}
+.mt-12 {
+  margin-top: 12px;
+}
+.mt-16 {
+  margin-top: 16px;
+}
+.mt-20 {
+  margin-top: 20px;
+}
+
+/* ------------------------------------------------------------------ */
+/* 앱 셸 · 헤더                                                          */
+/* ------------------------------------------------------------------ */
+.app {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(circle at 74% 8%, rgba(109, 140, 255, 0.15), rgba(0, 0, 0, 0) 496px),
+    radial-gradient(circle at 12% 62%, rgba(112, 78, 190, 0.1), rgba(0, 0, 0, 0) 544px),
+    var(--bg);
+}
+.hd {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  height: var(--header-h);
+  /* 로고(왼쪽)와 계정(오른쪽)의 폭이 달라도 탭이 화면 정중앙에 오도록 3열 격자 — 양옆 1fr 이 같은 폭으로 나뉜다 */
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 24px;
+  padding: 0 24px;
+  background: rgba(7, 10, 18, 0.9);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(12px);
+}
+.hd .logo {
+  justify-self: start;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--text);
+}
+.hd .logo img {
+  height: 40px;
+  width: auto;
+  display: block;
+}
+.hd nav {
+  justify-self: center;
+  display: flex;
+  gap: 26px;
+}
+.hd nav a {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-3);
+  padding: 20px 2px 18px;
+  transition: color 0.15s;
+}
+.hd nav a:hover {
+  color: var(--text);
+}
+.hd nav a.on {
+  color: var(--text);
+  box-shadow: inset 0 -2px 0 0 var(--primary);
+}
+.hd .account {
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.hd .login-link {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-3);
+}
+.hd .login-link:hover {
+  color: var(--text);
+}
+/* 사용 안내(`?`) — 은하 화면에서만 보이는 헤더 우측 버튼 */
+.hd .help-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  color: var(--text-3);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.hd .help-btn:hover {
+  color: var(--text);
+  background: rgba(109, 140, 255, 0.16);
+  border-color: rgba(109, 140, 255, 0.4);
+}
+.profile-btn {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.profile-btn .avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  font-size: 12px;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: #0b1120;
+}
+.profile-menu {
+  position: absolute;
+  right: 20px;
+  top: calc(var(--header-h) + 10px);
+  width: 266px;
+  padding: 8px;
+  border-radius: 14px;
+  z-index: 50;
+}
+.profile-menu .who {
+  padding: 12px 12px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+.profile-menu .who b {
+  font-size: 15px;
+  font-weight: 700;
+  display: block;
+}
+.profile-menu .item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 11px 12px;
+  border-radius: 9px;
+  font-size: 14px;
+  color: var(--text-2);
+  text-align: left;
+}
+.profile-menu .item:hover,
+.profile-menu .item.on {
+  background: rgba(109, 140, 255, 0.1);
+  color: var(--text);
+}
+.profile-menu .item .num {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary-2);
+}
+.mode-badge {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 3px 7px;
+  border-radius: 6px;
+  border: 1px solid rgba(245, 166, 35, 0.35);
+  color: var(--warn-fg);
+  background: rgba(245, 166, 35, 0.08);
+}
+
+/* ------------------------------------------------------------------ */
+/* 다이얼로그 · 토스트                                                     */
+/* ------------------------------------------------------------------ */
+.scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 5, 12, 0.66);
+  backdrop-filter: blur(6px);
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.dialog {
+  width: min(440px, 100%);
+  padding: 26px 26px 22px;
+  border-radius: 20px;
+  background: var(--panel-solid);
+}
+.dialog h2 {
+  margin: 8px 0 4px;
+  font-size: 22px;
+  letter-spacing: -0.5px;
+}
+.dialog .form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 18px;
+}
+.field-err {
+  font-size: 12px;
+  color: var(--neg-fg);
+  margin-top: -6px;
+}
+.form-err {
+  font-size: 13px;
+  color: var(--neg-fg);
+  background: rgba(255, 92, 122, 0.08);
+  border: 1px solid rgba(255, 92, 122, 0.25);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.hint {
+  font-size: 12px;
+  color: var(--text-4);
+  line-height: 1.7;
+}
+.toasts {
+  position: fixed;
+  left: 50%;
+  /* 은하 화면 하단 중앙의 상시 "읽는 법" 바(높이 32 + 여백) 위에 뜬다 */
+  bottom: 72px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 100;
+  pointer-events: none;
+}
+.toast {
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  background: rgba(16, 22, 34, 0.96);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-card);
+  animation: toast-in 0.2s ease-out;
+}
+.toast.success {
+  border-color: rgba(42, 199, 105, 0.4);
+}
+.toast.error {
+  border-color: rgba(255, 92, 122, 0.4);
+}
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* 페이지 공통                                                            */
+/* ------------------------------------------------------------------ */
+.page {
+  padding: 24px 32px 48px;
+  max-width: 1440px;
+  width: 100%;
+  margin: 0 auto;
+}
+.page-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.page-head h1 {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.6px;
+  margin: 8px 0 6px;
+}
+.page-head p {
+  margin: 0;
+  color: var(--text-3);
+  font-size: 14px;
+}
+.status-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-4);
+}
+.status-line .dot {
+  width: 6px;
+  height: 6px;
+  background: var(--pos);
+}
+@media (max-width: 900px) {
+  .page {
+    padding: 18px 16px 40px;
+  }
+  .hd {
+    padding: 0 16px;
+    gap: 12px;
+  }
+  .hd nav {
+    gap: 16px;
+  }
+  .hd nav a {
+    font-size: 13px;
+  }
+  .hd .logo span {
+    display: none;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* 인증 폼 — 비밀번호 규칙 · 중복 확인 · 보조 안내                          */
+/* ------------------------------------------------------------------ */
+.avail {
+  font-size: 12px;
+  white-space: nowrap;
+  color: var(--text-4);
+}
+.avail.yes {
+  color: var(--pos-fg);
+}
+.avail.no {
+  color: var(--neg-fg);
+}
+.eye-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-right: -6px;
+  border-radius: var(--r-sm);
+  color: var(--text-4);
+}
+.eye-btn:hover {
+  color: var(--text-2);
+}
+.pw-rules {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: -6px 0 0;
+  padding: 0 2px;
+  list-style: none;
+  font-size: 12px;
+  color: var(--text-4);
+}
+.pw-rules li {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.pw-rules li::before {
+  content: "○";
+  font-size: 10px;
+}
+.pw-rules li.ok {
+  color: var(--pos-fg);
+}
+.pw-rules li.ok::before {
+  content: "●";
+}
+.pw-rules li.bad {
+  color: var(--neg-fg);
+}
+.pw-rules li.bad::before {
+  content: "!";
+  font-weight: 700;
+}
+.caps-hint {
+  font-size: 12px;
+  color: var(--warn-fg);
+  margin-top: -6px;
+}
+.form-note {
+  font-size: 13px;
+  color: var(--pos-fg);
+  background: rgba(42, 199, 105, 0.08);
+  border: 1px solid rgba(42, 199, 105, 0.25);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.remember {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-3);
+  cursor: pointer;
+  user-select: none;
+}
+.remember input {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--primary);
+  cursor: pointer;
+}

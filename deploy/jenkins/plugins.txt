@@ -1,0 +1,8 @@
+git:5.10.1
+gitlab-plugin:1.2149.vcfc32c82b_f7f
+workflow-aggregator:608.v67378e9d3db_1
+credentials-binding:728.v902a_273b_8947
+plain-credentials:199.v9f8e1f741799
+ssh-credentials:372.va_250881b_08cd
+junit:1425.v9c7318dca_96d
+timestamper:1.30

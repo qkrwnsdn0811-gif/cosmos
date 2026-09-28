@@ -1,0 +1,16 @@
+{
+  "transport": "local",
+  "hdfs_bin": "/opt/hadoop/bin/hdfs",
+  "hdfs_uri": "hdfs://100.117.115.44:9000",
+  "lock_file": "/var/lib/cosmos-news-enrich/worker.lock",
+  "sources": [
+    {
+      "type": "realtime",
+      "input_success_glob": "/data-lake/analyzed/news/company-mentions/model_version=dict-v1.3/topic=*/partition=*/start=*/_SUCCESS",
+      "output_base": "/data-lake/analyzed/news/company-sentiment",
+      "source_model_version": "dict-v1.3",
+      "max_per_pass": 150,
+      "newest_first": true
+    }
+  ]
+}

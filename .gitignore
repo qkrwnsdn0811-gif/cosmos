@@ -1,0 +1,10 @@
+# Deployment credentials stay on the server, outside the checkout.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+deploy/reports/
+deploy/releases/
+__pycache__/
+*.py[cod]

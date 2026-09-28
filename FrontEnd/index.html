@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#070A12" />
+    <link rel="icon" type="image/png" href="/cosmos-logo.png" />
+    <title>COSMOS — 뉴스 기반 기업 관계 지도</title>
+    <meta name="description" content="뉴스와 공시에서 추출한 기업 간 관계를 3D 은하로 탐색합니다." />
+    <meta property="og:title" content="COSMOS — 뉴스 기반 기업 관계 지도" />
+    <meta property="og:image" content="/og.png" />
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <!-- Pretendard 는 렌더를 막지 않게 preload 로 받아 도착하면 적용한다 (CSS 자체가 font-display: swap 이라 글자는 먼저 시스템 폰트로 보인다).
+         예전처럼 rel=stylesheet 로 두면 외부 CDN 왕복이 첫 페인트를 300ms 안팎 막았다 (2026-09-18 Lighthouse). -->
+    <link rel="preload" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" onload="this.onload=null;this.rel='stylesheet'" />
+    <noscript><link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" /></noscript>
+    <style>
+      /* 첫 페인트용 최소 스타일 — 번들(three 청크 포함 1.5MB)이 오기 전에 로딩 화면을 그린다. GalaxyPage 의 .stage-loading 과 같은 모양·자리(헤더 60px 아래 중앙)라
+         React 가 마운트되며 자연스럽게 이어진다. 값은 styles/global.css 토큰과 같다 */
+      html, body, #root { height: 100%; margin: 0; background: #070a12; color: #c9d1de; font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", "Apple SD Gothic Neo", Arial, sans-serif; }
+      .boot { position: fixed; top: 60px; right: 0; bottom: 0; left: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; font-size: 13px; pointer-events: none; }
+      .boot .kick { font-family: ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace; font-size: 12px; font-weight: 700; color: #a2acba; letter-spacing: 0.09em; text-transform: uppercase; }
+      .boot b { font-size: 22px; letter-spacing: 0.32em; font-weight: 800; color: #f7f9fc; }
+      .boot i { width: 120px; height: 2px; background: linear-gradient(90deg, transparent, #829cff, transparent); animation: boot-scan 1.4s infinite; }
+      @keyframes boot-scan { from { transform: translateX(-60px); opacity: 0.2; } 50% { opacity: 1; } to { transform: translateX(60px); opacity: 0.2; } }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <div class="boot" aria-live="polite"><span class="kick">news × relationship graph</span><b>COSMOS</b><i></i><span>불러오는 중</span></div>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

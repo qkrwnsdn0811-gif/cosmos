@@ -1,0 +1,11 @@
+[Unit]
+Description=Analyze newly published realtime raw-news batches
+
+[Timer]
+OnBootSec=1min
+OnUnitInactiveSec=1min
+AccuracySec=10s
+Unit=cosmos-news-analysis.service
+
+[Install]
+WantedBy=timers.target

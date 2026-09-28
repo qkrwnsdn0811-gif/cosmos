@@ -1,0 +1,2 @@
+as_of_at,formula_version,model_version,status,hdfs_uri,published_at
+2026-09-21T00:00:00Z,rel-v0.4-en-news,en-rule-v1,PUBLISHED,local://AI/graph/data/en_rel_hits.jsonl,2026-09-21T00:00:00Z

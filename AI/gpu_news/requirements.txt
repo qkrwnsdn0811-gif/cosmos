@@ -1,0 +1,8 @@
+# Install CUDA PyTorch separately from the official PyTorch wheel index.
+transformers==5.16.1
+tokenizers==0.23.2
+huggingface-hub==1.30.0
+safetensors==0.8.0
+numpy==2.5.3
+pyarrow==23.0.1
+

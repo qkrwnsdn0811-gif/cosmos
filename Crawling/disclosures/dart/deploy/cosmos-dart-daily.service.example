@@ -1,0 +1,21 @@
+[Unit]
+Description=COSMOS latest DART daily polling and verified HDFS delta snapshots
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+WorkingDirectory=/opt/cosmos-crawling/disclosures/dart
+Environment=PYTHONUTF8=1
+Environment=JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+Environment=HADOOP_CONF_DIR=/opt/hadoop/etc/hadoop
+UMask=0077
+# Replace the private key and ledger paths together with the existing collector's paths.
+# Keep output and shared ledger outside versioned release directories.
+ExecStart=/usr/bin/python3 -u /opt/cosmos-crawling/disclosures/dart/scripts/run_dart_daily.py --output /var/lib/cosmos-dart-daily --key-file /etc/cosmos/opendart.env --ledger-dir /var/lib/cosmos-opendart-shared-ledger --start-date 20260910 --overlap-days 3 --max-days-per-run 7 --interval 0.5 --request-budget 2500
+TimeoutStartSec=50min
+TimeoutStopSec=30
+KillMode=control-group
+StandardOutput=journal
+StandardError=journal

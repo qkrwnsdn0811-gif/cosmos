@@ -1,0 +1,281 @@
+{
+  "schema_version": "grounded-service-delivery-patch-1",
+  "status": "PASS",
+  "production_base_commit": "d2e482c043968865d4770010bd12f32481725f2a",
+  "source_directory": "C:\\Users\\SSAFY\\S15P21C205\\ai\\graph\\artifacts\\service_db_grounded_20260919_v1\\service-source",
+  "scopes": [
+    "BackEnd",
+    "FrontEnd",
+    "docs/api-specification.md"
+  ],
+  "patch_file": "grounded_20260919.patch",
+  "patch_sha256": "ca00ea10b8dd28c214d349074090c3439c1ab1162fd108e171cf84f2a4736d23",
+  "patch_bytes": 171411,
+  "changed_files": [
+    {
+      "path": "BackEnd/ANALYSIS_RUN_API.md",
+      "change": "added",
+      "before_sha256": null,
+      "after_sha256": "ed243c4a247ed896cd4dcaa84e0a131860bb77e36b15803baa007f834f29d7cd"
+    },
+    {
+      "path": "BackEnd/src/main/java/com/cosmos/api/analysis/AnalysisRunController.java",
+      "change": "added",
+      "before_sha256": null,
+      "after_sha256": "39063ce3dbf911aa17956cc1eee17829155873ed887bac805d5f9b4d9b66de2a"
+    },
+    {
+      "path": "BackEnd/src/main/java/com/cosmos/api/company/dto/CompanyMetricHistoryItemResponse.java",
+      "change": "modified",
+      "before_sha256": "4172c99084c743a8144778d3d66a6eb569c12e46f999993c60240c9c90dd2f68",
+      "after_sha256": "667d7914a30604cc2b7fe462a5043eb01794fb2b869c52712d5f08c14d5abf00"
+    },
+    {
+      "path": "BackEnd/src/main/java/com/cosmos/api/company/entity/CompanyMetricHistory.java",
+      "change": "modified",
+      "before_sha256": "f8adf7cb3a5f5080ddfb57a1b601f15f0fb73084c56e3d5e9c43b34a8deeda8e",
+      "after_sha256": "2923830b6d525c4ad323cc5d3d0e75ad7953f3469badbaf84a9d7699b40bedd7"
+    },
+    {
+      "path": "BackEnd/src/main/java/com/cosmos/api/global/security/SecurityConfig.java",
+      "change": "modified",
+      "before_sha256": "91b53033472d092fd95d62b44b09f41e48423be325c3b2dd6defb5e229d31621",
+      "after_sha256": "cf0ff8183f621c7656864ec4460aa108105f4e854923318a76f1a9300d38b826"
+    },
+    {
+      "path": "BackEnd/src/main/java/com/cosmos/api/graph/controller/GraphController.java",
+      "change": "modified",
+      "before_sha256": "97f66959777e7c269f60b911eccdc18345c4871306836fb6aaeaa0887c7bbd4a",
+      "after_sha256": "d6cb60f77b8467c0edd889cad7a4bbf3287ab7c2213767523c47f53c247eb552"
+    },
+    {
+      "path": "BackEnd/src/main/java/com/cosmos/api/graph/dto/RelationshipDetailResponse.java",
+      "change": "modified",
+      "before_sha256": "3e9925f6aebc3b721bef82545ffc5d6214a2ed213f6afba1ba6b3e2eab7d57a5",
+      "after_sha256": "8ab11067f901e1c85b92bf25c9a3d9128706688a1ab3ae58e75e431ceb3b0ab7"
+    },
+    {
+      "path": "BackEnd/src/main/java/com/cosmos/api/graph/dto/RelationshipEvidenceResponse.java",
+      "change": "modified",
+      "before_sha256": "3e6735cbf34c4d6d604ee29698fe97695f750798504cf61e0da7d42124f83808",
+      "after_sha256": "f701619005d9068fea4b7fc8280e29625b946a237e15dbe5d8d69228f8c473b5"
+    },
+    {
+      "path": "BackEnd/src/main/java/com/cosmos/api/graph/repository/GraphQueryRepository.java",
+      "change": "modified",
+      "before_sha256": "41a0d8abcbe15005626eafc393040e6a348b32f95226f01e3b824b686440abdc",
+      "after_sha256": "fd1c9c93cc64c8ad95d86fb5759e9a9a0dc3ee8ee4a86ddfe7f08986ba5adc38"
+    },
+    {
+      "path": "BackEnd/src/main/java/com/cosmos/api/graph/service/GraphService.java",
+      "change": "modified",
+      "before_sha256": "6fe81eb7200b2fde2b87f8ab2c0c5ffab44c2213255693bcab870d0b00cc7fb2",
+      "after_sha256": "d86559b48472a01f9f5f529b9978630cffe2af17c51ba871952dc187dca19cb9"
+    },
+    {
+      "path": "BackEnd/src/main/java/com/cosmos/api/news/dto/NewsDetailResponse.java",
+      "change": "modified",
+      "before_sha256": "5b5c26262415b5bc1b19b2c1dc1ae4f3a1005591eed9ed2e8565e6a5bdd25fc3",
+      "after_sha256": "48194425b76e1f1d6e1f166e7e0f7b17e580bf93b364d335ff95a5254a56a851"
+    },
+    {
+      "path": "BackEnd/src/main/java/com/cosmos/api/news/dto/NewsSummaryResponse.java",
+      "change": "modified",
+      "before_sha256": "f130eca027dd28aff23917d1c65d9a240baa6c5f489133a6a2bc850a9cd859b9",
+      "after_sha256": "2a5a3af14f4251864f1accfd318547769ae5dddba39aefd0f4a2ef3fb38e140a"
+    },
+    {
+      "path": "BackEnd/src/main/java/com/cosmos/api/news/repository/NewsQueryRepository.java",
+      "change": "modified",
+      "before_sha256": "9a85e3019910fb1fc5eca690a52d12fbc9f7b807524c04e033711d4375dc12e9",
+      "after_sha256": "a33ed11da16d3aa1ed75675dd61d4f1f157640cff80017a5f527920c3130ab17"
+    },
+    {
+      "path": "BackEnd/src/main/java/com/cosmos/api/news/service/NewsService.java",
+      "change": "modified",
+      "before_sha256": "c455fc059bb7b49ae88750dfb26acd30ec692e4b137c2de320bfabfa38a218ef",
+      "after_sha256": "dddb1a484e5ac05e07cf4c132c953fcd6b9c99a4d0396309210a62a4ecbf496b"
+    },
+    {
+      "path": "BackEnd/src/main/resources/db/migration/V7__version_grounded_analysis.sql",
+      "change": "added",
+      "before_sha256": null,
+      "after_sha256": "da4eb27f705443fd4c820cd58a115a83b0e350b264ced5613d40574573129fcc"
+    },
+    {
+      "path": "BackEnd/src/test/java/com/cosmos/api/company/service/CompanyMetricStockIntegrationTest.java",
+      "change": "modified",
+      "before_sha256": "e5fa143e200a1c93b2adcd51bff04346f2520ed12ff4aadb6a02c4364262eadb",
+      "after_sha256": "72aec516595e9acce0727d04b289579d9326677b8ee97837b8e2d69f84ca924d"
+    },
+    {
+      "path": "BackEnd/src/test/java/com/cosmos/api/graph/controller/GraphControllerTest.java",
+      "change": "modified",
+      "before_sha256": "00289b3adae400e20a62f2292c6fbad9f00f8c32ea94ba6b6e63db27c1591f1d",
+      "after_sha256": "09fc70a8a841bb7de6b673eba232eaf7c0b3cc62b46423da81445ee1e983e549"
+    },
+    {
+      "path": "BackEnd/src/test/java/com/cosmos/api/graph/service/GraphServiceIntegrationTest.java",
+      "change": "modified",
+      "before_sha256": "838be381185ecce5d856a80302a2e8d15877ff26abc223d1156c976d62d90806",
+      "after_sha256": "f8caee931d977ad8f5f666d5a0d5bb7e7070236a474f0de780ffb19a7f2407a6"
+    },
+    {
+      "path": "BackEnd/src/test/java/com/cosmos/api/news/service/NewsServiceIntegrationTest.java",
+      "change": "modified",
+      "before_sha256": "0414b9a30fad1f51696ef2376894c8c5dccc7327fc52ecc271eb8c7351aa7467",
+      "after_sha256": "7db8596a398e33d784c510959bea28016097a1bdffb8545f5e373a1b315535c5"
+    },
+    {
+      "path": "BackEnd/src/test/java/com/cosmos/api/support/AnalysisRunFixture.java",
+      "change": "added",
+      "before_sha256": null,
+      "after_sha256": "ff2d86567f1cf93f082d790e95d10673718edd9b5259d706ed5873a5a820eff8"
+    },
+    {
+      "path": "BackEnd/src/test/java/com/cosmos/api/user/controller/NewsScrapControllerTest.java",
+      "change": "modified",
+      "before_sha256": "d8b7e52572e30194f1e95e74a5aade4adca64888afc3a86bcb0041ad150289bf",
+      "after_sha256": "b7d4fcd4a55a87ebe51cd5231b66f6c649380ab9c873a5612a2d3177996558c6"
+    },
+    {
+      "path": "BackEnd/src/test/java/com/cosmos/api/user/controller/NewsScrapListControllerTest.java",
+      "change": "modified",
+      "before_sha256": "95f058065f0354fda3aabbee1448a01715e14d183768a220088dc18f21be399d",
+      "after_sha256": "2d567d0f1433d1cd85486385a89f7bc951c8a6f5ad8701840ee7ccac3fec6c6e"
+    },
+    {
+      "path": "FrontEnd/scripts/test-analysis-contract.mjs",
+      "change": "added",
+      "before_sha256": null,
+      "after_sha256": "eac46a7872745d4f880dc0500b2d9ab6f47bf1acf223bf6e868602d2dfb2961d"
+    },
+    {
+      "path": "FrontEnd/src/App.tsx",
+      "change": "modified",
+      "before_sha256": "a7d53fdddc57459a747fa5dfacb536e6dc2426984da32ccd7ca832eaf79ef33e",
+      "after_sha256": "46aaad933523561c8ea0aff8f3997eaab42cb5425655f6de38178ff4c4041136"
+    },
+    {
+      "path": "FrontEnd/src/api/contract.ts",
+      "change": "modified",
+      "before_sha256": "c999db9f749a60b8d6f3bdc950f7199a3323d044d61fe3e884752a03e7844141",
+      "after_sha256": "63ee1804ff8af355d3d93aa6f2e45c4048184d95be9948130993772c89d9c35d"
+    },
+    {
+      "path": "FrontEnd/src/api/live.ts",
+      "change": "modified",
+      "before_sha256": "c2975e3422a905209b3ad9c5e4288cc67ebfb45e6929c98c7b0d97266ea8bbd6",
+      "after_sha256": "b6d3b21b887b34fcf0fe9bf5764acf84bd2314100bc9dfc91f687c0f828c7dee"
+    },
+    {
+      "path": "FrontEnd/src/api/types.ts",
+      "change": "modified",
+      "before_sha256": "132c8a464a090311b522064beae1fad38f098bf7572473cd95d38b8fe7c16c34",
+      "after_sha256": "d6fd126ed7bc62800bd4f1b58f9788022374b6f3ba819a4104b835b5be1de191"
+    },
+    {
+      "path": "FrontEnd/src/components/Header.tsx",
+      "change": "modified",
+      "before_sha256": "827379cb0272960c098d5b2de058eacef0c6eebdd002fa16c6fea5ebb71c54bf",
+      "after_sha256": "9b9b9a6ca61f9f5cc9a4bde1f357b54d7cd18fb059b423077d0407e50869759f"
+    },
+    {
+      "path": "FrontEnd/src/components/PriceChart.tsx",
+      "change": "modified",
+      "before_sha256": "df96be551fb0d4cb81beb72fba67da8207d5be59e96e466b8a1767a99bf9117e",
+      "after_sha256": "8dbf7c7fbbbaa0c5ca6cf1dfa1ce51594789d4f4fac3a774297b00bd431f5316"
+    },
+    {
+      "path": "FrontEnd/src/components/ui.tsx",
+      "change": "modified",
+      "before_sha256": "e53cbd16b9407acbd4e06c96f94ffda6547e7f874e4c733e5ed38698ffc5dd52",
+      "after_sha256": "311e939aa2d0c710c3cbddca5b70e27c4a59968bc83d065aeeadeae1ec0bc923"
+    },
+    {
+      "path": "FrontEnd/src/features/galaxy/CompanyPanel.tsx",
+      "change": "modified",
+      "before_sha256": "73898dd198f33b4691728c56c1357c7feae6637c1dab70edf4b312a08d83a485",
+      "after_sha256": "cb38e243c8a9cffd3b93f8dbf579071ef18909de2539552a38c40d10dc358949"
+    },
+    {
+      "path": "FrontEnd/src/features/galaxy/GalaxyPage.tsx",
+      "change": "modified",
+      "before_sha256": "73432fcb31bf378913fcdd070980dbb694df29f36afabacf90b4506794f8e4b7",
+      "after_sha256": "fbedb31702d30cea31b69f0f9e22b2bf85f4ef88d4f91c08bee2a80a5cffd61e"
+    },
+    {
+      "path": "FrontEnd/src/features/galaxy/RelationshipPanel.tsx",
+      "change": "modified",
+      "before_sha256": "2301cb66fb0c880499a537c38f20c490f38522d52c6992c4eec027ab3e448251",
+      "after_sha256": "1916e243915e8c81eff978ec69d05b125282db208af29d469902433d3cb74360"
+    },
+    {
+      "path": "FrontEnd/src/features/galaxy/SceneTip.tsx",
+      "change": "modified",
+      "before_sha256": "35827aa5b92977eca025761e89fb99c3f67dcdba19ebc2a4fe53891b57ebc598",
+      "after_sha256": "2e939fa961a75ac8befde5582fa56df065df1c797c5197107c87161740d2f001"
+    },
+    {
+      "path": "FrontEnd/src/features/news/KpiEvidenceDialog.tsx",
+      "change": "modified",
+      "before_sha256": "11ec77b0d3548322944a28c40bb6ed094b57f9ac878597a1f380d008878d2a07",
+      "after_sha256": "f3a221a12c342d8eb7c31a47165cb646436cedf9d80167f6f944ca3088c696ba"
+    },
+    {
+      "path": "FrontEnd/src/features/news/NewsPage.tsx",
+      "change": "modified",
+      "before_sha256": "6dd827b987aa71a6f0b32fb3252a7044424d375550c31653ff33fa93d2de1a57",
+      "after_sha256": "300bb73930bbc00d20d229af5284a6602d924166374f1e288996c5d223dd6c98"
+    },
+    {
+      "path": "FrontEnd/src/lib/analysisRun.ts",
+      "change": "added",
+      "before_sha256": null,
+      "after_sha256": "12e662f02abd2bc395c2104247e3480803873b0d4716d591f0d73e2cdb355872"
+    },
+    {
+      "path": "FrontEnd/src/lib/format.ts",
+      "change": "modified",
+      "before_sha256": "a3336cd900fe57cead2796d9131fe2b43c3e8a0dbca53b3e8756587dccc64d63",
+      "after_sha256": "e172f3ccb2b05c940d69c4ef91c2321dff54fb0c5d5df3610c13f7269bb7f890"
+    },
+    {
+      "path": "FrontEnd/src/lib/guide.ts",
+      "change": "modified",
+      "before_sha256": "2df3863368e3a4d9239455f53baba4ea8f9f14f9ae972ba86d2784a0e2fee976",
+      "after_sha256": "3fc92833466c7c75b85c715f9bbe9d5a6bb4bacd5a5c8f2d190db47d88b680e8"
+    },
+    {
+      "path": "FrontEnd/src/lib/newsImpact.ts",
+      "change": "added",
+      "before_sha256": null,
+      "after_sha256": "0da1baad6f19b3f5201d04b9806c9616ac2aea6132694398048cf4a4464e0aa2"
+    },
+    {
+      "path": "FrontEnd/src/lib/queries.ts",
+      "change": "modified",
+      "before_sha256": "82bca804b5bd0eacf7030c66d889336bbddf65970eb41bf37a4019864e92f6b2",
+      "after_sha256": "7ccc4366039cb87241069b5563ea3ec88d0016e3b8a94350824b3d39e2a45f96"
+    },
+    {
+      "path": "FrontEnd/src/styles/global.css",
+      "change": "modified",
+      "before_sha256": "38555887c4b6121af7fb6352b7cf7b0ee7ae8f2e687fe340175fcff66e1cf601",
+      "after_sha256": "86d6e50f90b0405a66aae68e28151a6ef08d235920bac54b6eef940731115de4"
+    }
+  ],
+  "baseline_file_count": 581,
+  "result_file_count": 588,
+  "verification_directory": "C:\\Users\\SSAFY\\S15P21C205\\ai\\graph\\artifacts\\service_db_grounded_20260919_v1\\delivery-verification\\20260919T103652Z-0a61a16e",
+  "baseline_archive_sha256": "c61b7a2fa00445b257fa48b659dc95833da2afa0a18a9170dcaf956c66f9b339",
+  "script_sha256": "a4131a7b79176219ae43ef38f00e1218a625751c1f4cd8ba072e2127d213cb56",
+  "checks": {
+    "git_apply_check": true,
+    "git_apply": true,
+    "all_result_bytes_equal_service_source": true,
+    "source_unchanged_during_build": true,
+    "root_checkout_not_changed": true
+  },
+  "deployment_status": "not_asserted_by_patch_generation"
+}

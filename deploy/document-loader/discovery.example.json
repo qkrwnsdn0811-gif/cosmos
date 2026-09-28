@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "register_sources": true,
+  "company_map_file": "/etc/cosmos/document-loader/company-map.json",
+  "roots": [
+    {
+      "kind": "news-analyzed",
+      "glob": "hdfs://namenode.example.internal:9000/data-lake/analyzed/news/company-mentions/model_version=dict-v1.3/topic=*/partition=*/start=*/_SUCCESS"
+    },
+    {
+      "kind": "news-historical-analyzed",
+      "glob": "hdfs://namenode.example.internal:9000/data-lake/analyzed/news/historical-company-mentions/model_version=dict-v1.3/run_id=*/batch=*/_SUCCESS"
+    },
+    {
+      "kind": "dart",
+      "glob": "hdfs://namenode.example.internal:9000/datasets/opendart/snapshots/*/ready.json"
+    },
+    {
+      "kind": "sec",
+      "glob": "hdfs://namenode.example.internal:9000/data-lake/raw/realtime/sec-edgar/filing_date=*/cik=*/accession=*/_SUCCESS"
+    },
+    {
+      "kind": "sec-batch",
+      "glob": "hdfs://namenode.example.internal:9000/datasets/sec-edgar/snapshots/20260908-nasdaq100-10y/_SUCCESS"
+    }
+  ]
+}

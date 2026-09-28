@@ -1,0 +1,25 @@
+{
+  "transport": "ssh",
+  "host": "ubuntu@j15c205a.p.ssafy.io",
+  "identity_file": "/home/ssafy/.ssh/J15C205T.pem",
+  "hdfs_bin": "/opt/hadoop/bin/hdfs",
+  "lock_file": "/home/ssafy/.cache/cosmos/news-enrich-worker.lock",
+  "sources": [
+    {
+      "type": "historical",
+      "input_success_glob": "/data-lake/analyzed/news/historical-company-mentions/model_version=dict-v1.3/run_id=*/batch=*/_SUCCESS",
+      "output_base": "/data-lake/analyzed/news/historical-company-sentiment",
+      "source_model_version": "dict-v1.3",
+      "max_per_pass": 50,
+      "newest_first": false
+    },
+    {
+      "type": "realtime",
+      "input_success_glob": "/data-lake/analyzed/news/company-mentions/model_version=dict-v1.3/topic=*/partition=*/start=*/_SUCCESS",
+      "output_base": "/data-lake/analyzed/news/company-sentiment",
+      "source_model_version": "dict-v1.3",
+      "max_per_pass": 40,
+      "newest_first": true
+    }
+  ]
+}

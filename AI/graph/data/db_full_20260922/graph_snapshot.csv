@@ -1,0 +1,2 @@
+as_of_at,formula_version,model_version,status,hdfs_uri,published_at
+2026-09-22T00:00:00Z,rel-v0.5-full,dict-v1.3+finbert-evidence-v1,PUBLISHED,hdfs://localhost:9000/data-lake/sandbox/news/junwoo/company-sentiment/v1,2026-09-22T00:00:00Z

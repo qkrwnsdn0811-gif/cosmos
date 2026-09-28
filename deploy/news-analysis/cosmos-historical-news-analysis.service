@@ -1,0 +1,21 @@
+[Unit]
+Description=Analyze immutable historical news candidates into bounded HDFS batches
+After=network-online.target hadoop.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+Group=ubuntu
+EnvironmentFile=/etc/cosmos/news-analysis/historical.env
+WorkingDirectory=/opt/cosmos/news-analysis/current/AI/ner
+ExecStart=/usr/bin/flock -n /run/lock/cosmos-historical-news-analysis.lock /usr/bin/bash /opt/cosmos/news-analysis/current/deploy/news-analysis/run-historical-analysis.sh
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/cosmos-news-analysis /run/lock
+TimeoutStartSec=infinity
+
+[Install]
+WantedBy=multi-user.target

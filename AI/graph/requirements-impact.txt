@@ -1,0 +1,8 @@
+# 검증한 Python 3.12 환경. CPU 서비스도 가능하며 CUDA 는 학습 시 선택한다.
+numpy==2.5.3
+pandas==2.3.3
+scipy==1.18.1
+pyarrow==25.0.1
+torch==2.6.0
+fastapi==0.141.1
+uvicorn==0.53.0

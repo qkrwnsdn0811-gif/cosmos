@@ -1,0 +1,12 @@
+[Unit]
+Description=Poll latest COSMOS DART disclosures hourly
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+RandomizedDelaySec=30
+AccuracySec=30
+Unit=cosmos-dart-daily.service
+
+[Install]
+WantedBy=timers.target

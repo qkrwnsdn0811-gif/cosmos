@@ -1,0 +1,25 @@
+[Unit]
+Description=COSMOS realtime raw-news company analysis
+After=network-online.target cosmos-hadoop-namenode.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+Group=ubuntu
+EnvironmentFile=/etc/cosmos/news-analysis.env
+WorkingDirectory=/opt/cosmos/news-analysis/current/AI/ner
+ExecStart=/usr/bin/bash /opt/cosmos/news-analysis/current/deploy/news-analysis/run-news-analysis.sh
+StateDirectory=cosmos-news-analysis
+StateDirectoryMode=0750
+RuntimeDirectory=cosmos-news-analysis
+RuntimeDirectoryMode=0750
+UMask=0027
+TimeoutStartSec=2h
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/cosmos-news-analysis /run/cosmos-news-analysis
+RestrictSUIDSGID=true
+LockPersonality=true

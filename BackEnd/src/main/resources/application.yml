@@ -1,0 +1,87 @@
+spring:
+  # .env 파일이 있으면 설정값으로 읽어들인다 (없어도 정상 동작)
+  config:
+    import: optional:file:.env[.properties]
+
+  application:
+    name: cosmos-api
+
+  jackson:
+    time-zone: UTC
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/cosmos}
+    username: ${DB_USERNAME:cosmos}
+    password: ${DB_PASSWORD:cosmos1234}
+    hikari:
+      connection-init-sql: SET TIME ZONE 'UTC'
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      repositories:
+        enabled: false   # Redis는 RedisTemplate으로 직접 사용. JPA 리포지토리까지 스캔하며 경고를 남기는 것을 막는다
+
+  # 인증 메일 발송용 SMTP (Gmail). 계정·앱 비밀번호는 .env 로만 주입한다. 값이 비어 있으면 앱은 뜨지만 발송 시 실패한다.
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    validate-on-migrate: true
+
+  jpa:
+    hibernate:
+      ddl-auto: validate   # 스키마는 Flyway가 관리하고 JPA는 Entity와의 일치 여부만 검증
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+    open-in-view: false
+
+# 토큰 서명 키와 수명. 키는 소스에 두지 않고 환경변수(JWT_SECRET)로만 주입한다.
+# 값이 없으면 애플리케이션이 뜨지 않으므로, 로컬은 .env.example을 복사해 .env를 만들어 사용한다.
+jwt:
+  secret: ${JWT_SECRET:}
+  access-token-validity: ${JWT_ACCESS_TOKEN_VALIDITY:PT30M}
+  refresh-token-validity: ${JWT_REFRESH_TOKEN_VALIDITY:P14D}
+
+app:
+  # Refresh Token 쿠키. 로컬(http)은 secure=false, 배포(https)는 true로 덮어쓴다.
+  # 프론트와 API가 다른 도메인이면 same-site를 None으로 (이때 secure는 반드시 true).
+  auth-cookie:
+    secure: ${COOKIE_SECURE:false}
+    same-site: ${COOKIE_SAME_SITE:Lax}
+  # 쿠키를 주고받을 프론트 주소. 쉼표로 여러 개 가능.
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+  # 가입 전 이메일 인증. 코드는 Redis에 code-ttl 동안만 살고, 인증 완료 표시는 verified-ttl 안에 가입해야 유효하다.
+  email-verification:
+    code-ttl: PT5M
+    resend-cooldown: PT60S
+    verified-ttl: PT30M
+    max-attempts: 5
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info
+  health:
+    mail:
+      enabled: false   # 헬스 체크마다 Gmail SMTP에 접속하지 않게. 메일 장애는 발송 API 응답(500)으로 드러난다

@@ -1,0 +1,203 @@
+﻿ticker,market,name_official,name_en,sector,main_product,dart_corp_code,cik
+005930,KOSPI,삼성전자,"SAMSUNG ELECTRONICS CO,.LTD",통신 및 방송 장비 제조업,"통신 및 방송 장비 제조(무선) 제품, 반도체 제조(메모리) 제품, 전자부품 제조(디스플레이) 제품, 영상 및 음향기기 제조(영상기기) 제품 등",126380.0,
+000660,KOSPI,SK하이닉스,SK hynix Inc.,반도체 제조업,"반도체,컴퓨터,통신기기 제조,도매",164779.0,
+402340,KOSPI,SK스퀘어,"SK Square Co., Ltd.",기타 금융업,지주회사,1596425.0,
+009150,KOSPI,삼성전기,"SAMSUNG ELECTRO-MECHANICS CO.,LTD",전자부품 제조업,"수동소자 (MLCC, Inductor, Chip Resistor 등), 모듈(카메라모듈, 통신모듈), 반도체패키지 기판",126371.0,
+373220,KOSPI,LG에너지솔루션,"LG ENERGY SOLUTION, LTD.",일차전지 및 이차전지 제조업,"2차전지 (소형,ESS,자동차전지)",1515323.0,
+005380,KOSPI,현대차,HYUNDAI MOTOR CO,자동차용 엔진 및 자동차 제조업,"자동차(승용차,버스,트럭,특장차),자동차부품,자동차전착도료 제조,차량정비사업",164742.0,
+207940,KOSPI,삼성바이오로직스,"SAMSUNG BIOLOGICS CO.,LTD.",기초 의약물질 제조업,바이오의약품,877059.0,
+105560,KOSPI,KB금융,KB Financial Group Inc.,기타 금융업,-,688996.0,
+032830,KOSPI,삼성생명,"Samsung Life Insurance co., Ltd",보험업,"생명보험,부동산 임대",126256.0,
+028260,KOSPI,삼성물산,SAMSUNG C&T CORPORATION,기타 전문 도매업,"도소매, 건설, 남자용 정장 제조업 등",149655.0,
+012450,KOSPI,한화에어로스페이스,"HANWHA AEROSPACE CO., LTD.","항공기,우주선 및 부품 제조업","항공기엔진,특수방산장비 제조/정비사업",126566.0,
+055550,KOSPI,신한지주,"SHINHAN FINANCIAL GROUP CO.,LTD",기타 금융업,금융지주회사,382199.0,
+034020,KOSPI,두산에너빌리티,"DOOSAN ENERBILITY CO., LTD.",일반 목적용 기계 제조업,"기관,터어빈,선박용엔진,주단조품,제강제품 제조/종합건설",159616.0,
+000270,KOSPI,기아,KIA CORPORATION,자동차용 엔진 및 자동차 제조업,"승용차,중대형버스,트럭,민수특수차량,군수차량 제조,판매,정비",106641.0,
+329180,KOSPI,HD현대중공업,"HD HYUNDAI HEAVY INDUSTRIES CO.,LTD.",선박 및 보트 건조업,"선박, 해양플랜트 및 엔진기계 등",1390344.0,
+006400,KOSPI,삼성SDI,"SAMSUNG SDI CO.,LTD",일차전지 및 이차전지 제조업,"2차전지, 전자재료 제조 판매",126362.0,
+068270,KOSPI,셀트리온,"Celltrion, Inc.",기초 의약물질 제조업,"램시마, 트룩시마, 허쥬마",413046.0,
+034730,KOSPI,SK,SK Inc.,기타 금융업,"지주회사, 시스템통합(SI), 정보통신사업 관련 컨설팅,조사용역,정보통신기술 연구개발/정보통신기기,소프트웨어 개발,도매",181712.0,
+012330,KOSPI,현대모비스,"HYUNDAI MOBIS CO.,LTD",자동차 신품 부품 제조업,"자동차A/S용 부품,컨테이너,특수중기,산업기계제품 생산,판매,부품모듈화,부품수출사업,환경/플랜트사업,특수중기부문(컨테이너)",164788.0,
+086790,KOSPI,하나금융지주,Hana Financial Group Inc.,기타 금융업,기타 금융,547583.0,
+066570,KOSPI,LG전자,LG ELECTRONICS INC.,통신 및 방송 장비 제조업,"이동통신단말기,C-TV,V.C.R.,컴퓨터,완전평면 TV,플라즈마 디스플레이 패널 TV,전자제품(세탁기외),CDMA(코드분할다중접속)이동통신,전자교환기,전송기기",401731.0,
+035420,KOSPI,NAVER,NAVER Corporation,"자료처리, 호스팅, 포털 및 기타 인터넷 정보매개 서비스업",포털 서비스 및 온라인 광고,266961.0,
+000810,KOSPI,삼성화재,"SAMSUNG FIRE & MARINE INSURANCE CO.,LTD",보험업,"손해보험의 원수,재보험,운용자산의 투자활동",139214.0,
+010120,KOSPI,LS ELECTRIC,"LS ELECTRIC CO., LTD","전동기, 발전기 및 전기 변환 · 공급 · 제어 장치 제조업","고압기기,저압기기,변압기,배전반,PLC,인버터,빌딩설비,공조기,건축배관,자동화기기 제조,동가공",105855.0,
+005490,KOSPI,POSCO홀딩스,POSCO Holdings Inc.,1차 철강 제조업,"열연코일,냉연강판,후판,선재,스테인리스 제조",155319.0,
+042660,KOSPI,한화오션,"Hanwha Ocean Co., Ltd.",선박 및 보트 건조업,선박 제조,111704.0,
+267260,KOSPI,HD현대일렉트릭,"HD HYUNDAI ELECTRIC CO.,LTD","전동기, 발전기 및 전기 변환 · 공급 · 제어 장치 제조업","변압기, 고압차단기, 회전기, 배전반 등",1205851.0,
+010130,KOSPI,고려아연,KOREA ZINC INC,1차 비철금속 제조업,"연,아연괴 제조,판매",102858.0,
+298040,KOSPI,효성중공업,Hyosung Heavy Industries Corporation,"전동기, 발전기 및 전기 변환 · 공급 · 제어 장치 제조업",-,1316245.0,
+316140,KOSPI,우리금융지주,Woori Financial Group Inc.,기타 금융업,금융지주,1350869.0,
+009540,KOSPI,HD한국조선해양,"HD KOREA SHIPBUILDING & OFFSHORE ENGINEERING CO., LTD.",기타 금융업,"선박,해양구조물,엔진,펌프 전동기,중전기,중장비 제조/자동창고,물류시스템",164830.0,
+096770,KOSPI,SK이노베이션,"SK Innovation Co., Ltd.",석유 정제품 제조업,"석유정제,석유화학제품,윤활유제품,아스팔트제품,의약중간체 제조,판매,유전개발,대체에너지사업",631518.0,
+042700,KOSPI,한미반도체,"HANMI Semiconductor CO., LTD.",특수 목적용 기계 제조업,"반도체 후공정장비,반도체금형 제조/부동산 매매,임대",161383.0,
+015760,KOSPI,한국전력,KOREA ELECTRIC POWER CORPORATION,전기업,"전력자원개발,발전,송전,전력용기자재확보",159193.0,
+011200,KOSPI,HMM,"HMM CO.,LTD",해상 운송업,"정기,부정기,전용선,콘테이너선,자동차선,LNG선 해운",164645.0,
+017670,KOSPI,SK텔레콤,"SK TELECOM CO.,LTD",전기 통신업,"이동전화,무선호출서비스,부가통신",159023.0,
+051910,KOSPI,LG화학,LG CHEM LTD,기초 화학물질 제조업,"유화/기능/합성수지,재생섬유소,산업재,리튬이온전지,평광판,PVC 제조,도매",356361.0,
+267250,KOSPI,HD현대,"HD HYUNDAI CO.,LTD.",기타 금융업,지주회사,1205709.0,
+010140,KOSPI,삼성중공업,"SAMSUNG HEAVY INDUSTRIES CO.,LTD",선박 및 보트 건조업,"선박(벌크선,원유운반선),철구조물,에너지플랜트 생산,판매/토목건축업",126478.0,
+006800,KOSPI,미래에셋증권,"MIRAE ASSET SECURITIES CO.,LTD.",금융 지원 서비스업,"유가증권매매,유가증권위탁매매,유가증권인수",111722.0,
+010950,KOSPI,S-Oil,S-Oil Corporation,석유 정제품 제조업,"석유제품,가스,윤활기유,윤활유,그리스,석유화학제품 제조,도매",138279.0,
+003550,KOSPI,LG,LG Corp.,기타 금융업,지주회사,120021.0,
+018260,KOSPI,삼성에스디에스,"SAMSUNG SDS CO., LTD.","컴퓨터 프로그래밍, 시스템 통합 및 관리업","IT서비스, 물류BPO",126186.0,
+000150,KOSPI,두산,"DOOSAN CO.,LTD",전자부품 제조업,"동박적층판 등 제조 및 판매, 유압기기 등 제조 및 판매, 지게차 제조 및 판매, IT 시스템 개발/운영 서비스 등, 연료전지 등",117212.0,
+033780,KOSPI,KT&G,KT&G Corporation,담배 제조업,"잎담배,제조담배,홍삼,홍삼제품 제조,판매",244455.0,
+024110,KOSPI,기업은행,INDUSTRIAL BANK OF KOREA,은행 및 저축기관,은행업,149646.0,
+003670,KOSPI,포스코퓨처엠,"POSCO FUTURE M CO., LTD.",일차전지 및 이차전지 제조업,"내화물, 생석회, 음극재 및 양극재",155276.0,
+035720,KOSPI,카카오,Kakao Corp.,"자료처리, 호스팅, 포털 및 기타 인터넷 정보매개 서비스업",인터넷 서비스(인터넷 광고),258801.0,
+086280,KOSPI,현대글로비스,"HYUNDAI GLOVIS Co., LTD.",기타 운송관련 서비스업,"화물운송주선,화물포장,자동차 수리/산업용 기계장비 임대",360595.0,
+278470,KOSPI,에이피알,"APR Co., Ltd.",기타 화학제품 제조업,"화장품, 피부미용기기 등",1190568.0,
+079550,KOSPI,LIG디펜스앤에어로스페이스,"LIG Defense&Aerospace Co., Ltd.",무기 및 총포탄 제조업,정밀유도무기 등,503668.0,
+064350,KOSPI,현대로템,Hyundai-Rotem Co.,그외 기타 운송장비 제조업,"철도차량, 특수중기, 산업기계",302926.0,
+030200,KOSPI,KT,KT CORPORATION,전기 통신업,"유무선통신사업,공중전기통신사업,인터넷,전자상거래,네트워크(전용회선,데이터통신,초고속사업 등)",190321.0,
+000720,KOSPI,현대건설,"HYUNDAI ENGINEERING & CONSTRUCTION CO.,LTD",토목 건설업,"공사수입,주택분양,건설산업부문 설계,감리 등 엔지니어링서비스",164478.0,
+011070,KOSPI,LG이노텍,"LG INNOTEK CO., LTD.",전자부품 제조업,기타 전자부품 제조업,105961.0,
+272210,KOSPI,한화시스템,"HANWHA SYSTEMS Co., Ltd.",전자부품 제조업,"정밀기기(육해공군관련전자제어시스템,열영상감시장비,탐지추적장치,전투지휘체계시스템) 제조",339391.0,
+005830,KOSPI,DB손해보험,"DB INSURANCE CO.,LTD",보험업,"자동차보험,화재보험,해상보험,특종보험,장기보험",159102.0,
+047810,KOSPI,한국항공우주,"KOREA AEROSPACE INDUSTRIES, LTD.","항공기,우주선 및 부품 제조업","정부방산 및 완제기 수출(T-50계열, KUH계열, KT-1계열 등), 기체부품",309503.0,
+078930,KOSPI,GS,GS Holdings,기타 금융업,지주회사/부동산 임대,500254.0,
+003490,KOSPI,대한항공,"KOREAN AIR LINES CO.,LTD",항공 여객 운송업,"여객운송,화물운송,항공기 제조,판매,정비수리/기내식 제조판매,면세품 판매",113526.0,
+307950,KOSPI,현대오토에버,HYUNDAI AUTOEVER CORPORATION.,소프트웨어 개발 및 공급업,"차량SW, 내비게이션, 스마트팩토리, AI·클라우드 기반 솔루션, 디지털 전환 컨설팅 및 IT서비스",362441.0,
+071050,KOSPI,한국금융지주,"Korea Investment Holdings Co., Ltd",기타 금융업,금융지주회사,432102.0,
+003230,KOSPI,삼양식품,Samyang Foods Inc.,기타 식품 제조업,"라면,스낵,유제품,장유,식용유,사료,향신료,건강음료(루이보스 티) 제조,도매",126955.0,
+323410,KOSPI,카카오뱅크,KakaoBank Corp.,은행 및 저축기관,은행 및 금융서비스,1133217.0,
+259960,KOSPI,크래프톤,"KRAFTON, Inc.",소프트웨어 개발 및 공급업,<배틀그라운드> 등 게임 소프트웨어,760971.0,
+047050,KOSPI,포스코인터내셔널,POSCO INTERNATIONAL,상품 중개업,"영업활동의 주요 품목으로 에너지 사업내 천연가스 발전, 태양력, 풍력, 수소 등이 있으며, 트레이딩 사업은 철강 및 철강원료, 이차전지소재, 곡물, 유지, 면방, 바이오플라스틱, 친환경차부품, 인프라 및 산업 플랜트 등이 있음.",124504.0,
+005940,KOSPI,NH투자증권,"NH INVESTMENT & SECURITIES CO.,LTD.",금융 지원 서비스업,"증권업,종합금융",120182.0,
+180640,KOSPI,한진칼,HANJINKAL,기타 금융업,"지주사업, 경영자문 및 컨설팅",983040.0,
+443060,KOSPI,HD현대마린솔루션,"HD Hyundai Marine Solution Co., Ltd","건축기술, 엔지니어링 및 관련 기술 서비스업","AM(After Market) 솔루션, 친환경 Retrofit, 디지털 제어",1194689.0,
+006260,KOSPI,LS,LS Corp.,기타 금융업,"전력용전선,일반전선,통신케이블,동선,알루미늄선,공조기,프라스틱사출성형기 제조,도매",105952.0,
+0126Z0,KOSPI,삼성에피스홀딩스,"SAMSUNG EPIS HOLDINGS Co., Ltd.",기타 금융업,지주회사,1965324.0,
+028050,KOSPI,삼성E&A,"SAMSUNG E&A CO.,LTD","건축기술, 엔지니어링 및 관련 기술 서비스업","산업설비,건물,구축물,토목시설의 설계,시공,공사감리",126308.0,
+090430,KOSPI,아모레퍼시픽,AMOREPACIFIC CORP.,기타 화학제품 제조업,"화장품,생활용품 제조, 판매",583424.0,
+161390,KOSPI,한국타이어앤테크놀로지,"HANKOOK TIRE & TECHNOLOGY CO.,LTD",고무제품 제조업,타이어 제조,937324.0,
+007660,KOSPI,이수페타시스,"ISUPETASYS CO.,LTD",전자부품 제조업,"P.C.B(인쇄회로기판),M.L.B 제조",107613.0,
+016360,KOSPI,삼성증권,"SAMSUNG SECURITIES CO.,LTD",금융 지원 서비스업,"유가증권의 매매,위탁매매,인수주선",104856.0,
+352820,KOSPI,하이브,"HYBE Co., Ltd.",오디오물 출판 및 원판 녹음업,"음악 기획/제작, 퍼블리싱, 아티스트 매니지먼트",1204056.0,
+000880,KOSPI,한화,HANWHA CORP,기타 화학제품 제조업,"화약,화공품,자동선반류,공작기계 제조,전자교환기,건설,정보통신,종합무역/임직원 및 개인대상 교육,세미나 및 워크샵 중계,동영상광고",160588.0,
+064400,KOSPI,LG씨엔에스,"LG CNS Co., Ltd.","컴퓨터 프로그래밍, 시스템 통합 및 관리업","컨설팅, 시스템 구축/운영, 토탈 아웃소싱 및 AI, 클라우드·스마트팩토리 등 IT신기술 기반의 DX사업",139834.0,
+021240,KOSPI,코웨이,"COWAY Co., Ltd.",그외 기타 개인 서비스업,"렌탈 서비스(정수기,비데, 필터교환 등), 가정용기기 도매,판매,제조,폐기물처리설비,수출(정수기,청정기)",170558.0,
+039490,KOSPI,키움증권,"KIWOOM Securities Co.,Ltd.",금융 지원 서비스업,"유가증권의 매매, 위탁, 인수, 주선",296290.0,
+047040,KOSPI,대우건설,"DAEWOO ENGINEERING & CONSTRUCTION CO.,LTD",건물 건설업,"아파트건설,토목공사,건축공사,포장공사,전기공사,무역/중장비 대여",124540.0,
+009830,KOSPI,한화솔루션,HANWHA SOLUTIONS CORPORATION,기초 화학물질 제조업,"합성수지,유화부문(LDPE,LLDPE)제품 제조,플라스틱가공품(PVC),CA,무기화학제품,부동산업",162461.0,
+326030,KOSPI,SK바이오팜,"SK biopharmaceuticals Co., Ltd.",자연과학 및 공학 연구개발업,신경질환 및 정신질환을 포함한 중추신경 관련 신약 개발,878696.0,
+267270,KOSPI,HD건설기계,"HD Construction Equipment Co.,Ltd.",특수 목적용 기계 제조업,"굴삭기, 지게차, 휠로더 등",1205842.0,
+377300,KOSPI,카카오페이,kakaopay Corp.,금융 지원 서비스업,"간편결제, 간편송금 및 기타 금융서비스",1244601.0,
+000500,KOSPI,가온전선,"GAON CABLE CO.,LTD",절연선 및 케이블 제조업,"전력선,통신케이블 제조,도매,수출입",104768.0,
+032640,KOSPI,LG유플러스,LG Uplus Corp,전기 통신업,"개인휴대통신서비스,음성서비스,데이터서비스,부가통신/단말기 도소매/프로그램 개발,자료제공",231363.0,
+241560,KOSPI,두산밥캣,Doosan Bobcat Inc.,특수 목적용 기계 제조업,"Compact Equipment, Heavy Equipment, Portable Power",1032486.0,
+000100,KOSPI,유한양행,YUHAN CORPORATION,의약품 제조업,"의약품(삐콤씨, 안티푸라민, 렉라자, 로수바미브, 코푸시럽 등), 생활용품(유한락스, 해피홈, 유한젠), 동물약품",145109.0,
+128940,KOSPI,한미약품,"Hanmi Pharm. Co., Ltd.",의약품 제조업,의약품,828497.0,
+062040,KOSPI,산일전기,"SANIL ELECTRIC CO., LTD","전동기, 발전기 및 전기 변환 · 공급 · 제어 장치 제조업","유입, 몰드, 주상, 건식 변압기 등",366438.0,
+175330,KOSPI,JB금융지주,"JB FINANCIAL GROUP CO.,LTD",기타 금융업,금융지주 회사,980122.0,
+029780,KOSPI,삼성카드,"SAMSUNG CARD CO.,LTD",기타 금융업,"신용카드업,상품신용판매,현금서비스,카드론,리스,기업대출,여행업무,통신판매",126292.0,
+001440,KOSPI,대한전선,"Taihan Cable & Solution Co., Ltd.",절연선 및 케이블 제조업,"전력선,통신케이블,적산계기,스텐레스압연제품,광케이블,초고압선,알루미늄 제조,도매/전기공사",113207.0,
+088350,KOSPI,한화생명,"HANWHA LIFE INSURANCE CO., LTD.",보험업,생명보험,113058.0,
+271560,KOSPI,오리온,ORION CORP.,기타 식품 제조업,스낵 등 과자류,1238169.0,
+066970,KOSPI,엘앤에프,"L&F CO.,LTD",일차전지 및 이차전지 제조업,이차전지 양극활물질,398701.0,
+353200,KOSPI,대덕전자,"DAEDUCK ELECTRONICS CO.,LTD",전자부품 제조업,"PCB(Printed Circuit Board, 인쇄회로기판)의 제조 및 판매",1478712.0,
+088980,KOSPI,맥쿼리인프라,Macquarie Korea Infrastructure Fund,신탁업 및 집합투자업,증권투자회사,435297.0,
+ADBE,NASDAQ,Adobe Inc.,Adobe Inc.,Technology,,,796343.0
+AMD,NASDAQ,Advanced Micro Devices,Advanced Micro Devices,Technology,,,2488.0
+ABNB,NASDAQ,Airbnb,Airbnb,Consumer Discretionary,,,1559720.0
+ALNY,NASDAQ,Alnylam Pharmaceuticals,Alnylam Pharmaceuticals,Health Care,,,1178670.0
+GOOGL,NASDAQ,Alphabet Inc. (Class A),Alphabet Inc. (Class A),Technology,,,1652044.0
+GOOG,NASDAQ,Alphabet Inc. (Class C),Alphabet Inc. (Class C),Technology,,,1652044.0
+AMZN,NASDAQ,Amazon,Amazon,Consumer Discretionary,,,1018724.0
+AEP,NASDAQ,American Electric Power,American Electric Power,Utilities,,,4904.0
+AMGN,NASDAQ,Amgen,Amgen,Health Care,,,318154.0
+ADI,NASDAQ,Analog Devices,Analog Devices,Technology,,,6281.0
+AAPL,NASDAQ,Apple Inc.,Apple Inc.,Technology,,,320193.0
+AMAT,NASDAQ,Applied Materials,Applied Materials,Technology,,,6951.0
+APP,NASDAQ,AppLovin,AppLovin,Technology,,,1751008.0
+ARM,NASDAQ,Arm Holdings,Arm Holdings,Technology,,,1973239.0
+ASML,NASDAQ,ASML Holding,ASML Holding,Technology,,,937966.0
+ALAB,NASDAQ,Astera Labs,Astera Labs,Technology,,,1736297.0
+ADSK,NASDAQ,Autodesk,Autodesk,Technology,,,769397.0
+ADP,NASDAQ,Automatic Data Processing,Automatic Data Processing,Industrials,,,8670.0
+AXON,NASDAQ,Axon Enterprise,Axon Enterprise,Industrials,,,1069183.0
+BKR,NASDAQ,Baker Hughes,Baker Hughes,Energy,,,1701605.0
+BKNG,NASDAQ,Booking Holdings,Booking Holdings,Consumer Discretionary,,,1075531.0
+AVGO,NASDAQ,Broadcom,Broadcom,Technology,,,1730168.0
+CDNS,NASDAQ,Cadence Design Systems,Cadence Design Systems,Technology,,,813672.0
+CTAS,NASDAQ,Cintas,Cintas,Industrials,,,723254.0
+CSCO,NASDAQ,Cisco,Cisco,Telecommunications,,,858877.0
+CCEP,NASDAQ,Coca-Cola Europacific Partners,Coca-Cola Europacific Partners,Consumer Staples,,,1650107.0
+CMCSA,NASDAQ,Comcast,Comcast,Telecommunications,,,1166691.0
+CEG,NASDAQ,Constellation Energy,Constellation Energy,Utilities,,,1868275.0
+CPRT,NASDAQ,Copart,Copart,Consumer Discretionary,,,900075.0
+CRWV,NASDAQ,CoreWeave,CoreWeave,Technology,,,1769628.0
+COST,NASDAQ,Costco,Costco,Consumer Discretionary,,,909832.0
+CRWD,NASDAQ,CrowdStrike,CrowdStrike,Technology,,,1535527.0
+CSX,NASDAQ,CSX Corporation,CSX Corporation,Industrials,,,277948.0
+DDOG,NASDAQ,Datadog,Datadog,Technology,,,1561550.0
+DXCM,NASDAQ,DexCom,DexCom,Health Care,,,1093557.0
+FANG,NASDAQ,Diamondback Energy,Diamondback Energy,Energy,,,1539838.0
+DASH,NASDAQ,DoorDash,DoorDash,Technology,,,1792789.0
+EXC,NASDAQ,Exelon,Exelon,Utilities,,,1109357.0
+FAST,NASDAQ,Fastenal,Fastenal,Industrials,,,815556.0
+FER,NASDAQ,Ferrovial,Ferrovial,Industrials,,,1468522.0
+FTNT,NASDAQ,Fortinet,Fortinet,Technology,,,1262039.0
+GEHC,NASDAQ,GE HealthCare,GE HealthCare,Health Care,,,1932393.0
+GILD,NASDAQ,Gilead Sciences,Gilead Sciences,Health Care,,,882095.0
+HONA,NASDAQ,Honeywell Aerospace,Honeywell Aerospace,Industrials,,,2089271.0
+HON,NASDAQ,Honeywell Technologies,Honeywell Technologies,Industrials,,,773840.0
+IDXX,NASDAQ,Idexx Laboratories,Idexx Laboratories,Health Care,,,874716.0
+INTC,NASDAQ,Intel,Intel,Technology,,,50863.0
+INTU,NASDAQ,Intuit,Intuit,Technology,,,896878.0
+ISRG,NASDAQ,Intuitive Surgical,Intuitive Surgical,Health Care,,,1035267.0
+KDP,NASDAQ,Keurig Dr Pepper,Keurig Dr Pepper,Consumer Staples,,,1418135.0
+KLAC,NASDAQ,KLA Corporation,KLA Corporation,Technology,,,319201.0
+KHC,NASDAQ,Kraft Heinz,Kraft Heinz,Consumer Staples,,,1637459.0
+LRCX,NASDAQ,Lam Research,Lam Research,Technology,,,707549.0
+LIN,NASDAQ,Linde plc,Linde plc,Basic Materials,,,1707925.0
+LITE,NASDAQ,Lumentum,Lumentum,Technology,,,1633978.0
+MAR,NASDAQ,Marriott International,Marriott International,Consumer Discretionary,,,1048286.0
+MRVL,NASDAQ,Marvell Technology,Marvell Technology,Technology,,,1835632.0
+MELI,NASDAQ,Mercado Libre,Mercado Libre,Consumer Discretionary,,,1099590.0
+META,NASDAQ,Meta Platforms,Meta Platforms,Technology,,,1326801.0
+MCHP,NASDAQ,Microchip Technology,Microchip Technology,Technology,,,827054.0
+MU,NASDAQ,Micron Technology,Micron Technology,Technology,,,723125.0
+MSFT,NASDAQ,Microsoft,Microsoft,Technology,,,789019.0
+MSTR,NASDAQ,MicroStrategy,MicroStrategy,Technology,,,1050446.0
+MDLZ,NASDAQ,Mondelez International,Mondelez International,Consumer Staples,,,1103982.0
+MPWR,NASDAQ,Monolithic Power Systems,Monolithic Power Systems,Technology,,,1280452.0
+MNST,NASDAQ,Monster Beverage,Monster Beverage,Consumer Staples,,,865752.0
+NBIS,NASDAQ,Nebius Group,Nebius Group,Technology,,,1513845.0
+NFLX,NASDAQ,"Netflix, Inc.","Netflix, Inc.",Consumer Discretionary,,,1065280.0
+NVDA,NASDAQ,Nvidia,Nvidia,Technology,,,1045810.0
+NXPI,NASDAQ,NXP Semiconductors,NXP Semiconductors,Technology,,,1413447.0
+ORLY,NASDAQ,O'Reilly Automotive,O'Reilly Automotive,Consumer Discretionary,,,898173.0
+ODFL,NASDAQ,Old Dominion Freight Line,Old Dominion Freight Line,Industrials,,,878927.0
+PCAR,NASDAQ,Paccar,Paccar,Consumer Discretionary,,,75362.0
+PLTR,NASDAQ,Palantir Technologies,Palantir Technologies,Technology,,,1321655.0
+PANW,NASDAQ,Palo Alto Networks,Palo Alto Networks,Technology,,,1327567.0
+PAYX,NASDAQ,Paychex,Paychex,Industrials,,,723531.0
+PYPL,NASDAQ,PayPal,PayPal,Industrials,,,1633917.0
+PDD,NASDAQ,PDD Holdings,PDD Holdings,Technology,,,1737806.0
+PEP,NASDAQ,PepsiCo,PepsiCo,Consumer Staples,,,77476.0
+QCOM,NASDAQ,Qualcomm,Qualcomm,Technology,,,804328.0
+REGN,NASDAQ,Regeneron Pharmaceuticals,Regeneron Pharmaceuticals,Health Care,,,872589.0
+RKLB,NASDAQ,Rocket Lab,Rocket Lab,Industrials,,,1819994.0
+ROP,NASDAQ,Roper Technologies,Roper Technologies,Technology,,,882835.0
+ROST,NASDAQ,Ross Stores,Ross Stores,Consumer Discretionary,,,745732.0
+SNDK,NASDAQ,Sandisk,Sandisk,Technology,,,2023554.0
+STX,NASDAQ,Seagate Technology,Seagate Technology,Technology,,,1137789.0
+SHOP,NASDAQ,Shopify,Shopify,Technology,,,1594805.0
+SPCX,NASDAQ,SpaceX,SpaceX,Telecommunications,,,1181412.0
+SBUX,NASDAQ,Starbucks,Starbucks,Consumer Discretionary,,,829224.0
+SNPS,NASDAQ,Synopsys,Synopsys,Technology,,,883241.0
+TMUS,NASDAQ,T-Mobile US,T-Mobile US,Telecommunications,,,1283699.0
+TTWO,NASDAQ,Take-Two Interactive,Take-Two Interactive,Consumer Discretionary,,,946581.0
+TER,NASDAQ,Teradyne,Teradyne,Technology,,,97210.0
+TSLA,NASDAQ,"Tesla, Inc.","Tesla, Inc.",Consumer Discretionary,,,1318605.0
+TXN,NASDAQ,Texas Instruments,Texas Instruments,Technology,,,97476.0
+TRI,NASDAQ,Thomson Reuters,Thomson Reuters,Technology,,,1075124.0
+VRTX,NASDAQ,Vertex Pharmaceuticals,Vertex Pharmaceuticals,Health Care,,,875320.0
+WMT,NASDAQ,Walmart,Walmart,Consumer Discretionary,,,104169.0
+WBD,NASDAQ,Warner Bros. Discovery,Warner Bros. Discovery,Consumer Discretionary,,,1437107.0
+WDC,NASDAQ,Western Digital,Western Digital,Technology,,,106040.0
+WDAY,NASDAQ,"Workday, Inc.","Workday, Inc.",Technology,,,1327811.0
+XEL,NASDAQ,Xcel Energy,Xcel Energy,Utilities,,,72903.0

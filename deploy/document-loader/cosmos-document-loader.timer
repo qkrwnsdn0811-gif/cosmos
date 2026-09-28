@@ -1,0 +1,11 @@
+[Unit]
+Description=Discover newly published HDFS news and filings every two minutes
+
+[Timer]
+OnBootSec=1min
+OnUnitInactiveSec=2min
+AccuracySec=10s
+Unit=cosmos-document-loader.service
+
+[Install]
+WantedBy=timers.target

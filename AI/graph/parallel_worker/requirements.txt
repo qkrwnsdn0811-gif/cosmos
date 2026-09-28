@@ -1,0 +1,7 @@
+# CUDA PyTorch is installed separately by bootstrap.py from its official index.
+# These runtime versions match the existing B model's tested local environment.
+transformers==5.16.1
+tokenizers==0.23.2
+huggingface-hub==1.30.0
+safetensors==0.8.0
+numpy==2.5.3

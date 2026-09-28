@@ -1,0 +1,203 @@
+ticker,market,name_official,industry_id,industry_ko
+005930,KOSPI,삼성전자,SEMI,반도체
+000660,KOSPI,SK하이닉스,SEMI,반도체
+402340,KOSPI,SK스퀘어,HOLDING,지주회사
+009150,KOSPI,삼성전기,HW,전자부품·하드웨어
+373220,KOSPI,LG에너지솔루션,BATTERY,2차전지
+005380,KOSPI,현대차,AUTO,자동차
+207940,KOSPI,삼성바이오로직스,BIO,바이오·헬스케어
+105560,KOSPI,KB금융,FIN,금융
+032830,KOSPI,삼성생명,FIN,금융
+028260,KOSPI,삼성물산,HOLDING,지주회사
+012450,KOSPI,한화에어로스페이스,DEFENSE,방산·항공우주
+055550,KOSPI,신한지주,FIN,금융
+034020,KOSPI,두산에너빌리티,POWER,전력·에너지설비
+000270,KOSPI,기아,AUTO,자동차
+329180,KOSPI,HD현대중공업,TRANSPORT,조선·해운·운송
+006400,KOSPI,삼성SDI,BATTERY,2차전지
+068270,KOSPI,셀트리온,BIO,바이오·헬스케어
+034730,KOSPI,SK,HOLDING,지주회사
+012330,KOSPI,현대모비스,AUTO,자동차
+086790,KOSPI,하나금융지주,FIN,금융
+066570,KOSPI,LG전자,HW,전자부품·하드웨어
+035420,KOSPI,NAVER,INTERNET,인터넷·플랫폼
+000810,KOSPI,삼성화재,FIN,금융
+010120,KOSPI,LS ELECTRIC,POWER,전력·에너지설비
+005490,KOSPI,POSCO홀딩스,MATERIAL,철강·비철·소재
+042660,KOSPI,한화오션,TRANSPORT,조선·해운·운송
+267260,KOSPI,HD현대일렉트릭,POWER,전력·에너지설비
+010130,KOSPI,고려아연,MATERIAL,철강·비철·소재
+298040,KOSPI,효성중공업,POWER,전력·에너지설비
+316140,KOSPI,우리금융지주,FIN,금융
+009540,KOSPI,HD한국조선해양,TRANSPORT,조선·해운·운송
+096770,KOSPI,SK이노베이션,CHEM,정유·화학·에너지
+042700,KOSPI,한미반도체,SEMI,반도체
+015760,KOSPI,한국전력,POWER,전력·에너지설비
+011200,KOSPI,HMM,TRANSPORT,조선·해운·운송
+017670,KOSPI,SK텔레콤,TELECOM,통신
+051910,KOSPI,LG화학,CHEM,정유·화학·에너지
+267250,KOSPI,HD현대,HOLDING,지주회사
+010140,KOSPI,삼성중공업,TRANSPORT,조선·해운·운송
+006800,KOSPI,미래에셋증권,FIN,금융
+010950,KOSPI,S-Oil,CHEM,정유·화학·에너지
+003550,KOSPI,LG,HOLDING,지주회사
+018260,KOSPI,삼성에스디에스,SW,소프트웨어·AI
+000150,KOSPI,두산,HOLDING,지주회사
+033780,KOSPI,KT&G,CONSUMER,소비재·유통
+024110,KOSPI,기업은행,FIN,금융
+003670,KOSPI,포스코퓨처엠,BATTERY,2차전지
+035720,KOSPI,카카오,INTERNET,인터넷·플랫폼
+086280,KOSPI,현대글로비스,TRANSPORT,조선·해운·운송
+278470,KOSPI,에이피알,CONSUMER,소비재·유통
+079550,KOSPI,LIG디펜스앤에어로스페이스,DEFENSE,방산·항공우주
+064350,KOSPI,현대로템,DEFENSE,방산·항공우주
+030200,KOSPI,KT,TELECOM,통신
+000720,KOSPI,현대건설,CONSTR,건설·기계·산업재
+011070,KOSPI,LG이노텍,HW,전자부품·하드웨어
+272210,KOSPI,한화시스템,DEFENSE,방산·항공우주
+005830,KOSPI,DB손해보험,FIN,금융
+047810,KOSPI,한국항공우주,DEFENSE,방산·항공우주
+078930,KOSPI,GS,HOLDING,지주회사
+003490,KOSPI,대한항공,TRANSPORT,조선·해운·운송
+307950,KOSPI,현대오토에버,SW,소프트웨어·AI
+071050,KOSPI,한국금융지주,FIN,금융
+003230,KOSPI,삼양식품,CONSUMER,소비재·유통
+323410,KOSPI,카카오뱅크,FIN,금융
+259960,KOSPI,크래프톤,MEDIA,미디어·게임·엔터
+047050,KOSPI,포스코인터내셔널,MATERIAL,철강·비철·소재
+005940,KOSPI,NH투자증권,FIN,금융
+180640,KOSPI,한진칼,TRANSPORT,조선·해운·운송
+443060,KOSPI,HD현대마린솔루션,TRANSPORT,조선·해운·운송
+006260,KOSPI,LS,HOLDING,지주회사
+0126Z0,KOSPI,삼성에피스홀딩스,BIO,바이오·헬스케어
+028050,KOSPI,삼성E&A,CONSTR,건설·기계·산업재
+090430,KOSPI,아모레퍼시픽,CONSUMER,소비재·유통
+161390,KOSPI,한국타이어앤테크놀로지,AUTO,자동차
+007660,KOSPI,이수페타시스,HW,전자부품·하드웨어
+016360,KOSPI,삼성증권,FIN,금융
+352820,KOSPI,하이브,MEDIA,미디어·게임·엔터
+000880,KOSPI,한화,HOLDING,지주회사
+064400,KOSPI,LG씨엔에스,SW,소프트웨어·AI
+021240,KOSPI,코웨이,CONSUMER,소비재·유통
+039490,KOSPI,키움증권,FIN,금융
+047040,KOSPI,대우건설,CONSTR,건설·기계·산업재
+009830,KOSPI,한화솔루션,CHEM,정유·화학·에너지
+326030,KOSPI,SK바이오팜,BIO,바이오·헬스케어
+267270,KOSPI,HD건설기계,CONSTR,건설·기계·산업재
+377300,KOSPI,카카오페이,FIN,금융
+000500,KOSPI,가온전선,POWER,전력·에너지설비
+032640,KOSPI,LG유플러스,TELECOM,통신
+241560,KOSPI,두산밥캣,CONSTR,건설·기계·산업재
+000100,KOSPI,유한양행,BIO,바이오·헬스케어
+128940,KOSPI,한미약품,BIO,바이오·헬스케어
+062040,KOSPI,산일전기,POWER,전력·에너지설비
+175330,KOSPI,JB금융지주,FIN,금융
+029780,KOSPI,삼성카드,FIN,금융
+001440,KOSPI,대한전선,POWER,전력·에너지설비
+088350,KOSPI,한화생명,FIN,금융
+271560,KOSPI,오리온,CONSUMER,소비재·유통
+066970,KOSPI,엘앤에프,BATTERY,2차전지
+353200,KOSPI,대덕전자,HW,전자부품·하드웨어
+088980,KOSPI,맥쿼리인프라,FIN,금융
+ADBE,NASDAQ,Adobe Inc.,SW,소프트웨어·AI
+AMD,NASDAQ,Advanced Micro Devices,SEMI,반도체
+ABNB,NASDAQ,Airbnb,INTERNET,인터넷·플랫폼
+ALNY,NASDAQ,Alnylam Pharmaceuticals,BIO,바이오·헬스케어
+GOOGL,NASDAQ,Alphabet Inc. (Class A),INTERNET,인터넷·플랫폼
+GOOG,NASDAQ,Alphabet Inc. (Class C),INTERNET,인터넷·플랫폼
+AMZN,NASDAQ,Amazon,INTERNET,인터넷·플랫폼
+AEP,NASDAQ,American Electric Power,POWER,전력·에너지설비
+AMGN,NASDAQ,Amgen,BIO,바이오·헬스케어
+ADI,NASDAQ,Analog Devices,SEMI,반도체
+AAPL,NASDAQ,Apple Inc.,HW,전자부품·하드웨어
+AMAT,NASDAQ,Applied Materials,SEMI,반도체
+APP,NASDAQ,AppLovin,SW,소프트웨어·AI
+ARM,NASDAQ,Arm Holdings,SEMI,반도체
+ASML,NASDAQ,ASML Holding,SEMI,반도체
+ALAB,NASDAQ,Astera Labs,SEMI,반도체
+ADSK,NASDAQ,Autodesk,SW,소프트웨어·AI
+ADP,NASDAQ,Automatic Data Processing,SW,소프트웨어·AI
+AXON,NASDAQ,Axon Enterprise,DEFENSE,방산·항공우주
+BKR,NASDAQ,Baker Hughes,CHEM,정유·화학·에너지
+BKNG,NASDAQ,Booking Holdings,INTERNET,인터넷·플랫폼
+AVGO,NASDAQ,Broadcom,SEMI,반도체
+CDNS,NASDAQ,Cadence Design Systems,SW,소프트웨어·AI
+CTAS,NASDAQ,Cintas,CONSUMER,소비재·유통
+CSCO,NASDAQ,Cisco,HW,전자부품·하드웨어
+CCEP,NASDAQ,Coca-Cola Europacific Partners,CONSUMER,소비재·유통
+CMCSA,NASDAQ,Comcast,MEDIA,미디어·게임·엔터
+CEG,NASDAQ,Constellation Energy,POWER,전력·에너지설비
+CPRT,NASDAQ,Copart,AUTO,자동차
+CRWV,NASDAQ,CoreWeave,SW,소프트웨어·AI
+COST,NASDAQ,Costco,CONSUMER,소비재·유통
+CRWD,NASDAQ,CrowdStrike,SW,소프트웨어·AI
+CSX,NASDAQ,CSX Corporation,TRANSPORT,조선·해운·운송
+DDOG,NASDAQ,Datadog,SW,소프트웨어·AI
+DXCM,NASDAQ,DexCom,BIO,바이오·헬스케어
+FANG,NASDAQ,Diamondback Energy,CHEM,정유·화학·에너지
+DASH,NASDAQ,DoorDash,INTERNET,인터넷·플랫폼
+EXC,NASDAQ,Exelon,POWER,전력·에너지설비
+FAST,NASDAQ,Fastenal,CONSTR,건설·기계·산업재
+FER,NASDAQ,Ferrovial,CONSTR,건설·기계·산업재
+FTNT,NASDAQ,Fortinet,SW,소프트웨어·AI
+GEHC,NASDAQ,GE HealthCare,BIO,바이오·헬스케어
+GILD,NASDAQ,Gilead Sciences,BIO,바이오·헬스케어
+HONA,NASDAQ,Honeywell Aerospace,DEFENSE,방산·항공우주
+HON,NASDAQ,Honeywell Technologies,CONSTR,건설·기계·산업재
+IDXX,NASDAQ,Idexx Laboratories,BIO,바이오·헬스케어
+INTC,NASDAQ,Intel,SEMI,반도체
+INTU,NASDAQ,Intuit,SW,소프트웨어·AI
+ISRG,NASDAQ,Intuitive Surgical,BIO,바이오·헬스케어
+KDP,NASDAQ,Keurig Dr Pepper,CONSUMER,소비재·유통
+KLAC,NASDAQ,KLA Corporation,SEMI,반도체
+KHC,NASDAQ,Kraft Heinz,CONSUMER,소비재·유통
+LRCX,NASDAQ,Lam Research,SEMI,반도체
+LIN,NASDAQ,Linde plc,CHEM,정유·화학·에너지
+LITE,NASDAQ,Lumentum,SEMI,반도체
+MAR,NASDAQ,Marriott International,CONSUMER,소비재·유통
+MRVL,NASDAQ,Marvell Technology,SEMI,반도체
+MELI,NASDAQ,Mercado Libre,INTERNET,인터넷·플랫폼
+META,NASDAQ,Meta Platforms,INTERNET,인터넷·플랫폼
+MCHP,NASDAQ,Microchip Technology,SEMI,반도체
+MU,NASDAQ,Micron Technology,SEMI,반도체
+MSFT,NASDAQ,Microsoft,SW,소프트웨어·AI
+MSTR,NASDAQ,MicroStrategy,SW,소프트웨어·AI
+MDLZ,NASDAQ,Mondelez International,CONSUMER,소비재·유통
+MPWR,NASDAQ,Monolithic Power Systems,SEMI,반도체
+MNST,NASDAQ,Monster Beverage,CONSUMER,소비재·유통
+NBIS,NASDAQ,Nebius Group,SW,소프트웨어·AI
+NFLX,NASDAQ,"Netflix, Inc.",MEDIA,미디어·게임·엔터
+NVDA,NASDAQ,Nvidia,SEMI,반도체
+NXPI,NASDAQ,NXP Semiconductors,SEMI,반도체
+ORLY,NASDAQ,O'Reilly Automotive,CONSUMER,소비재·유통
+ODFL,NASDAQ,Old Dominion Freight Line,TRANSPORT,조선·해운·운송
+PCAR,NASDAQ,Paccar,AUTO,자동차
+PLTR,NASDAQ,Palantir Technologies,SW,소프트웨어·AI
+PANW,NASDAQ,Palo Alto Networks,SW,소프트웨어·AI
+PAYX,NASDAQ,Paychex,SW,소프트웨어·AI
+PYPL,NASDAQ,PayPal,FIN,금융
+PDD,NASDAQ,PDD Holdings,INTERNET,인터넷·플랫폼
+PEP,NASDAQ,PepsiCo,CONSUMER,소비재·유통
+QCOM,NASDAQ,Qualcomm,SEMI,반도체
+REGN,NASDAQ,Regeneron Pharmaceuticals,BIO,바이오·헬스케어
+RKLB,NASDAQ,Rocket Lab,DEFENSE,방산·항공우주
+ROP,NASDAQ,Roper Technologies,SW,소프트웨어·AI
+ROST,NASDAQ,Ross Stores,CONSUMER,소비재·유통
+SNDK,NASDAQ,Sandisk,HW,전자부품·하드웨어
+STX,NASDAQ,Seagate Technology,HW,전자부품·하드웨어
+SHOP,NASDAQ,Shopify,INTERNET,인터넷·플랫폼
+SPCX,NASDAQ,SpaceX,DEFENSE,방산·항공우주
+SBUX,NASDAQ,Starbucks,CONSUMER,소비재·유통
+SNPS,NASDAQ,Synopsys,SW,소프트웨어·AI
+TMUS,NASDAQ,T-Mobile US,TELECOM,통신
+TTWO,NASDAQ,Take-Two Interactive,MEDIA,미디어·게임·엔터
+TER,NASDAQ,Teradyne,SEMI,반도체
+TSLA,NASDAQ,"Tesla, Inc.",AUTO,자동차
+TXN,NASDAQ,Texas Instruments,SEMI,반도체
+TRI,NASDAQ,Thomson Reuters,SW,소프트웨어·AI
+VRTX,NASDAQ,Vertex Pharmaceuticals,BIO,바이오·헬스케어
+WMT,NASDAQ,Walmart,CONSUMER,소비재·유통
+WBD,NASDAQ,Warner Bros. Discovery,MEDIA,미디어·게임·엔터
+WDC,NASDAQ,Western Digital,HW,전자부품·하드웨어
+WDAY,NASDAQ,"Workday, Inc.",SW,소프트웨어·AI
+XEL,NASDAQ,Xcel Energy,POWER,전력·에너지설비

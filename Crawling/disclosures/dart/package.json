@@ -1,0 +1,13 @@
+{
+  "name": "cosmos-dart-collector",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22.13.0" },
+  "scripts": {
+    "collect:universe": "node scripts/collect-opendart-kospi-top100.mjs --universe-only",
+    "collect:periodic": "node scripts/collect-opendart-kospi-top100.mjs",
+    "test": "node --test tests/opendart-kospi-top100.test.mjs"
+  },
+  "dependencies": { "linkedom": "0.18.13" }
+}

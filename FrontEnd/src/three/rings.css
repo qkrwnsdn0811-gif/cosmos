@@ -1,0 +1,20 @@
+.ring-label {
+  font: 11.5px var(--font);
+  color: rgba(230, 236, 245, 0.55);
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  transition: none; /* 페이드는 useFrame 이 opacity 를 직접 쓴다 — CSS 트랜지션과 겹치면 두 번 감쇠한다 */
+}
+/* 허브(연결 랭크) 링 라벨 — 각 링(10/30/60%)과 같은 금색 램프를 쓴다. 링 자체의 색이 구간을 나타내므로
+   라벨 색도 반드시 같은 순서로 맞춰야 한다 (three/ReferenceRings.tsx 의 HUB_RING_COLORS 와 1:1 대응) */
+.ring-label-hub-0 {
+  color: rgba(244, 217, 160, 0.85);
+}
+.ring-label-hub-1 {
+  color: rgba(217, 179, 108, 0.75);
+}
+.ring-label-hub-2 {
+  color: rgba(169, 130, 76, 0.65);
+}

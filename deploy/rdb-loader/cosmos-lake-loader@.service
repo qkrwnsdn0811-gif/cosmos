@@ -1,0 +1,24 @@
+[Unit]
+Description=COSMOS verified analytics run %i from HDFS to PostgreSQL
+Wants=network-online.target
+After=network-online.target cosmos-hadoop-namenode.service
+
+[Service]
+Type=oneshot
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/cosmos-rdb-loader/current
+EnvironmentFile=/etc/cosmos/rdb-loader.env
+Environment=RDB_LOADER_APP_ROOT=/home/ubuntu/cosmos-rdb-loader/current
+ExecStart=/usr/bin/bash /home/ubuntu/cosmos-rdb-loader/current/deploy/rdb-loader/run-verified-lake.sh %i
+TimeoutStartSec=2h
+TimeoutStopSec=120
+KillMode=control-group
+UMask=0077
+Nice=5
+MemoryHigh=1536M
+MemoryMax=2G
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only

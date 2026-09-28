@@ -1,0 +1,3179 @@
+diff --git a/BackEnd/ANALYSIS_RUN_API.md b/BackEnd/ANALYSIS_RUN_API.md
+new file mode 100644
+--- /dev/null
++++ b/BackEnd/ANALYSIS_RUN_API.md
+@@ -0,0 +1,47 @@
++# Versioned analysis read contract
++
++All news, graph, evidence, and company metric reads use the selected
++`cosmos_analysis.current_*` views or explicit active-run keyed joins.
++The news feed first selects eligible page IDs and then reads article summaries;
++unfiltered cursor pages use the run/sort index instead of scanning every article.
++The publisher owns the active-run switch.
++Live collection, user accounts, scraps, and watchlists remain in `public`.
++Existing scrap lists keep their public article metadata and original links;
++new scrap registration requires an article visible in the selected run.
++An old scrap does not grant access to analysis excluded from the active run.
++
++## Additional response fields
++
++- `GET /api/analysis-runs/active` is public and returns `runId`,
++  `snapshotId`, `asOf`, `counts`, and `displayName`.
++- News list/detail preserve nullable `publishedAt` and expose
++  `sourceRevisionId`, `publishedAtRaw`, and `publicationPrecision`.
++  Pagination uses a separate internal `sort_at`, never a fabricated
++  publication timestamp. Date-range filters match verified publication times.
++- Relationship detail includes `explanation: string | null` and
++  `explanationScope: "HISTORICAL" | null`. This stored, cited explanation
++  describes the relationship's history, separately from the selected score window.
++- Relationship evidence accepts `window=7D|30D|90D` (default `30D`).
++  The source availability interval is `[asOf-window, asOf)`.
++  Both news and disclosures are returned. Each quote has `evidenceId`,
++  `documentId`, `sourceType`, `sourceRevisionId`,
++  `publishedAtRaw`, and `publicationPrecision`.
++  The legacy `newsId` field remains an alias for document ID.
++  Distinct quotes from one document are retained and paginate by
++  `(sort_at, evidenceId)`.
++- `nextRefreshAt` is null for this static publication; no automatic refresh
++  is claimed.
++- Unknown company metric counts and sentiment/impact/confidence values remain
++  null. They are not zero, neutral, or a GNN prediction.
++
++Frontend caches must be invalidated together when the selected `runId` changes.
++The default graph still selects the 30D window. Historical relation storage
++counts and the active graph's window edge count are different quantities.
++
++## Validation
++
++The integration fixtures explicitly capture a selected run rather than relying
++on public rows to leak into the analysis views. Coverage includes unknown
++publication time and pagination, live-collector isolation, nullable metric
++counts, disclosure quotes, same-document multiple quotes, and exact UTC window
++boundaries. Integration tests require an isolated PostgreSQL/Redis environment.
+diff --git a/BackEnd/src/main/java/com/cosmos/api/analysis/AnalysisRunController.java b/BackEnd/src/main/java/com/cosmos/api/analysis/AnalysisRunController.java
+new file mode 100644
+--- /dev/null
++++ b/BackEnd/src/main/java/com/cosmos/api/analysis/AnalysisRunController.java
+@@ -0,0 +1,48 @@
++package com.cosmos.api.analysis;
++
++import com.cosmos.api.global.error.BusinessException;
++import com.cosmos.api.graph.error.GraphErrorCode;
++import java.time.Instant;
++import java.util.Map;
++import java.util.UUID;
++import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
++import org.springframework.transaction.annotation.Isolation;
++import org.springframework.transaction.annotation.Transactional;
++import org.springframework.web.bind.annotation.GetMapping;
++import org.springframework.web.bind.annotation.RestController;
++import tools.jackson.databind.JsonNode;
++import tools.jackson.databind.ObjectMapper;
++
++/** Read-only publication metadata; selecting or changing a run is a loader operation. */
++@RestController
++public class AnalysisRunController {
++    private final NamedParameterJdbcTemplate jdbc;
++    private final ObjectMapper mapper;
++
++    public AnalysisRunController(NamedParameterJdbcTemplate jdbc, ObjectMapper mapper) {
++        this.jdbc = jdbc;
++        this.mapper = mapper;
++    }
++
++    @GetMapping("/api/analysis-runs/active")
++    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
++    public ActiveAnalysisRun active() {
++        return jdbc.query("""
++                SELECT r.run_id, r.snapshot_id, r.as_of_at, r.counts::text AS counts,
++                       COALESCE(NULLIF(r.metadata ->> 'display_name', ''),
++                                '검증된 뉴스·공시 분석') AS display_name
++                FROM cosmos_analysis.runs r
++                JOIN cosmos_analysis.active_run a ON a.run_id = r.run_id
++                WHERE a.singleton = TRUE
++                """, Map.of(), (rs, rowNum) -> new ActiveAnalysisRun(
++                        rs.getString("run_id"), rs.getObject("snapshot_id", UUID.class),
++                        rs.getTimestamp("as_of_at").toInstant(), mapper.readTree(rs.getString("counts")),
++                        rs.getString("display_name")))
++                .stream().findFirst()
++                .orElseThrow(() -> new BusinessException(GraphErrorCode.GRAPH_SNAPSHOT_NOT_FOUND));
++    }
++
++    public record ActiveAnalysisRun(
++            String runId, UUID snapshotId, Instant asOf, JsonNode counts, String displayName
++    ) {}
++}
+diff --git a/BackEnd/src/main/java/com/cosmos/api/company/dto/CompanyMetricHistoryItemResponse.java b/BackEnd/src/main/java/com/cosmos/api/company/dto/CompanyMetricHistoryItemResponse.java
+--- a/BackEnd/src/main/java/com/cosmos/api/company/dto/CompanyMetricHistoryItemResponse.java
++++ b/BackEnd/src/main/java/com/cosmos/api/company/dto/CompanyMetricHistoryItemResponse.java
+@@ -6,11 +6,11 @@
+ 
+ public record CompanyMetricHistoryItemResponse(
+         Instant measuredAt,
+-        int newsMentionCount,
+-        int positiveCount,
+-        int negativeCount,
++        Integer newsMentionCount,
++        Integer positiveCount,
++        Integer negativeCount,
+         BigDecimal sentimentScore,
+-        int relationshipCount
++        Integer relationshipCount
+ ) {
+ 
+     public static CompanyMetricHistoryItemResponse from(CompanyMetricHistory metric) {
+diff --git a/BackEnd/src/main/java/com/cosmos/api/company/entity/CompanyMetricHistory.java b/BackEnd/src/main/java/com/cosmos/api/company/entity/CompanyMetricHistory.java
+--- a/BackEnd/src/main/java/com/cosmos/api/company/entity/CompanyMetricHistory.java
++++ b/BackEnd/src/main/java/com/cosmos/api/company/entity/CompanyMetricHistory.java
+@@ -15,7 +15,8 @@
+ import lombok.NoArgsConstructor;
+ 
+ @Entity
+-@Table(name = "company_metric_history")
++@Table(name = "current_company_metric_history", schema = "cosmos_analysis")
++@org.hibernate.annotations.Immutable
+ @Getter
+ @NoArgsConstructor(access = AccessLevel.PROTECTED)
+ public class CompanyMetricHistory {
+@@ -34,20 +35,20 @@
+     @Column(name = "window_type", nullable = false, insertable = false, updatable = false, length = 30)
+     private String windowType;
+ 
+-    @Column(name = "news_mention_count", nullable = false)
+-    private int newsMentionCount;
++    @Column(name = "news_mention_count")
++    private Integer newsMentionCount;
+ 
+-    @Column(name = "positive_count", nullable = false)
+-    private int positiveCount;
++    @Column(name = "positive_count")
++    private Integer positiveCount;
+ 
+-    @Column(name = "negative_count", nullable = false)
+-    private int negativeCount;
++    @Column(name = "negative_count")
++    private Integer negativeCount;
+ 
+     @Column(name = "sentiment_score", precision = 18, scale = 6)
+     private BigDecimal sentimentScore;
+ 
+-    @Column(name = "relationship_count", nullable = false)
+-    private int relationshipCount;
++    @Column(name = "relationship_count")
++    private Integer relationshipCount;
+ 
+     @Column(name = "metric_version", nullable = false, length = 50)
+     private String metricVersion;
+diff --git a/BackEnd/src/main/java/com/cosmos/api/global/security/SecurityConfig.java b/BackEnd/src/main/java/com/cosmos/api/global/security/SecurityConfig.java
+--- a/BackEnd/src/main/java/com/cosmos/api/global/security/SecurityConfig.java
++++ b/BackEnd/src/main/java/com/cosmos/api/global/security/SecurityConfig.java
+@@ -34,6 +34,7 @@
+             "/api/news/**",
+             "/api/graphs/**",
+             "/api/relationships/**",
++            "/api/analysis-runs/active",
+             "/api/community/**"
+     };
+ 
+diff --git a/BackEnd/src/main/java/com/cosmos/api/graph/controller/GraphController.java b/BackEnd/src/main/java/com/cosmos/api/graph/controller/GraphController.java
+--- a/BackEnd/src/main/java/com/cosmos/api/graph/controller/GraphController.java
++++ b/BackEnd/src/main/java/com/cosmos/api/graph/controller/GraphController.java
+@@ -56,8 +56,9 @@
+     public CursorPageResponse<RelationshipEvidenceResponse> findRelationshipEvidence(
+             @PathVariable UUID relationshipId,
+             @RequestParam(required = false) String cursor,
++            @RequestParam(defaultValue = "30D") String window,
+             @RequestParam(defaultValue = "10") @Min(1) @Max(20) int size
+     ) {
+-        return graphService.findRelationshipEvidence(relationshipId, cursor, size);
++        return graphService.findRelationshipEvidence(relationshipId, cursor, size, window);
+     }
+ }
+diff --git a/BackEnd/src/main/java/com/cosmos/api/graph/dto/RelationshipDetailResponse.java b/BackEnd/src/main/java/com/cosmos/api/graph/dto/RelationshipDetailResponse.java
+--- a/BackEnd/src/main/java/com/cosmos/api/graph/dto/RelationshipDetailResponse.java
++++ b/BackEnd/src/main/java/com/cosmos/api/graph/dto/RelationshipDetailResponse.java
+@@ -18,6 +18,17 @@
+         BigDecimal confidence,
+         int evidenceCount,
+         Instant asOfAt,
+-        boolean personalized
++        boolean personalized,
++        String explanation,
++        String explanationScope
+ ) {
++    public RelationshipDetailResponse(UUID relationshipId, RelationshipCompanyResponse sourceCompany,
++            RelationshipCompanyResponse targetCompany, String relationshipType, String directionality,
++            String window, BigDecimal score, BigDecimal newsScore, BigDecimal disclosureScore,
++            String impactDirection, BigDecimal confidence, int evidenceCount, Instant asOfAt,
++            boolean personalized) {
++        this(relationshipId, sourceCompany, targetCompany, relationshipType, directionality, window,
++                score, newsScore, disclosureScore, impactDirection, confidence, evidenceCount, asOfAt,
++                personalized, null, null);
++    }
+ }
+diff --git a/BackEnd/src/main/java/com/cosmos/api/graph/dto/RelationshipEvidenceResponse.java b/BackEnd/src/main/java/com/cosmos/api/graph/dto/RelationshipEvidenceResponse.java
+--- a/BackEnd/src/main/java/com/cosmos/api/graph/dto/RelationshipEvidenceResponse.java
++++ b/BackEnd/src/main/java/com/cosmos/api/graph/dto/RelationshipEvidenceResponse.java
+@@ -13,6 +13,18 @@
+         Instant publishedAt,
+         String evidenceSentence,
+         BigDecimal contributionScore,
+-        BigDecimal confidence
++        BigDecimal confidence,
++        UUID documentId,
++        UUID evidenceId,
++        String sourceType,
++        String sourceRevisionId,
++        String publishedAtRaw,
++        String publicationPrecision
+ ) {
++    public RelationshipEvidenceResponse(UUID newsId, String title, String summary, String publisher,
++            String originalUrl, Instant publishedAt, String evidenceSentence,
++            BigDecimal contributionScore, BigDecimal confidence) {
++        this(newsId, title, summary, publisher, originalUrl, publishedAt, evidenceSentence,
++                contributionScore, confidence, newsId, null, "NEWS", null, null, null);
++    }
+ }
+diff --git a/BackEnd/src/main/java/com/cosmos/api/graph/repository/GraphQueryRepository.java b/BackEnd/src/main/java/com/cosmos/api/graph/repository/GraphQueryRepository.java
+--- a/BackEnd/src/main/java/com/cosmos/api/graph/repository/GraphQueryRepository.java
++++ b/BackEnd/src/main/java/com/cosmos/api/graph/repository/GraphQueryRepository.java
+@@ -23,7 +23,7 @@
+     public Optional<SnapshotRow> findLatestPublishedSnapshot() {
+         return jdbcTemplate.query("""
+                         SELECT snapshot_id, as_of_at
+-                        FROM graph_snapshot
++                        FROM cosmos_analysis.current_graph_snapshot
+                         WHERE status = 'PUBLISHED'
+                         ORDER BY as_of_at DESC, snapshot_id DESC
+                         LIMIT 1
+@@ -98,8 +98,8 @@
+                         SELECT cr.relationship_id, cr.source_company_id, cr.target_company_id,
+                                rt.code AS relationship_type, rsc.score,
+                                rsc.news_score, rsc.disclosure_score, rsc.impact_direction
+-                        FROM relationship_score_current rsc
+-                        JOIN company_relationship cr ON cr.relationship_id = rsc.relationship_id
++                        FROM cosmos_analysis.current_relationship_score_current rsc
++                        JOIN cosmos_analysis.current_company_relationship cr ON cr.relationship_id = rsc.relationship_id
+                         JOIN relationship_type rt
+                           ON rt.relationship_type_id = cr.relationship_type_id
+                         JOIN company source_company
+@@ -133,15 +133,18 @@
+                                rt.code AS relationship_type, rt.directionality,
+                                rsc.window_type, rsc.score, rsc.news_score,
+                                rsc.disclosure_score, rsc.impact_direction,
+-                               rsc.confidence, rsc.evidence_count, rsc.as_of_at
+-                        FROM company_relationship cr
++                               rsc.confidence, rsc.evidence_count, rsc.as_of_at,
++                               rc.explanation ->> 'summary' AS explanation
++                        FROM cosmos_analysis.current_company_relationship cr
++                        LEFT JOIN cosmos_analysis.current_relationship_context rc
++                          ON rc.relationship_id = cr.relationship_id
+                         JOIN company source_company ON source_company.company_id = cr.source_company_id
+                         JOIN company target_company ON target_company.company_id = cr.target_company_id
+                         JOIN relationship_type rt ON rt.relationship_type_id = cr.relationship_type_id
+-                        JOIN relationship_score_current rsc
++                        JOIN cosmos_analysis.current_relationship_score_current rsc
+                           ON rsc.relationship_id = cr.relationship_id
+                          AND rsc.window_type = :window
+-                        JOIN graph_snapshot gs ON gs.snapshot_id = rsc.snapshot_id
++                        JOIN cosmos_analysis.current_graph_snapshot gs ON gs.snapshot_id = rsc.snapshot_id
+                         WHERE cr.relationship_id = :relationshipId
+                           AND source_company.status = 'ACTIVE'
+                           AND target_company.status = 'ACTIVE'
+@@ -165,14 +168,14 @@
+                         rs.getString("impact_direction"),
+                         rs.getBigDecimal("confidence"),
+                         rs.getInt("evidence_count"),
+-                        rs.getTimestamp("as_of_at").toInstant()))
++                        rs.getTimestamp("as_of_at").toInstant(), rs.getString("explanation")))
+                 .stream().findFirst();
+     }
+ 
+     public boolean existsRelationship(UUID relationshipId) {
+         Boolean exists = jdbcTemplate.queryForObject("""
+                         SELECT EXISTS (
+-                            SELECT 1 FROM company_relationship
++                            SELECT 1 FROM cosmos_analysis.current_company_relationship
+                             WHERE relationship_id = :relationshipId
+                         )
+                         """, Map.of("relationshipId", relationshipId), Boolean.class);
+@@ -183,39 +186,48 @@
+             UUID relationshipId,
+             Instant cursorPublishedAt,
+             UUID cursorNewsId,
+-            int limit
++            int limit,
++            Instant availableFrom,
++            Instant availableTo
+     ) {
+         String sql = """
+-                WITH representative_evidence AS (
+-                    SELECT DISTINCT ON (sd.document_id)
++                WITH selected_evidence AS (
++                    SELECT re.relationship_evidence_id AS evidence_id,
+                            sd.document_id AS news_id, sd.title, sd.summary,
+-                           na.publisher, sd.original_url, sd.published_at,
++                           COALESCE(na.publisher, ds.name) AS publisher,
++                           sd.original_url, sd.published_at, sd.document_type AS source_type,
++                           dc.sort_at, ec.source_revision_id,
++                           COALESCE(ec.published_at_raw, dc.published_at_raw) AS published_at_raw,
++                           COALESCE(ec.publication_precision, dc.publication_precision) AS publication_precision,
+                            de.sentence_text AS evidence_sentence,
+                            re.contribution_score, de.confidence
+-                    FROM relationship_evidence re
+-                    JOIN source_document sd ON sd.document_id = re.document_id
+-                    JOIN news_article na ON na.document_id = sd.document_id
+-                    LEFT JOIN document_evidence de ON de.evidence_id = re.evidence_id
++                    FROM cosmos_analysis.current_relationship_evidence re
++                    JOIN cosmos_analysis.current_source_document sd ON sd.document_id = re.document_id
++                    JOIN cosmos_analysis.current_document_context dc ON dc.document_id = sd.document_id
++                    JOIN data_source ds ON ds.source_id = sd.source_id
++                    LEFT JOIN cosmos_analysis.current_news_article na ON na.document_id = sd.document_id
++                    JOIN cosmos_analysis.current_document_evidence de ON de.evidence_id = re.evidence_id
++                    LEFT JOIN cosmos_analysis.current_evidence_context ec ON ec.evidence_id = de.evidence_id
+                     WHERE re.relationship_id = :relationshipId
+-                      AND sd.document_type = 'NEWS'
+-                      AND sd.published_at IS NOT NULL
+-                    ORDER BY sd.document_id,
+-                             re.contribution_score DESC NULLS LAST,
+-                             re.relationship_evidence_id
++                      AND ec.available_at >= :availableFrom
++                      AND ec.available_at < :availableTo
+                 )
+-                SELECT news_id, title, summary, publisher, original_url, published_at,
+-                       evidence_sentence, contribution_score, confidence
+-                FROM representative_evidence
++                SELECT evidence_id, news_id, title, summary, publisher, original_url, published_at,
++                       evidence_sentence, contribution_score, confidence, sort_at,
++                       source_type, source_revision_id, published_at_raw, publication_precision
++                FROM selected_evidence
+                 WHERE CAST(:cursorPublishedAt AS TIMESTAMPTZ) IS NULL OR
+-                      (published_at, news_id) <
++                      (sort_at, evidence_id) <
+                       (CAST(:cursorPublishedAt AS TIMESTAMPTZ), CAST(:cursorNewsId AS UUID))
+-                ORDER BY published_at DESC, news_id DESC
++                ORDER BY sort_at DESC, evidence_id DESC
+                 LIMIT :limit
+                 """;
+         MapSqlParameterSource params = new MapSqlParameterSource()
+                 .addValue("relationshipId", relationshipId)
+                 .addValue("cursorPublishedAt", cursorPublishedAt == null ? null : Timestamp.from(cursorPublishedAt))
+                 .addValue("cursorNewsId", cursorNewsId)
++                .addValue("availableFrom", Timestamp.from(availableFrom))
++                .addValue("availableTo", Timestamp.from(availableTo))
+                 .addValue("limit", limit);
+         return jdbcTemplate.query(sql, params, (rs, rowNum) -> new EvidenceRow(
+                 rs.getObject("news_id", UUID.class),
+@@ -223,10 +235,18 @@
+                 rs.getString("summary"),
+                 rs.getString("publisher"),
+                 rs.getString("original_url"),
+-                rs.getTimestamp("published_at").toInstant(),
++                instant(rs, "published_at"),
+                 rs.getString("evidence_sentence"),
+                 rs.getBigDecimal("contribution_score"),
+-                rs.getBigDecimal("confidence")));
++                rs.getBigDecimal("confidence"), rs.getObject("evidence_id", UUID.class),
++                rs.getTimestamp("sort_at").toInstant(), rs.getString("source_type"),
++                rs.getString("source_revision_id"), rs.getString("published_at_raw"),
++                rs.getString("publication_precision")));
++    }
++
++    private Instant instant(java.sql.ResultSet rs, String column) throws java.sql.SQLException {
++        Timestamp value = rs.getTimestamp(column);
++        return value == null ? null : value.toInstant();
+     }
+ 
+     public record SnapshotRow(UUID snapshotId, Instant asOfAt) {
+@@ -262,7 +282,8 @@
+             String impactDirection,
+             BigDecimal confidence,
+             int evidenceCount,
+-            Instant asOfAt
++            Instant asOfAt,
++            String explanation
+     ) {
+     }
+ 
+@@ -275,7 +296,13 @@
+             Instant publishedAt,
+             String evidenceSentence,
+             BigDecimal contributionScore,
+-            BigDecimal confidence
++            BigDecimal confidence,
++            UUID evidenceId,
++            Instant sortAt,
++            String sourceType,
++            String sourceRevisionId,
++            String publishedAtRaw,
++            String publicationPrecision
+     ) {
+     }
+ }
+diff --git a/BackEnd/src/main/java/com/cosmos/api/graph/service/GraphService.java b/BackEnd/src/main/java/com/cosmos/api/graph/service/GraphService.java
+--- a/BackEnd/src/main/java/com/cosmos/api/graph/service/GraphService.java
++++ b/BackEnd/src/main/java/com/cosmos/api/graph/service/GraphService.java
+@@ -70,7 +70,7 @@
+         return new LatestGraphResponse(
+                 snapshot.snapshotId(),
+                 snapshot.asOfAt(),
+-                snapshot.asOfAt().plus(1, ChronoUnit.HOURS),
++                null,
+                 false,
+                 nodeRows.stream().map(this::toNode).toList(),
+                 edges.stream().map(this::toEdge).toList());
+@@ -127,7 +127,7 @@
+                 row.confidence(),
+                 row.evidenceCount(),
+                 row.asOfAt(),
+-                false);
++                false, row.explanation(), row.explanation() == null ? null : "HISTORICAL");
+     }
+ 
+     public CursorPageResponse<RelationshipEvidenceResponse> findRelationshipEvidence(
+@@ -135,6 +135,13 @@
+             String encodedCursor,
+             int size
+     ) {
++        return findRelationshipEvidence(relationshipId, encodedCursor, size, "30D");
++    }
++
++    public CursorPageResponse<RelationshipEvidenceResponse> findRelationshipEvidence(
++            UUID relationshipId, String encodedCursor, int size, String windowValue
++    ) {
++        MetricWindow window = MetricWindow.from(windowValue);
+         if (size < 1 || size > 20) {
+             throw new BusinessException(CommonErrorCode.VALIDATION_FAILED);
+         }
+@@ -142,22 +149,25 @@
+             throw new BusinessException(GraphErrorCode.RELATIONSHIP_NOT_FOUND);
+         }
+         EvidenceCursor cursor = cursorCodec.decode(encodedCursor);
++        SnapshotRow snapshot = latestSnapshot();
+         List<EvidenceRow> rows = graphRepository.findNewsEvidence(
+                 relationshipId,
+                 cursor == null ? null : cursor.publishedAt(),
+                 cursor == null ? null : cursor.newsId(),
+-                size + 1);
++                size + 1, snapshot.asOfAt().minus(window.days(), ChronoUnit.DAYS), snapshot.asOfAt());
+         boolean hasNext = rows.size() > size;
+         List<EvidenceRow> pageRows = hasNext ? rows.subList(0, size) : rows;
+         String nextCursor = null;
+         if (hasNext && !pageRows.isEmpty()) {
+             EvidenceRow last = pageRows.getLast();
+-            nextCursor = cursorCodec.encode(new EvidenceCursor(last.publishedAt(), last.newsId()));
++            nextCursor = cursorCodec.encode(new EvidenceCursor(last.sortAt(), last.evidenceId()));
+         }
+         List<RelationshipEvidenceResponse> items = pageRows.stream()
+                 .map(row -> new RelationshipEvidenceResponse(
+                         row.newsId(), row.title(), row.summary(), row.publisher(), row.originalUrl(),
+-                        row.publishedAt(), row.evidenceSentence(), row.contributionScore(), row.confidence()))
++                        row.publishedAt(), row.evidenceSentence(), row.contributionScore(), row.confidence(),
++                        row.newsId(), row.evidenceId(), row.sourceType(), row.sourceRevisionId(),
++                        row.publishedAtRaw(), row.publicationPrecision()))
+                 .toList();
+         return CursorPageResponse.of(items, nextCursor, hasNext);
+     }
+diff --git a/BackEnd/src/main/java/com/cosmos/api/news/dto/NewsDetailResponse.java b/BackEnd/src/main/java/com/cosmos/api/news/dto/NewsDetailResponse.java
+--- a/BackEnd/src/main/java/com/cosmos/api/news/dto/NewsDetailResponse.java
++++ b/BackEnd/src/main/java/com/cosmos/api/news/dto/NewsDetailResponse.java
+@@ -14,8 +14,18 @@
+         Instant publishedAt,
+         List<NewsRelatedCompanyResponse> relatedCompanies,
+         List<NewsEvidenceResponse> evidence,
+-        boolean scrapped
++        boolean scrapped,
++        String sourceRevisionId,
++        String publishedAtRaw,
++        String publicationPrecision
+ ) {
++    public NewsDetailResponse(UUID newsId, String title, String summary, String publisher,
++            String author, String originalUrl, Instant publishedAt,
++            List<NewsRelatedCompanyResponse> relatedCompanies, List<NewsEvidenceResponse> evidence,
++            boolean scrapped) {
++        this(newsId, title, summary, publisher, author, originalUrl, publishedAt,
++                relatedCompanies, evidence, scrapped, null, null, null);
++    }
+     public NewsDetailResponse {
+         relatedCompanies = List.copyOf(relatedCompanies);
+         evidence = List.copyOf(evidence);
+diff --git a/BackEnd/src/main/java/com/cosmos/api/news/dto/NewsSummaryResponse.java b/BackEnd/src/main/java/com/cosmos/api/news/dto/NewsSummaryResponse.java
+--- a/BackEnd/src/main/java/com/cosmos/api/news/dto/NewsSummaryResponse.java
++++ b/BackEnd/src/main/java/com/cosmos/api/news/dto/NewsSummaryResponse.java
+@@ -13,8 +13,17 @@
+         Instant publishedAt,
+         String sentiment,
+         List<NewsCompanySummaryResponse> relatedCompanies,
+-        boolean scrapped
++        boolean scrapped,
++        String sourceRevisionId,
++        String publishedAtRaw,
++        String publicationPrecision
+ ) {
++    public NewsSummaryResponse(UUID newsId, String title, String summary, String publisher,
++            String originalUrl, Instant publishedAt, String sentiment,
++            List<NewsCompanySummaryResponse> relatedCompanies, boolean scrapped) {
++        this(newsId, title, summary, publisher, originalUrl, publishedAt, sentiment,
++                relatedCompanies, scrapped, null, null, null);
++    }
+     public NewsSummaryResponse {
+         relatedCompanies = List.copyOf(relatedCompanies);
+     }
+diff --git a/BackEnd/src/main/java/com/cosmos/api/news/repository/NewsQueryRepository.java b/BackEnd/src/main/java/com/cosmos/api/news/repository/NewsQueryRepository.java
+--- a/BackEnd/src/main/java/com/cosmos/api/news/repository/NewsQueryRepository.java
++++ b/BackEnd/src/main/java/com/cosmos/api/news/repository/NewsQueryRepository.java
+@@ -29,7 +29,7 @@
+         return jdbcTemplate.query("""
+                         SELECT cd.document_id AS news_id, c.company_id, c.name,
+                                cd.sentiment, cd.relevance_score, cd.impact_score
+-                        FROM company_document cd
++                        FROM cosmos_analysis.current_company_document cd
+                         JOIN company c ON c.company_id = cd.company_id
+                         WHERE cd.document_id IN (:newsIds)
+                           AND cd.is_service_visible = TRUE
+@@ -43,19 +43,20 @@
+         return jdbcTemplate.query("""
+                         SELECT sd.document_id AS news_id, sd.title, sd.summary, na.publisher,
+                                na.author, sd.original_url, sd.published_at,
++                               dc.source_revision_id, dc.published_at_raw, dc.publication_precision,
+                                EXISTS (
+                                    SELECT 1 FROM user_scrap us
+                                    WHERE us.document_id = sd.document_id
+                                      AND us.user_id = CAST(:userId AS BIGINT)
+                                ) AS scrapped
+-                        FROM source_document sd
+-                        JOIN news_article na ON na.document_id = sd.document_id
++                        FROM cosmos_analysis.current_source_document sd
++                        JOIN cosmos_analysis.current_news_article na ON na.document_id = sd.document_id
++                        JOIN cosmos_analysis.current_document_context dc ON dc.document_id = sd.document_id
+                         WHERE sd.document_id = :newsId
+                           AND sd.document_type = 'NEWS'
+-                          AND sd.published_at IS NOT NULL
+                           AND EXISTS (
+                               SELECT 1
+-                              FROM company_document cd
++                              FROM cosmos_analysis.current_company_document cd
+                               JOIN company c ON c.company_id = cd.company_id
+                               WHERE cd.document_id = sd.document_id
+                                 AND cd.is_service_visible = TRUE
+@@ -72,16 +73,17 @@
+                         rs.getString("publisher"),
+                         rs.getString("author"),
+                         rs.getString("original_url"),
+-                        rs.getTimestamp("published_at").toInstant(),
+-                        rs.getBoolean("scrapped")))
++                        instant(rs, "published_at"),
++                        rs.getBoolean("scrapped"), rs.getString("source_revision_id"),
++                        rs.getString("published_at_raw"), rs.getString("publication_precision")))
+                 .stream().findFirst();
+     }
+ 
+     public List<EvidenceRow> findEvidence(UUID newsId) {
+         return jdbcTemplate.query("""
+                         SELECT de.sentence_text, de.confidence
+-                        FROM document_evidence de
+-                        JOIN company_document cd
++                        FROM cosmos_analysis.current_document_evidence de
++                        JOIN cosmos_analysis.current_company_document cd
+                           ON cd.document_id = de.document_id
+                          AND cd.company_id = de.company_id
+                         JOIN company c ON c.company_id = cd.company_id
+@@ -104,21 +106,16 @@
+             Long userId
+     ) {
+         String sql = """
+-                SELECT sd.document_id AS news_id, sd.title, sd.summary, na.publisher,
+-                       sd.original_url, sd.published_at, representative.sentiment,
+-                       EXISTS (
+-                           SELECT 1 FROM user_scrap us
+-                           WHERE us.document_id = sd.document_id
+-                             AND us.user_id = CAST(:userId AS BIGINT)
+-                       ) AS scrapped
+-                FROM source_document sd
+-                JOIN news_article na ON na.document_id = sd.document_id
+-                JOIN LATERAL (
+-                    SELECT cd.sentiment
+-                    FROM company_document cd
++                WITH selected_run AS MATERIALIZED (
++                    SELECT run_id FROM cosmos_analysis.active_run WHERE singleton = TRUE
++                ),
++                eligible_mentions AS MATERIALIZED (
++                    SELECT DISTINCT ON (cd.document_id)
++                           cd.run_id, cd.document_id, cd.sentiment
++                    FROM cosmos_analysis.company_document cd
++                    JOIN selected_run selected ON selected.run_id = cd.run_id
+                     JOIN company c ON c.company_id = cd.company_id
+-                    WHERE cd.document_id = sd.document_id
+-                      AND cd.is_service_visible = TRUE
++                    WHERE cd.is_service_visible = TRUE
+                       AND c.status = 'ACTIVE'
+                       AND (CAST(:companyId AS UUID) IS NULL OR cd.company_id = CAST(:companyId AS UUID))
+                       AND (CAST(:sentiment AS TEXT) IS NULL OR cd.sentiment = CAST(:sentiment AS TEXT))
+@@ -127,11 +124,21 @@
+                           WHERE ci.company_id = cd.company_id
+                             AND ci.industry_id = CAST(:industryId AS UUID)
+                       ))
+-                    ORDER BY cd.relevance_score DESC NULLS LAST, cd.company_id
+-                    LIMIT 1
+-                ) representative ON TRUE
+-                WHERE sd.document_type = 'NEWS'
+-                  AND sd.published_at IS NOT NULL
++                    ORDER BY cd.document_id, cd.relevance_score DESC NULLS LAST, cd.company_id
++                ),
++                selected_page AS MATERIALIZED (
++                    SELECT eligible.run_id, eligible.document_id, eligible.sentiment, dc.sort_at
++                    FROM eligible_mentions eligible
++                    JOIN cosmos_analysis.document_context dc
++                      ON dc.run_id = eligible.run_id AND dc.document_id = eligible.document_id
++                    JOIN cosmos_analysis.source_document sd
++                      ON sd.run_id = eligible.run_id AND sd.document_id = eligible.document_id
++                    WHERE sd.document_type = 'NEWS'
++                  AND EXISTS (
++                      SELECT 1 FROM cosmos_analysis.news_article available_article
++                      WHERE available_article.run_id = eligible.run_id
++                        AND available_article.document_id = eligible.document_id
++                  )
+                   AND (CAST(:keyword AS TEXT) IS NULL
+                        OR lower(sd.title) LIKE CAST(:keywordPattern AS TEXT) ESCAPE '\\')
+                   AND (CAST(:fromInclusive AS TIMESTAMPTZ) IS NULL
+@@ -139,11 +146,33 @@
+                   AND (CAST(:toExclusive AS TIMESTAMPTZ) IS NULL
+                        OR sd.published_at < CAST(:toExclusive AS TIMESTAMPTZ))
+                   AND (CAST(:cursorPublishedAt AS TIMESTAMPTZ) IS NULL OR
+-                       (sd.published_at, sd.document_id) <
++                       (dc.sort_at, sd.document_id) <
+                        (CAST(:cursorPublishedAt AS TIMESTAMPTZ), CAST(:cursorNewsId AS UUID)))
+-                ORDER BY sd.published_at DESC, sd.document_id DESC
+-                LIMIT :limit
++                    ORDER BY dc.sort_at DESC, sd.document_id DESC
++                    LIMIT :limit
++                )
++                SELECT sd.document_id AS news_id, sd.title, sd.summary, na.publisher,
++                       sd.original_url, sd.published_at, page.sort_at, page.sentiment,
++                       dc.source_revision_id, dc.published_at_raw, dc.publication_precision,
++                       EXISTS (
++                           SELECT 1 FROM user_scrap us
++                           WHERE us.document_id = page.document_id
++                             AND us.user_id = CAST(:userId AS BIGINT)
++                       ) AS scrapped
++                FROM selected_page page
++                JOIN cosmos_analysis.source_document sd
++                  ON sd.run_id = page.run_id AND sd.document_id = page.document_id
++                JOIN cosmos_analysis.news_article na
++                  ON na.run_id = page.run_id AND na.document_id = page.document_id
++                JOIN cosmos_analysis.document_context dc
++                  ON dc.run_id = page.run_id AND dc.document_id = page.document_id
++                ORDER BY page.sort_at DESC, page.document_id DESC
+                 """;
++        if (condition.companyId() == null && condition.sentiment() == null
++                && condition.industryId() == null && condition.keyword() == null
++                && fromInclusive == null && toExclusive == null) {
++            sql = orderedFeedSql();
++        }
+         MapSqlParameterSource params = new MapSqlParameterSource()
+                 .addValue("keyword", condition.keyword())
+                 .addValue("keywordPattern", likePattern(condition.keyword()))
+@@ -159,12 +188,77 @@
+         return jdbcTemplate.query(sql, params, this::mapNews);
+     }
+ 
++    /**
++     * Unfiltered feeds can stop at the first page in the run/sort index. Do not
++     * materialize every article or every company mention just to return 20 rows.
++     * All existence checks bind both run_id and document_id to their PK indexes.
++     */
++    private String orderedFeedSql() {
++        return """
++                WITH selected_page AS MATERIALIZED (
++                    SELECT dc.run_id, dc.document_id, dc.sort_at
++                    FROM cosmos_analysis.document_context dc
++                    WHERE dc.run_id = (
++                        SELECT run_id FROM cosmos_analysis.active_run WHERE singleton = TRUE
++                    )
++                      AND (CAST(:cursorPublishedAt AS TIMESTAMPTZ) IS NULL OR
++                           (dc.sort_at, dc.document_id) <
++                           (CAST(:cursorPublishedAt AS TIMESTAMPTZ), CAST(:cursorNewsId AS UUID)))
++                      AND EXISTS (
++                          SELECT 1 FROM cosmos_analysis.source_document sd
++                          WHERE sd.run_id = dc.run_id AND sd.document_id = dc.document_id
++                            AND sd.document_type = 'NEWS'
++                      )
++                      AND EXISTS (
++                          SELECT 1 FROM cosmos_analysis.news_article na
++                          WHERE na.run_id = dc.run_id AND na.document_id = dc.document_id
++                      )
++                      AND EXISTS (
++                          SELECT 1 FROM cosmos_analysis.company_document cd
++                          JOIN company c ON c.company_id = cd.company_id
++                          WHERE cd.run_id = dc.run_id AND cd.document_id = dc.document_id
++                            AND cd.is_service_visible = TRUE AND c.status = 'ACTIVE'
++                      )
++                    ORDER BY dc.sort_at DESC, dc.document_id DESC
++                    LIMIT :limit
++                ),
++                representatives AS MATERIALIZED (
++                    SELECT DISTINCT ON (cd.document_id) cd.document_id, cd.sentiment
++                    FROM selected_page page
++                    JOIN cosmos_analysis.company_document cd
++                      ON cd.run_id = page.run_id AND cd.document_id = page.document_id
++                    JOIN company c ON c.company_id = cd.company_id
++                    WHERE cd.is_service_visible = TRUE AND c.status = 'ACTIVE'
++                    ORDER BY cd.document_id, cd.relevance_score DESC NULLS LAST, cd.company_id
++                )
++                SELECT sd.document_id AS news_id, sd.title, sd.summary, na.publisher,
++                       sd.original_url, sd.published_at, page.sort_at, representative.sentiment,
++                       dc.source_revision_id, dc.published_at_raw, dc.publication_precision,
++                       EXISTS (
++                           SELECT 1 FROM user_scrap us
++                           WHERE us.document_id = page.document_id
++                             AND us.user_id = CAST(:userId AS BIGINT)
++                       ) AS scrapped
++                FROM selected_page page
++                JOIN representatives representative ON representative.document_id = page.document_id
++                JOIN cosmos_analysis.source_document sd
++                  ON sd.run_id = page.run_id AND sd.document_id = page.document_id
++                JOIN cosmos_analysis.news_article na
++                  ON na.run_id = page.run_id AND na.document_id = page.document_id
++                JOIN cosmos_analysis.document_context dc
++                  ON dc.run_id = page.run_id AND dc.document_id = page.document_id
++                ORDER BY page.sort_at DESC, page.document_id DESC
++                """;
++    }
++
+     private NewsRow mapNews(ResultSet rs, int rowNum) throws SQLException {
+         return new NewsRow(
+                 rs.getObject("news_id", UUID.class), rs.getString("title"),
+                 rs.getString("summary"), rs.getString("publisher"), rs.getString("original_url"),
+-                rs.getTimestamp("published_at").toInstant(), rs.getString("sentiment"),
+-                rs.getBoolean("scrapped"));
++                instant(rs, "published_at"), rs.getString("sentiment"),
++                rs.getBoolean("scrapped"), instant(rs, "sort_at"),
++                rs.getString("source_revision_id"), rs.getString("published_at_raw"),
++                rs.getString("publication_precision"));
+     }
+ 
+     private RelatedCompanyRow mapRelatedCompany(ResultSet rs, int rowNum) throws SQLException {
+@@ -189,15 +283,22 @@
+         return value == null ? null : Timestamp.from(value);
+     }
+ 
++    private Instant instant(ResultSet rs, String column) throws SQLException {
++        Timestamp value = rs.getTimestamp(column);
++        return value == null ? null : value.toInstant();
++    }
++
+     public record NewsRow(
+             UUID newsId, String title, String summary, String publisher, String originalUrl,
+-            Instant publishedAt, String sentiment, boolean scrapped
++            Instant publishedAt, String sentiment, boolean scrapped, Instant sortAt,
++            String sourceRevisionId, String publishedAtRaw, String publicationPrecision
+     ) {
+     }
+ 
+     public record NewsDetailRow(
+             UUID newsId, String title, String summary, String publisher, String author,
+-            String originalUrl, Instant publishedAt, boolean scrapped
++            String originalUrl, Instant publishedAt, boolean scrapped,
++            String sourceRevisionId, String publishedAtRaw, String publicationPrecision
+     ) {
+     }
+ 
+diff --git a/BackEnd/src/main/java/com/cosmos/api/news/service/NewsService.java b/BackEnd/src/main/java/com/cosmos/api/news/service/NewsService.java
+--- a/BackEnd/src/main/java/com/cosmos/api/news/service/NewsService.java
++++ b/BackEnd/src/main/java/com/cosmos/api/news/service/NewsService.java
+@@ -26,9 +26,10 @@
+ import java.util.UUID;
+ import org.springframework.stereotype.Service;
+ import org.springframework.transaction.annotation.Transactional;
++import org.springframework.transaction.annotation.Isolation;
+ 
+ @Service
+-@Transactional(readOnly = true)
++@Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
+ public class NewsService {
+ 
+     private final NewsQueryRepository newsRepository;
+@@ -85,13 +86,14 @@
+                                 .map(company -> new NewsCompanySummaryResponse(
+                                         company.companyId(), company.name()))
+                                 .toList(),
+-                        row.scrapped()))
++                        row.scrapped(), row.sourceRevisionId(),
++                        row.publishedAtRaw(), row.publicationPrecision()))
+                 .toList();
+ 
+         String nextCursor = null;
+         if (hasNext && !pageRows.isEmpty()) {
+             NewsRow last = pageRows.getLast();
+-            nextCursor = cursorCodec.encode(new NewsCursor(last.publishedAt(), last.newsId()));
++            nextCursor = cursorCodec.encode(new NewsCursor(last.sortAt(), last.newsId()));
+         }
+         return CursorPageResponse.of(items, nextCursor, hasNext);
+     }
+@@ -108,7 +110,8 @@
+                 .toList();
+         return new NewsDetailResponse(
+                 news.newsId(), news.title(), news.summary(), news.publisher(), news.author(),
+-                news.originalUrl(), news.publishedAt(), companies, evidence, news.scrapped());
++                news.originalUrl(), news.publishedAt(), companies, evidence, news.scrapped(),
++                news.sourceRevisionId(), news.publishedAtRaw(), news.publicationPrecision());
+     }
+ 
+     private Map<UUID, List<RelatedCompanyRow>> relatedCompaniesByNews(List<NewsRow> rows) {
+diff --git a/BackEnd/src/main/resources/db/migration/V7__version_grounded_analysis.sql b/BackEnd/src/main/resources/db/migration/V7__version_grounded_analysis.sql
+new file mode 100644
+--- /dev/null
++++ b/BackEnd/src/main/resources/db/migration/V7__version_grounded_analysis.sql
+@@ -0,0 +1,201 @@
++-- Keep each verified analysis run separate from live collection tables.
++-- The loader captures legacy data, validates each complete version, and switches
++-- active_run in one transaction. This migration does not copy or change public
++-- data, choose an active run, or touch users, scraps, and collection writers.
++CREATE SCHEMA IF NOT EXISTS cosmos_analysis;
++
++CREATE TABLE cosmos_analysis.runs (
++    run_id               TEXT PRIMARY KEY,
++    snapshot_id          UUID,
++    as_of_at             TIMESTAMPTZ NOT NULL,
++    publication_sha256   TEXT NOT NULL,
++    status               TEXT NOT NULL,
++    counts               JSONB NOT NULL DEFAULT '{}'::JSONB,
++    metadata             JSONB NOT NULL DEFAULT '{}'::JSONB,
++    created_at           TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
++    published_at         TIMESTAMPTZ,
++    supersedes_run_id    TEXT REFERENCES cosmos_analysis.runs (run_id),
++    CONSTRAINT runs_run_id_nonempty CHECK (length(btrim(run_id)) > 0),
++    CONSTRAINT runs_publication_sha256_valid
++        CHECK (publication_sha256 ~ '^[0-9a-f]{64}$'),
++    CONSTRAINT runs_status_nonempty CHECK (length(btrim(status)) > 0),
++    CONSTRAINT runs_counts_object CHECK (jsonb_typeof(counts) = 'object'),
++    CONSTRAINT runs_metadata_object CHECK (jsonb_typeof(metadata) = 'object'),
++    CONSTRAINT runs_supersedes_other CHECK (supersedes_run_id IS DISTINCT FROM run_id)
++);
++
++CREATE TABLE cosmos_analysis.active_run (
++    singleton BOOLEAN PRIMARY KEY DEFAULT TRUE CHECK (singleton),
++    run_id TEXT NOT NULL REFERENCES cosmos_analysis.runs (run_id)
++);
++
++-- Copy column names, PostgreSQL types, and type modifiers, but no public data,
++-- defaults, NOT NULL constraints, triggers, or foreign keys. Unknown analysis
++-- values must remain NULL, even when the legacy collector used NOT NULL/zero.
++-- Each row is instead keyed by (run_id, original primary-key columns).
++DO $version_tables$
++DECLARE
++    analysis_table TEXT;
++    primary_key_columns TEXT;
++    public_column_projection TEXT;
++    public_table_oid OID;
++BEGIN
++    FOREACH analysis_table IN ARRAY ARRAY[
++        'source_document',
++        'news_article',
++        'disclosure',
++        'company_document',
++        'document_evidence',
++        'company_relationship',
++        'relationship_evidence',
++        'relationship_score_current',
++        'relationship_score_history',
++        'company_metric_history',
++        'graph_snapshot',
++        'graph_snapshot_load'
++    ] LOOP
++        public_table_oid := to_regclass(format('public.%I', analysis_table));
++        IF public_table_oid IS NULL THEN
++            RAISE EXCEPTION 'Missing required public table: %', analysis_table;
++        END IF;
++
++        SELECT string_agg(format('%I', attribute.attname), ', ' ORDER BY key_column.ordinality)
++          INTO primary_key_columns
++          FROM pg_constraint original_key
++          CROSS JOIN LATERAL unnest(original_key.conkey)
++              WITH ORDINALITY AS key_column(attnum, ordinality)
++          JOIN pg_attribute attribute
++            ON attribute.attrelid = original_key.conrelid
++           AND attribute.attnum = key_column.attnum
++         WHERE original_key.conrelid = public_table_oid
++           AND original_key.contype = 'p';
++        IF primary_key_columns IS NULL THEN
++            RAISE EXCEPTION 'Required public table has no primary key: %', analysis_table;
++        END IF;
++
++        EXECUTE format(
++            'CREATE TABLE cosmos_analysis.%I AS '
++            'SELECT NULL::TEXT AS run_id, original.* FROM public.%I original WITH NO DATA',
++            analysis_table, analysis_table
++        );
++        EXECUTE format(
++            'ALTER TABLE cosmos_analysis.%I ADD PRIMARY KEY (run_id, %s), '
++            'ADD FOREIGN KEY (run_id) REFERENCES cosmos_analysis.runs (run_id)',
++            analysis_table, primary_key_columns
++        );
++
++        -- Expose the original public shape only. run_id is internal, and an
++        -- empty active_run means an empty projection rather than public fallback.
++        SELECT string_agg(format('version_row.%I', attribute.attname), ', ' ORDER BY attribute.attnum)
++          INTO public_column_projection
++          FROM pg_attribute attribute
++         WHERE attribute.attrelid = public_table_oid
++           AND attribute.attnum > 0
++           AND NOT attribute.attisdropped;
++        EXECUTE format(
++            'CREATE VIEW cosmos_analysis.%I AS SELECT %s '
++            'FROM cosmos_analysis.%I version_row '
++            'JOIN cosmos_analysis.active_run selected ON selected.run_id = version_row.run_id',
++            'current_' || analysis_table, public_column_projection, analysis_table
++        );
++    END LOOP;
++END;
++$version_tables$;
++
++CREATE INDEX source_document_run_publication
++    ON cosmos_analysis.source_document (run_id, published_at DESC, document_id);
++CREATE INDEX news_article_run_url_hash
++    ON cosmos_analysis.news_article (run_id, canonical_url_hash);
++CREATE INDEX company_document_run_company_visible
++    ON cosmos_analysis.company_document (run_id, company_id, is_service_visible, document_id);
++CREATE INDEX company_document_run_document_visible
++    ON cosmos_analysis.company_document (run_id, document_id, is_service_visible);
++CREATE INDEX document_evidence_run_document_company
++    ON cosmos_analysis.document_evidence (run_id, document_id, company_id, sentence_order);
++CREATE INDEX company_relationship_run_identity
++    ON cosmos_analysis.company_relationship
++        (run_id, source_company_id, target_company_id, relationship_type_id);
++CREATE INDEX relationship_evidence_run_relationship
++    ON cosmos_analysis.relationship_evidence (run_id, relationship_id, document_id);
++CREATE INDEX relationship_evidence_run_document
++    ON cosmos_analysis.relationship_evidence (run_id, document_id);
++CREATE INDEX relationship_score_current_run_snapshot_window
++    ON cosmos_analysis.relationship_score_current (run_id, snapshot_id, window_type, score DESC);
++CREATE INDEX relationship_score_history_run_relationship_window
++    ON cosmos_analysis.relationship_score_history (run_id, relationship_id, window_type, period_end DESC);
++CREATE INDEX company_metric_history_run_company_window_time
++    ON cosmos_analysis.company_metric_history (run_id, company_id, window_type, measured_at DESC);
++CREATE INDEX graph_snapshot_run_status_time
++    ON cosmos_analysis.graph_snapshot (run_id, status, as_of_at DESC);
++
++-- One representative context per canonical document. Other cited original
++-- revisions remain in evidence_context. sort_at is a documented conservative
++-- display/availability ordering time, not a fabricated published_at.
++CREATE TABLE cosmos_analysis.document_context (
++    run_id                 TEXT NOT NULL REFERENCES cosmos_analysis.runs (run_id),
++    document_id            UUID NOT NULL,
++    source_revision_id     TEXT NOT NULL,
++    sort_at                TIMESTAMPTZ NOT NULL,
++    published_at_raw       TEXT,
++    publication_precision  TEXT,
++    payload                JSONB NOT NULL DEFAULT '{}'::JSONB,
++    PRIMARY KEY (run_id, document_id),
++    FOREIGN KEY (run_id, document_id)
++        REFERENCES cosmos_analysis.source_document (run_id, document_id),
++    CHECK (jsonb_typeof(payload) = 'object')
++);
++CREATE INDEX document_context_run_sort
++    ON cosmos_analysis.document_context (run_id, sort_at DESC, document_id);
++
++CREATE VIEW cosmos_analysis.current_document_context AS
++SELECT context.document_id, context.source_revision_id, context.sort_at,
++       context.published_at_raw, context.publication_precision, context.payload
++FROM cosmos_analysis.document_context context
++JOIN cosmos_analysis.active_run selected ON selected.run_id = context.run_id;
++
++CREATE TABLE cosmos_analysis.relationship_context (
++    run_id           TEXT NOT NULL REFERENCES cosmos_analysis.runs (run_id),
++    relationship_id  UUID NOT NULL,
++    explanation      JSONB,
++    payload          JSONB NOT NULL DEFAULT '{}'::JSONB,
++    PRIMARY KEY (run_id, relationship_id),
++    FOREIGN KEY (run_id, relationship_id)
++        REFERENCES cosmos_analysis.company_relationship (run_id, relationship_id),
++    CHECK (jsonb_typeof(payload) = 'object')
++);
++
++CREATE VIEW cosmos_analysis.current_relationship_context AS
++SELECT context.relationship_id, context.explanation, context.payload
++FROM cosmos_analysis.relationship_context context
++JOIN cosmos_analysis.active_run selected ON selected.run_id = context.run_id;
++
++CREATE TABLE cosmos_analysis.evidence_context (
++    run_id                 TEXT NOT NULL REFERENCES cosmos_analysis.runs (run_id),
++    evidence_id            UUID NOT NULL,
++    source_revision_id     TEXT,
++    source_kind            TEXT,
++    available_at           TIMESTAMPTZ,
++    published_at_raw       TEXT,
++    publication_precision  TEXT,
++    payload                JSONB NOT NULL DEFAULT '{}'::JSONB,
++    PRIMARY KEY (run_id, evidence_id),
++    FOREIGN KEY (run_id, evidence_id)
++        REFERENCES cosmos_analysis.document_evidence (run_id, evidence_id),
++    CHECK (jsonb_typeof(payload) = 'object')
++);
++CREATE INDEX evidence_context_run_available
++    ON cosmos_analysis.evidence_context (run_id, available_at);
++
++CREATE VIEW cosmos_analysis.current_evidence_context AS
++SELECT context.evidence_id, context.source_revision_id, context.source_kind,
++       context.available_at, context.published_at_raw,
++       context.publication_precision, context.payload
++FROM cosmos_analysis.evidence_context context
++JOIN cosmos_analysis.active_run selected ON selected.run_id = context.run_id;
++
++COMMENT ON SCHEMA cosmos_analysis
++    IS 'Immutable validated analysis versions and one selected service projection; live collection remains in public';
++COMMENT ON TABLE cosmos_analysis.active_run
++    IS 'Zero or one selected version; the validated publisher changes this pointer atomically, without merging runs';
++COMMENT ON COLUMN cosmos_analysis.document_context.sort_at
++    IS 'Declared display/availability ordering time; published_at and original precision remain separate';
+diff --git a/BackEnd/src/test/java/com/cosmos/api/company/service/CompanyMetricStockIntegrationTest.java b/BackEnd/src/test/java/com/cosmos/api/company/service/CompanyMetricStockIntegrationTest.java
+--- a/BackEnd/src/test/java/com/cosmos/api/company/service/CompanyMetricStockIntegrationTest.java
++++ b/BackEnd/src/test/java/com/cosmos/api/company/service/CompanyMetricStockIntegrationTest.java
+@@ -45,6 +45,7 @@
+         insertStock("2026-07-31T00:00:00Z", "70000", "71000", "69000", "70500", 900L);
+         insertStock("2026-08-10T00:00:00Z", "71000", "72000", "70000", "71500", 1000L);
+         insertStock("2026-09-06T00:00:00Z", "72000", "73500", "71500", "73000", 18234567L);
++        com.cosmos.api.support.AnalysisRunFixture.capture(jdbcTemplate);
+     }
+ 
+     @Test
+@@ -88,6 +89,22 @@
+         assertThat(result.items()).hasSize(2);
+         assertThat(result.items()).extracting(item -> item.newsMentionCount())
+                 .containsExactly(100, 152);
++    }
++
++    @Test
++    void preservesUnknownMetricCountsAsNull() {
++        jdbcTemplate.update("""
++                UPDATE cosmos_analysis.company_metric_history
++                SET positive_count = NULL, negative_count = NULL
++                WHERE company_id = ? AND window_type = '30D'
++                """, COMPANY_ID);
++        assertThat(companyService.findLatestMetric(COMPANY_ID, "30D").positiveCount()).isNull();
++        assertThat(companyService.findMetricHistory(COMPANY_ID, "30D",
++                LocalDate.parse("2026-08-31"), LocalDate.parse("2026-09-07")).items())
++                .allSatisfy(item -> {
++                    assertThat(item.positiveCount()).isNull();
++                    assertThat(item.negativeCount()).isNull();
++                });
+     }
+ 
+     @Test
+diff --git a/BackEnd/src/test/java/com/cosmos/api/graph/controller/GraphControllerTest.java b/BackEnd/src/test/java/com/cosmos/api/graph/controller/GraphControllerTest.java
+--- a/BackEnd/src/test/java/com/cosmos/api/graph/controller/GraphControllerTest.java
++++ b/BackEnd/src/test/java/com/cosmos/api/graph/controller/GraphControllerTest.java
+@@ -122,7 +122,7 @@
+ 
+     @Test
+     void returnsEvidenceCursorPage() throws Exception {
+-        when(graphService.findRelationshipEvidence(RELATIONSHIP_ID, null, 10))
++        when(graphService.findRelationshipEvidence(RELATIONSHIP_ID, null, 10, "30D"))
+                 .thenReturn(CursorPageResponse.of(List.of(new RelationshipEvidenceResponse(
+                         NEWS_ID,
+                         "뉴스 제목",
+diff --git a/BackEnd/src/test/java/com/cosmos/api/graph/service/GraphServiceIntegrationTest.java b/BackEnd/src/test/java/com/cosmos/api/graph/service/GraphServiceIntegrationTest.java
+--- a/BackEnd/src/test/java/com/cosmos/api/graph/service/GraphServiceIntegrationTest.java
++++ b/BackEnd/src/test/java/com/cosmos/api/graph/service/GraphServiceIntegrationTest.java
+@@ -74,11 +74,8 @@
+         insertEvidence(NEWS_1, "최근 근거 문장", "0.760000", "0.910000");
+         insertAdditionalEvidence(NEWS_1, "보조 근거 문장", "0.300000", "0.700000");
+         insertEvidence(NEWS_2, "이전 근거 문장", "0.650000", "0.850000");
+-        jdbcTemplate.update("""
+-                INSERT INTO relationship_evidence
+-                    (relationship_id, document_id, contribution_score, model_version, formula_version)
+-                VALUES (?, ?, 0.5, 'model-v1', 'formula-v1')
+-                """, RELATIONSHIP_AB, DISCLOSURE);
++        insertEvidence(DISCLOSURE, "공시 원문 근거", "0.500000", "0.800000");
++        com.cosmos.api.support.AnalysisRunFixture.capture(jdbcTemplate);
+     }
+ 
+     @Test
+@@ -87,7 +84,7 @@
+ 
+         assertThat(result.snapshotId()).isEqualTo(SNAPSHOT_ID);
+         assertThat(result.asOfAt()).hasToString("2026-09-07T06:00:00Z");
+-        assertThat(result.nextRefreshAt()).hasToString("2026-09-07T07:00:00Z");
++        assertThat(result.nextRefreshAt()).isNull();
+         assertThat(result.personalized()).isFalse();
+         assertThat(result.nodes()).extracting(node -> node.companyId())
+                 .containsExactly(COMPANY_A, COMPANY_B, COMPANY_C);
+@@ -135,7 +132,7 @@
+     @Test
+     void preservesMissingSourceScoreAsNull() {
+         jdbcTemplate.update("""
+-                UPDATE relationship_score_current
++                UPDATE cosmos_analysis.relationship_score_current
+                 SET disclosure_score = NULL
+                 WHERE relationship_id = ? AND window_type = '30D'
+                 """, RELATIONSHIP_AB);
+@@ -147,23 +144,64 @@
+     }
+ 
+     @Test
+-    void pagesOnlyNewsEvidenceInNewestFirstOrder() {
++    void pagesEveryNewsAndDisclosureEvidenceWithoutDroppingSameDocumentQuotes() {
+         CursorPageResponse<RelationshipEvidenceResponse> first =
+-                graphService.findRelationshipEvidence(RELATIONSHIP_AB, null, 1);
+-
+-        assertThat(first.items()).singleElement()
+-                .satisfies(item -> {
+-                    assertThat(item.newsId()).isEqualTo(NEWS_1);
+-                    assertThat(item.evidenceSentence()).isEqualTo("최근 근거 문장");
+-                });
++                graphService.findRelationshipEvidence(RELATIONSHIP_AB, null, 2);
++
++        assertThat(first.items()).extracting(RelationshipEvidenceResponse::newsId)
++                .containsExactly(NEWS_1, NEWS_1);
++        assertThat(first.items()).extracting(RelationshipEvidenceResponse::evidenceSentence)
++                .containsExactlyInAnyOrder("최근 근거 문장", "보조 근거 문장");
++        assertThat(first.items()).extracting(RelationshipEvidenceResponse::evidenceId).doesNotHaveDuplicates();
+         assertThat(first.hasNext()).isTrue();
+         assertThat(first.nextCursor()).isNotBlank();
+ 
+         CursorPageResponse<RelationshipEvidenceResponse> second =
+-                graphService.findRelationshipEvidence(RELATIONSHIP_AB, first.nextCursor(), 1);
++                graphService.findRelationshipEvidence(RELATIONSHIP_AB, first.nextCursor(), 2);
+         assertThat(second.items()).extracting(RelationshipEvidenceResponse::newsId)
+-                .containsExactly(NEWS_2);
++                .containsExactly(NEWS_2, DISCLOSURE);
++        assertThat(second.items().getLast().sourceType()).isEqualTo("DISCLOSURE");
+         assertThat(second.hasNext()).isFalse();
++    }
++
++    @Test
++    void returnsDisclosureQuoteWithUnknownPublicationTimeWithoutInventingUtc() {
++        jdbcTemplate.update("""
++                UPDATE cosmos_analysis.source_document SET published_at = NULL WHERE document_id = ?
++                """, DISCLOSURE);
++        jdbcTemplate.update("""
++                UPDATE cosmos_analysis.evidence_context
++                SET published_at_raw = '2026-09-05', publication_precision = 'DATE_ONLY'
++                WHERE evidence_id IN (SELECT evidence_id FROM document_evidence WHERE document_id = ?)
++                """, DISCLOSURE);
++        assertThat(graphService.findRelationshipEvidence(RELATIONSHIP_AB, null, 20).items())
++                .filteredOn(item -> item.documentId().equals(DISCLOSURE))
++                .singleElement().satisfies(item -> {
++                    assertThat(item.sourceType()).isEqualTo("DISCLOSURE");
++                    assertThat(item.evidenceSentence()).isEqualTo("공시 원문 근거");
++                    assertThat(item.publishedAt()).isNull();
++                    assertThat(item.publishedAtRaw()).isEqualTo("2026-09-05");
++                    assertThat(item.publicationPrecision()).isEqualTo("DATE_ONLY");
++                });
++    }
++
++    @Test
++    void evidenceWindowIncludesStartAndExcludesSnapshotInstant() {
++        jdbcTemplate.update("""
++                UPDATE cosmos_analysis.evidence_context
++                SET available_at = '2026-08-08T06:00:00Z'
++                WHERE evidence_id IN (SELECT evidence_id FROM document_evidence WHERE document_id = ?)
++                """, NEWS_2);
++        jdbcTemplate.update("""
++                UPDATE cosmos_analysis.evidence_context
++                SET available_at = '2026-09-07T06:00:00Z'
++                WHERE evidence_id IN (SELECT evidence_id FROM document_evidence WHERE document_id = ?)
++                """, DISCLOSURE);
++        assertThat(graphService.findRelationshipEvidence(RELATIONSHIP_AB, null, 20, "30D").items())
++                .extracting(RelationshipEvidenceResponse::documentId)
++                .contains(NEWS_2).doesNotContain(DISCLOSURE);
++        assertThat(graphService.findRelationshipEvidence(RELATIONSHIP_AB, null, 20, "7D").items())
++                .extracting(RelationshipEvidenceResponse::documentId).doesNotContain(NEWS_2, DISCLOSURE);
+     }
+ 
+     @Test
+@@ -195,7 +233,7 @@
+                 () -> graphService.findRelationshipEvidence(missing, null, 10),
+                 GraphErrorCode.RELATIONSHIP_NOT_FOUND);
+ 
+-        jdbcTemplate.update("UPDATE graph_snapshot SET status = 'ARCHIVED' WHERE snapshot_id = ?", SNAPSHOT_ID);
++        jdbcTemplate.update("UPDATE cosmos_analysis.graph_snapshot SET status = 'ARCHIVED' WHERE snapshot_id = ?", SNAPSHOT_ID);
+         assertError(
+                 () -> graphService.findLatestGraph(null, null),
+                 GraphErrorCode.GRAPH_SNAPSHOT_NOT_FOUND);
+@@ -257,7 +295,7 @@
+                 INSERT INTO source_document
+                     (document_id, source_id, document_type, title, original_url, published_at, status)
+                 VALUES (?, ?, 'DISCLOSURE', '테스트 공시', 'https://dart.example/test',
+-                        '2026-09-08T00:00:00Z', 'ANALYZED')
++                        '2026-09-05T00:00:00Z', 'ANALYZED')
+                 """, documentId, SOURCE_ID);
+         jdbcTemplate.update("""
+                 INSERT INTO disclosure
+diff --git a/BackEnd/src/test/java/com/cosmos/api/news/service/NewsServiceIntegrationTest.java b/BackEnd/src/test/java/com/cosmos/api/news/service/NewsServiceIntegrationTest.java
+--- a/BackEnd/src/test/java/com/cosmos/api/news/service/NewsServiceIntegrationTest.java
++++ b/BackEnd/src/test/java/com/cosmos/api/news/service/NewsServiceIntegrationTest.java
+@@ -71,6 +71,7 @@
+                 VALUES (?, 'news-test@example.com', 'encoded-password', '뉴스테스터')
+                 """, USER_ID);
+         jdbcTemplate.update("INSERT INTO user_scrap (user_id, document_id) VALUES (?, ?)", USER_ID, NEWS_NEW);
++        com.cosmos.api.support.AnalysisRunFixture.capture(jdbcTemplate);
+     }
+ 
+     @Test
+@@ -139,6 +140,44 @@
+     }
+ 
+     @Test
++    void keepsUnknownPublicationTimeNullWhileCursorUsesSeparateSortTime() {
++        jdbcTemplate.update("""
++                UPDATE cosmos_analysis.source_document SET published_at = NULL WHERE document_id = ?
++                """, NEWS_NEW);
++        jdbcTemplate.update("""
++                UPDATE cosmos_analysis.document_context
++                SET published_at_raw = '2026-09-07', publication_precision = 'DATE_ONLY'
++                WHERE document_id = ?
++                """, NEWS_NEW);
++        CursorPageResponse<NewsSummaryResponse> first = newsService.findNews(condition(null, 1), null);
++        assertThat(first.items().getFirst().publishedAt()).isNull();
++        assertThat(first.items().getFirst().publishedAtRaw()).isEqualTo("2026-09-07");
++        assertThat(first.items().getFirst().publicationPrecision()).isEqualTo("DATE_ONLY");
++        assertThat(first.nextCursor()).isNotBlank();
++        assertThat(newsService.findNews(condition(first.nextCursor(), 1), null).items())
++                .extracting(NewsSummaryResponse::newsId).containsExactly(NEWS_OLD);
++        assertThat(newsService.findNewsDetail(NEWS_NEW, null).publishedAt()).isNull();
++        NewsSearchCondition dated = new NewsSearchCondition(
++                null, null, null, null,
++                LocalDate.parse("2026-09-07"), LocalDate.parse("2026-09-07"), null, 20);
++        assertThat(newsService.findNews(dated, null).items()).isEmpty();
++    }
++
++    @Test
++    void liveCollectorChangesDoNotLeakIntoSelectedAnalysisVersion() {
++        jdbcTemplate.update("UPDATE public.source_document SET title = 'unreviewed replacement' WHERE document_id = ?",
++                NEWS_NEW);
++        jdbcTemplate.update("UPDATE public.company_document SET sentiment = 'NEUTRAL' WHERE document_id = ?",
++                NEWS_NEW);
++        NewsDetailResponse detail = newsService.findNewsDetail(NEWS_NEW, null);
++        assertThat(detail.title()).isEqualTo("반도체 공급망 협력 확대");
++        assertThat(detail.relatedCompanies().getFirst().sentiment()).isEqualTo("POSITIVE");
++        NewsSummaryResponse listed = newsService.findNews(condition(null, 1), null).items().getFirst();
++        assertThat(listed.title()).isEqualTo("반도체 공급망 협력 확대");
++        assertThat(listed.sentiment()).isEqualTo("POSITIVE");
++    }
++
++    @Test
+     void rejectsInvalidFiltersAndMissingResources() {
+         assertError(
+                 () -> newsService.findNews(new NewsSearchCondition(
+diff --git a/BackEnd/src/test/java/com/cosmos/api/support/AnalysisRunFixture.java b/BackEnd/src/test/java/com/cosmos/api/support/AnalysisRunFixture.java
+new file mode 100644
+--- /dev/null
++++ b/BackEnd/src/test/java/com/cosmos/api/support/AnalysisRunFixture.java
+@@ -0,0 +1,43 @@
++package com.cosmos.api.support;
++
++import org.springframework.jdbc.core.JdbcTemplate;
++
++/** Isolated test transactions capture their public fixtures as a selected immutable version. */
++public final class AnalysisRunFixture {
++    public static final String RUN_ID = "integration-test-run";
++    private AnalysisRunFixture() {}
++
++    public static void capture(JdbcTemplate jdbc) {
++        jdbc.update("""
++                INSERT INTO cosmos_analysis.runs(run_id, as_of_at, publication_sha256, status)
++                VALUES (?, '2026-09-07T06:00:00Z', repeat('a', 64), 'VERIFIED')
++                """, RUN_ID);
++        for (String table : new String[] {
++                "source_document", "news_article", "disclosure", "company_document",
++                "document_evidence", "company_relationship", "relationship_evidence",
++                "relationship_score_current", "relationship_score_history",
++                "company_metric_history", "graph_snapshot", "graph_snapshot_load"
++        }) {
++            jdbc.update("INSERT INTO cosmos_analysis." + table
++                    + " SELECT ?, p.* FROM public." + table + " p", RUN_ID);
++        }
++        jdbc.update("""
++                INSERT INTO cosmos_analysis.document_context
++                    (run_id, document_id, source_revision_id, sort_at, publication_precision)
++                SELECT ?, document_id, document_id::text,
++                       COALESCE(published_at, first_collected_at), 'UTC'
++                FROM public.source_document
++                """, RUN_ID);
++        jdbc.update("""
++                INSERT INTO cosmos_analysis.evidence_context
++                    (run_id, evidence_id, source_revision_id, source_kind, available_at, publication_precision)
++                SELECT ?, de.evidence_id, sd.document_id::text, sd.document_type, sd.published_at, 'UTC'
++                FROM public.document_evidence de
++                JOIN public.source_document sd ON sd.document_id = de.document_id
++                """, RUN_ID);
++        jdbc.update("""
++                INSERT INTO cosmos_analysis.active_run(singleton, run_id)
++                VALUES(TRUE, ?) ON CONFLICT(singleton) DO UPDATE SET run_id = EXCLUDED.run_id
++                """, RUN_ID);
++    }
++}
+diff --git a/BackEnd/src/test/java/com/cosmos/api/user/controller/NewsScrapControllerTest.java b/BackEnd/src/test/java/com/cosmos/api/user/controller/NewsScrapControllerTest.java
+--- a/BackEnd/src/test/java/com/cosmos/api/user/controller/NewsScrapControllerTest.java
++++ b/BackEnd/src/test/java/com/cosmos/api/user/controller/NewsScrapControllerTest.java
+@@ -77,6 +77,7 @@
+                 COMPANY_ID);
+         insertNews(NEWS_VISIBLE, "노출 뉴스", 'x', true);
+         insertNews(NEWS_HIDDEN, "숨김 뉴스", 'y', false);
++        com.cosmos.api.support.AnalysisRunFixture.capture(jdbcTemplate);
+ 
+         myToken = signupAndToken("scrap@test.com", "스크랩테스터");
+         myUserId = userRepository.findByEmail("scrap@test.com").orElseThrow().getUserId();
+diff --git a/BackEnd/src/test/java/com/cosmos/api/user/controller/NewsScrapListControllerTest.java b/BackEnd/src/test/java/com/cosmos/api/user/controller/NewsScrapListControllerTest.java
+--- a/BackEnd/src/test/java/com/cosmos/api/user/controller/NewsScrapListControllerTest.java
++++ b/BackEnd/src/test/java/com/cosmos/api/user/controller/NewsScrapListControllerTest.java
+@@ -69,6 +69,7 @@
+         insertNews(NEWS_A, "뉴스A", "2026-09-01T02:00:00Z", 'k');
+         insertNews(NEWS_B, "뉴스B", "2026-09-02T02:00:00Z", 'l');
+         insertNews(NEWS_C, "뉴스C", "2026-09-03T02:00:00Z", 'm');
++        com.cosmos.api.support.AnalysisRunFixture.capture(jdbcTemplate);
+ 
+         myToken = signupAndToken("scraplist@test.com", "스크랩목록테스터");
+     }
+diff --git a/FrontEnd/scripts/test-analysis-contract.mjs b/FrontEnd/scripts/test-analysis-contract.mjs
+new file mode 100644
+--- /dev/null
++++ b/FrontEnd/scripts/test-analysis-contract.mjs
+@@ -0,0 +1,79 @@
++import assert from "node:assert/strict";
++import { readFileSync } from "node:fs";
++import { createRequire } from "node:module";
++import { test } from "node:test";
++import ts from "typescript";
++import { QueryClient } from "@tanstack/react-query";
++
++const require = createRequire(import.meta.url);
++function loadTypeScript(relative) {
++  const source = readFileSync(new URL(relative, import.meta.url), "utf8");
++  const { outputText } = ts.transpileModule(source, {
++    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
++  });
++  const module = { exports: {} };
++  new Function("module", "exports", "require", outputText)(module, module.exports, require);
++  return module.exports;
++}
++
++const { fmtPublication, meanConfidence } = loadTypeScript("../src/lib/format.ts");
++const { analyzeNewsImpact } = loadTypeScript("../src/lib/newsImpact.ts");
++const { resetAnalysisQueries } = loadTypeScript("../src/lib/analysisRun.ts");
++
++test("unknown publication time never becomes epoch or an invented hour", () => {
++  assert.equal(fmtPublication({ publishedAt: null }), "발행 시각 미확인");
++  assert.equal(fmtPublication({ publishedAt: null, publishedAtRaw: "2026-09-15 08:30" }), "2026. 09. 15. (시각 미확인)");
++  assert.equal(fmtPublication({ publishedAt: null, publishedAtRaw: "20260915" }, true), "2026. 09. 15. (시각 미확인)");
++  assert.equal(fmtPublication({ publishedAt: "invalid", publishedAtRaw: "unknown" }), "발행 시각 미확인");
++});
++
++test("confidence excludes absent values and preserves a genuine zero", () => {
++  assert.equal(meanConfidence([null, undefined]), null);
++  assert.equal(meanConfidence([0, null]), 0);
++  assert.equal(meanConfidence([0.8, null, 0.4]), 0.6000000000000001);
++});
++
++const graph = {
++  nodes: [{ companyId: "a", name: "A" }, { companyId: "b", name: "B" }],
++  edges: [{ relationshipId: "rel", sourceCompanyId: "a", targetCompanyId: "b", score: 90, relationshipType: "SUPPLY" }],
++};
++
++test("a selected company without an impact value stays pending and cannot seed indirect scores", () => {
++  const result = analyzeNewsImpact({ relatedCompanies: [{ companyId: "a", name: "A", relevanceScore: 0.9, impactScore: null }] }, graph);
++  assert.equal(result.hasScores, false);
++  assert.equal(result.ranking.length, 1);
++  assert.equal(result.ranking[0].score, null);
++  assert.equal(result.ranking[0].hop, 0);
++});
++
++test("unknown relevance also prevents inference, while measured zero remains zero", () => {
++  const pending = analyzeNewsImpact({ relatedCompanies: [{ companyId: "a", name: "A", relevanceScore: null, impactScore: 0.8 }] }, graph);
++  assert.equal(pending.ranking[0].score, null);
++  const zero = analyzeNewsImpact({ relatedCompanies: [{ companyId: "a", name: "A", relevanceScore: 0.9, impactScore: 0 }] }, graph);
++  assert.equal(zero.ranking[0].score, 0);
++  assert.equal(zero.ranking.length, 1);
++});
++
++test("version switch clears all analysis caches without resetting its own pointer or account state", async () => {
++  const client = new QueryClient({ defaultOptions: { queries: { gcTime: Infinity } } });
++  const roots = ["news", "graph", "relationship", "company", "companies", "industries"];
++  for (const root of roots) client.setQueryData([root, "cached"], { run: "old" });
++  client.setQueryData(["analysis-runs", "active"], { runId: "new" });
++  client.setQueryData(["me", "watchlist"], { items: ["keep"] });
++  await resetAnalysisQueries(client);
++  for (const root of roots) assert.equal(client.getQueryData([root, "cached"]), undefined);
++  assert.deepEqual(client.getQueryData(["analysis-runs", "active"]), { runId: "new" });
++  assert.deepEqual(client.getQueryData(["me", "watchlist"]), { items: ["keep"] });
++  client.clear();
++});
++
++test("a response started before version change cannot refill the cleared cache", async () => {
++  const client = new QueryClient({ defaultOptions: { queries: { gcTime: Infinity, retry: false } } });
++  let finish;
++  const inFlight = client.fetchQuery({ queryKey: ["news", "detail", "old"], queryFn: () => new Promise(resolve => { finish = resolve; }) }).catch(() => undefined);
++  await resetAnalysisQueries(client);
++  finish({ run: "old" });
++  await inFlight;
++  assert.equal(client.getQueryData(["news", "detail", "old"]), undefined);
++  client.clear();
++});
+diff --git a/FrontEnd/src/App.tsx b/FrontEnd/src/App.tsx
+--- a/FrontEnd/src/App.tsx
++++ b/FrontEnd/src/App.tsx
+@@ -7,6 +7,8 @@
+ import AuthDialog from "@/features/auth/AuthDialog";
+ import GalaxyPage from "@/features/galaxy/GalaxyPage";
+ import { useSession } from "@/store/session";
++import { useActiveAnalysisRun } from "@/lib/queries";
++import { resetAnalysisQueries } from "@/lib/analysisRun";
+ 
+ // 은하(/)가 첫 화면이다 — 나머지 탭은 들어갈 때 받는다. 전부 정적으로 묶으면 첫 로드 번들에 뉴스·기업·커뮤니티·내 페이지·실험실 코드와
+ // 그 CSS 가 함께 실려 Lighthouse 가 "미사용 JS/CSS" 로 잡았다 (2026-09-18). 각 페이지는 자기 청크(+CSS)로 나뉘어 라우트 진입 시 로드된다
+@@ -96,11 +98,29 @@
+   return null;
+ }
+ 
++function AnalysisRunSync() {
++  const active = useActiveAnalysisRun();
++  const previous = useRef<string | undefined>(undefined);
++  useEffect(() => {
++    const runId = active.data?.runId;
++    if (!runId || previous.current === runId) return;
++    const changed = previous.current !== undefined;
++    previous.current = runId;
++    if (changed) {
++      // Cancel stale responses, clear all version-dependent pages together, and
++      // refetch active observers. Never reset the active-run query itself.
++      void resetAnalysisQueries(queryClient);
++    }
++  }, [active.data?.runId]);
++  return null;
++}
++
+ export default function App() {
+   return (
+     <QueryClientProvider client={queryClient}>
+       <BrowserRouter>
+         <SessionBoot />
++        <AnalysisRunSync />
+         <div className="app">
+           <Header />
+           <LazyBoundary>
+diff --git a/FrontEnd/src/api/contract.ts b/FrontEnd/src/api/contract.ts
+--- a/FrontEnd/src/api/contract.ts
++++ b/FrontEnd/src/api/contract.ts
+@@ -5,6 +5,9 @@
+  * 화면 코드는 이 인터페이스만 의존하므로 경로·응답 보정은 live.ts 한 곳에서만 다룬다.
+  */
+ export interface CosmosApi {
++  analysisRuns: {
++    active(): Promise<T.ActiveAnalysisRun>;
++  };
+   auth: {
+     checkEmail(email: string): Promise<T.Availability>;
+     checkNickname(nickname: string): Promise<T.Availability>;
+@@ -42,7 +45,7 @@
+     company(companyId: string, params?: T.CompanyGraphParams): Promise<T.CompanyGraph>;
+     relationship(relationshipId: string, window?: T.MetricWindow): Promise<T.RelationshipDetail>;
+     /** size 는 기본 10 · 최대 20 (명세). 그 이상을 보내면 실 백엔드가 400 을 낸다. */
+-    evidence(relationshipId: string, params?: { cursor?: string; size?: number }): Promise<T.Page<T.RelationshipEvidence>>;
++    evidence(relationshipId: string, params?: { cursor?: string; size?: number; window?: T.MetricWindow }): Promise<T.Page<T.RelationshipEvidence>>;
+   };
+   community: {
+     latest(params?: { cursor?: string; size?: number }): Promise<T.Page<T.GlobalComment>>;
+diff --git a/FrontEnd/src/api/live.ts b/FrontEnd/src/api/live.ts
+--- a/FrontEnd/src/api/live.ts
++++ b/FrontEnd/src/api/live.ts
+@@ -44,6 +44,9 @@
+ 
+ /** 실 백엔드(/api) 호출 구현. 경로·파라미터·상태 코드는 docs/api-specification.md 를 따른다. */
+ export const liveApi: CosmosApi = {
++  analysisRuns: {
++    active: () => request("/analysis-runs/active"),
++  },
+   auth: {
+     checkEmail: (email) => request(`/auth/check-email${qs({ email })}`),
+     checkNickname: (nickname) => request(`/auth/check-nickname${qs({ nickname })}`),
+diff --git a/FrontEnd/src/api/types.ts b/FrontEnd/src/api/types.ts
+--- a/FrontEnd/src/api/types.ts
++++ b/FrontEnd/src/api/types.ts
+@@ -15,6 +15,20 @@
+ export type Directionality = "DIRECTED" | "UNDIRECTED";
+ /** 관계 유형 코드. DB 설계의 공급·투자·협력·경쟁을 기준으로 하되 미정 코드는 문자열로 수용한다. */
+ export type RelationshipType = "SUPPLY" | "INVEST" | "PARTNER" | "COMPETE" | (string & {});
++
++export interface ActiveAnalysisRun {
++  runId: string;
++  snapshotId: UUID | null;
++  asOf: ISODateTime;
++  displayName: string;
++  counts: Record<string, number>;
++}
++
++export interface PublicationContext {
++  publishedAtRaw?: string | null;
++  publicationPrecision?: string | null;
++  sourceRevisionId?: string | null;
++}
+ 
+ export interface Page<T> {
+   items: T[];
+@@ -146,11 +160,11 @@
+ }
+ export interface MetricPoint {
+   measuredAt: ISODateTime;
+-  newsMentionCount: number;
+-  positiveCount: number;
+-  negativeCount: number;
++  newsMentionCount: number | null;
++  positiveCount: number | null;
++  negativeCount: number | null;
+   sentimentScore: number | null;
+-  relationshipCount: number;
++  relationshipCount: number | null;
+ }
+ export interface MetricsHistoryParams {
+   window?: MetricWindow;
+@@ -200,7 +214,7 @@
+   companyId: UUID;
+   name: string;
+ }
+-export interface NewsItem {
++export interface NewsItem extends PublicationContext {
+   newsId: UUID;
+   title: string;
+   summary: string | null;
+@@ -222,7 +236,7 @@
+   sentence: string;
+   confidence: number | null;
+ }
+-export interface NewsDetail {
++export interface NewsDetail extends PublicationContext {
+   newsId: UUID;
+   title: string;
+   summary: string | null;
+@@ -285,7 +299,7 @@
+ export interface LatestGraph {
+   snapshotId: UUID;
+   asOfAt: ISODateTime;
+-  nextRefreshAt: ISODateTime;
++  nextRefreshAt: ISODateTime | null;
+   personalized: boolean;
+   nodes: LatestGraphNode[];
+   edges: GraphEdge[];
+@@ -313,6 +327,8 @@
+   maxDepth?: number;
+ }
+ export interface RelationshipDetail {
++  explanation?: string | null;
++  explanationScope?: "HISTORICAL" | null;
+   relationshipId: UUID;
+   sourceCompany: CompanyRef;
+   targetCompany: CompanyRef;
+@@ -329,14 +345,17 @@
+   asOfAt: ISODateTime;
+   personalized: boolean;
+ }
+-export interface RelationshipEvidence {
++export interface RelationshipEvidence extends PublicationContext {
+   newsId: UUID;
++  documentId: UUID;
++  sourceType: "NEWS" | "DISCLOSURE";
++  evidenceId: UUID | null;
+   title: string;
+   summary: string | null;
+   publisher: string | null;
+   originalUrl: string;
+   publishedAt: ISODateTime | null;
+-  evidenceSentence: string;
++  evidenceSentence: string | null;
+   contributionScore: number | null;
+   confidence: number | null;
+ }
+diff --git a/FrontEnd/src/components/Header.tsx b/FrontEnd/src/components/Header.tsx
+--- a/FrontEnd/src/components/Header.tsx
++++ b/FrontEnd/src/components/Header.tsx
+@@ -2,7 +2,8 @@
+ import { NavLink, useLocation, useNavigate } from "react-router-dom";
+ import type { Me } from "@/api";
+ import { HELP_UI } from "@/lib/guide";
+-import { useScraps, useWatchlist } from "@/lib/queries";
++import { useActiveAnalysisRun, useScraps, useWatchlist } from "@/lib/queries";
++import { fmtDate } from "@/lib/format";
+ import { useNarrowViewport } from "@/lib/viewport";
+ import { useSession } from "@/store/session";
+ import { useUi } from "@/store/ui";
+@@ -43,6 +44,7 @@
+   const toggleHelp = useUi((s) => s.toggleHelp);
+   const { pathname } = useLocation();
+   const narrow = useNarrowViewport();
++  const analysisRun = useActiveAnalysisRun();
+   const watchlist = useWatchlist();
+   const scraps = useScraps();
+   const nWatch = watchlist.data?.items.length ?? "-";
+@@ -59,7 +61,13 @@
+     <header className={narrow ? "hd hd-narrow" : "hd"}>
+       <NavLink to="/" className="logo" aria-label="COSMOS 홈">
+         <img src="/cosmos-logo.png" alt="" width={167} height={128} />
+-        <span>COSMOS</span>
++        <span>COSMOS
++          <small className="analysis-run-label" aria-live="polite">
++            {analysisRun.data
++              ? `${analysisRun.data.displayName || "뉴스·공시 분석"} · ${fmtDate(analysisRun.data.asOf)} 기준`
++              : analysisRun.isError ? "분석 버전 확인 불가" : "분석 버전 확인 중"}
++          </small>
++        </span>
+       </NavLink>
+       {narrow ? (
+         <MobileMenu {...ctx} />
+diff --git a/FrontEnd/src/components/PriceChart.tsx b/FrontEnd/src/components/PriceChart.tsx
+--- a/FrontEnd/src/components/PriceChart.tsx
++++ b/FrontEnd/src/components/PriceChart.tsx
+@@ -86,12 +86,14 @@
+ }
+ 
+ /** 지표 이력용 작은 막대 스파크라인 */
+-export function Sparkbars({ values, color = "#829CFF", height = 36 }: { values: number[]; color?: string; height?: number }) {
+-  const max = Math.max(1, ...values);
++export function Sparkbars({ values, color = "#829CFF", height = 36 }: { values: (number | null)[]; color?: string; height?: number }) {
++  const known = values.filter((value): value is number => value != null);
++  if (!known.length) return <span className="meta">지표 이력 미제공</span>;
++  const max = Math.max(1, ...known);
+   return (
+     <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height }} aria-hidden="true">
+       {values.map((v, i) => (
+-        <span key={i} style={{ flex: 1, height: `${Math.max(4, (v / max) * 100)}%`, background: color, opacity: 0.35 + (v / max) * 0.65, borderRadius: 2 }} />
++        <span key={i} style={{ flex: 1, height: v == null ? 0 : `${Math.max(4, (v / max) * 100)}%`, background: color, opacity: v == null ? 0 : 0.35 + (v / max) * 0.65, borderRadius: 2 }} />
+       ))}
+     </div>
+   );
+diff --git a/FrontEnd/src/components/ui.tsx b/FrontEnd/src/components/ui.tsx
+--- a/FrontEnd/src/components/ui.tsx
++++ b/FrontEnd/src/components/ui.tsx
+@@ -59,9 +59,9 @@
+     </span>
+   );
+ }
+-/** impactDirection 은 선택 필드(NULL 허용)라 값이 없으면 중립으로 읽는다. */
++/** Missing direction means no supplied analysis, not neutral impact. */
+ export function ImpactBadge({ value }: { value: ImpactDirection | null | undefined }) {
+-  const m = (value && IMPACT_META[value]) ?? IMPACT_META.NEUTRAL;
++  const m = (value && IMPACT_META[value]) ?? { ...SENTIMENT_PENDING, label: "영향 분석 전" };
+   return (
+     <span className="badge" style={{ background: m.bg, color: m.fg }}>
+       <i className="dot" style={{ background: m.color }} />
+diff --git a/FrontEnd/src/features/galaxy/CompanyPanel.tsx b/FrontEnd/src/features/galaxy/CompanyPanel.tsx
+--- a/FrontEnd/src/features/galaxy/CompanyPanel.tsx
++++ b/FrontEnd/src/features/galaxy/CompanyPanel.tsx
+@@ -2,7 +2,7 @@
+ import type { CompanyComment, MetricWindow, PricePeriod, Sentiment } from "@/api/types";
+ import { CompanyAvatar, Empty, Icon, IndustryBadge, SentimentBadge, Skeleton } from "@/components/ui";
+ import PriceChart, { Sparkbars } from "@/components/PriceChart";
+-import { fmtCompact, fmtCompactPrice, fmtDateTime, fmtNumber, fmtPct, fmtPctFrom01, fmtPrice, fmtRelative, fmtTradingDate } from "@/lib/format";
++import { fmtCompact, fmtCompactPrice, fmtDateTime, fmtNumber, fmtPct, fmtPctFrom01, fmtPrice, fmtPublication, fmtRelative, fmtTradingDate } from "@/lib/format";
+ import type { SceneModel } from "@/lib/graph";
+ import { PREVIEW_UI } from "@/lib/guide";
+ import { SENTIMENTS, SENTIMENT_META, marketCurrency } from "@/lib/meta";
+@@ -174,7 +174,7 @@
+             <div className="row between">
+               <div className="row" style={{ gap: 8 }}>
+                 <SentimentBadge value={n.sentiment} />
+-                <span className="meta num">{[n.publisher, fmtRelative(n.publishedAt)].filter(Boolean).join(" · ")}</span>
++                <span className="meta num">{[n.publisher, fmtPublication(n, true)].filter(Boolean).join(" · ")}</span>
+               </div>
+               <button
+                 type="button"
+diff --git a/FrontEnd/src/features/galaxy/GalaxyPage.tsx b/FrontEnd/src/features/galaxy/GalaxyPage.tsx
+--- a/FrontEnd/src/features/galaxy/GalaxyPage.tsx
++++ b/FrontEnd/src/features/galaxy/GalaxyPage.tsx
+@@ -466,7 +466,7 @@
+             </div>
+             <div className="meta num" style={{ marginTop: 4 }}>
+               {snapshot
+-                ? `${fmtDateTime(snapshot.asOfAt)} 기준 · 다음 갱신 ${fmtDateTime(snapshot.nextRefreshAt).slice(-5)}`
++                ? `${fmtDateTime(snapshot.asOfAt)} 기준 · 선택한 분석 데이터`
+                 : scopeError
+                   ? noSnapshot
+                     ? "공개된 스냅샷 없음 · 분석 결과 게시 전"
+diff --git a/FrontEnd/src/features/galaxy/RelationshipPanel.tsx b/FrontEnd/src/features/galaxy/RelationshipPanel.tsx
+--- a/FrontEnd/src/features/galaxy/RelationshipPanel.tsx
++++ b/FrontEnd/src/features/galaxy/RelationshipPanel.tsx
+@@ -1,6 +1,6 @@
+ import type { MetricWindow, RelationshipEvidence } from "@/api/types";
+ import { Empty, Icon, ImpactBadge, ScoreBar, Skeleton, TypeBadge } from "@/components/ui";
+-import { fmtDateTime, fmtPctFrom01, fmtRelative, fmtScore, pct01 } from "@/lib/format";
++import { fmtDateTime, fmtPctFrom01, fmtPublication, fmtScore, pct01 } from "@/lib/format";
+ import type { SceneModel } from "@/lib/graph";
+ import { EVIDENCE_UI, SURPRISE_UI } from "@/lib/guide";
+ import { relationshipMeta, scoreBand } from "@/lib/meta";
+@@ -32,7 +32,7 @@
+ 
+ /** 근거 문장 복사 — Clipboard API 실패 시(비보안 컨텍스트·권한 거부) textarea 폴백 */
+ async function copyEvidenceSentence(e: RelationshipEvidence) {
+-  const text = `"${e.evidenceSentence}" — ${e.publisher ?? ""}, ${(e.publishedAt ?? "").slice(0, 10)}, ${e.originalUrl}`;
++  const text = `"${e.evidenceSentence ?? ""}" — ${e.publisher ?? ""}, ${fmtPublication(e)}, ${e.originalUrl}`;
+   try {
+     if (!navigator.clipboard?.writeText) throw new Error("clipboard unavailable");
+     await navigator.clipboard.writeText(text);
+@@ -59,17 +59,20 @@
+   const window = useGalaxy((s) => s.window);
+   const setWindow = useGalaxy((s) => s.setWindow);
+   const rel = useRelationship(relationshipId, window);
+-  const evidence = useRelationshipEvidence(relationshipId);
++  const evidence = useRelationshipEvidence(relationshipId, window);
+   const newsWeight = useNewsWeight();
+   const r = rel.data;
+   // 점수를 무엇으로 만들었는지 — 비율을 움직였거나 한쪽 근거만 있을 때만 한 줄 붙는다
+   const basis = r ? scoreBasisLabel(r, newsWeight) : null;
+   const meta = r ? relationshipMeta(r.relationshipType) : null;
+   const items = evidence.data?.pages.flatMap((p) => p.items) ?? [];
+-  const sortedItems = [...items].sort((a, b) => new Date(b.publishedAt ?? 0).getTime() - new Date(a.publishedAt ?? 0).getTime());
++  // The API orders by verified availability and its cursor; raw dates are not
++  // instants and must not be reinterpreted as epoch or browser-local time here.
++  const sortedItems = items;
+   const representativeId = sortedItems.reduce<{ id: string; score: number } | null>((best, e) => {
+-    const s = e.contributionScore ?? -Infinity;
+-    return !best || s > best.score ? { id: e.newsId, score: s } : best;
++    if (e.contributionScore == null) return best;
++    const s = e.contributionScore;
++    return !best || s > best.score ? { id: e.evidenceId ?? e.documentId ?? e.newsId, score: s } : best;
+   }, null)?.id;
+ 
+   const edge = model && r ? model.edgeById.get(relationshipId) : undefined;
+@@ -125,6 +128,12 @@
+             <div className="meta mt-8" style={{ lineHeight: 1.6 }}>
+               {meta.description}
+             </div>
++            {r.explanation && (
++              <div className="ev-why mt-16">
++                <div className="kick ev-why-title">{r.explanationScope === "HISTORICAL" ? "관계 형성 이력 설명" : "관계의 근거"}</div>
++                <p style={{ whiteSpace: "pre-wrap", lineHeight: 1.7 }}>{r.explanation}</p>
++              </div>
++            )}
+ 
+             <div className="row between mt-20">
+               <span className="kick">관계 점수</span>
+@@ -165,7 +174,7 @@
+             <div className="stat-grid mt-16">
+               <div className="stat">
+                 <div className="lab">신뢰도</div>
+-                <div className="v num">{fmtPctFrom01(r.confidence)}</div>
++                <div className="v num">{r.confidence == null ? "미제공" : fmtPctFrom01(r.confidence)}</div>
+               </div>
+               <div className="stat">
+                 <div className="lab">근거 문서</div>
+@@ -183,37 +192,37 @@
+               <span className="kick">{EVIDENCE_UI.timelineKicker}</span>
+               <span className="meta">{EVIDENCE_UI.timelineOrder}</span>
+             </div>
+-            {sortedItems.length > 0 && <div className="meta ev-timeline-summary">{EVIDENCE_UI.timelineSummary(sortedItems.length, fmtRelative(sortedItems[0].publishedAt))}</div>}
++            {sortedItems.length > 0 && <div className="meta ev-timeline-summary">{window} 점수에 반영된 뉴스·공시 근거 {sortedItems.length}건</div>}
+ 
+             <div className="ev-timeline mt-12">
+               {evidence.isLoading && [0, 1].map((i) => <Skeleton key={i} h={96} style={{ borderRadius: 14 }} />)}
+               {!evidence.isLoading && !sortedItems.length && (
+                 <div>
+                   <Empty>{EVIDENCE_UI.noEvidence}</Empty>
+-                  <div className="meta mt-8">{EVIDENCE_UI.disclosure}</div>
+                 </div>
+               )}
+               {sortedItems.map((e) => (
+-                <div key={e.newsId} className="ev-item" style={{ opacity: ageOpacityOf(e.publishedAt) }}>
++                <div key={e.evidenceId ?? e.documentId ?? e.newsId} className="ev-item" style={{ opacity: ageOpacityOf(e.publishedAt) }}>
+                   <div className="ev-item-rail" aria-hidden="true">
+                     <i className="ev-item-dot" />
+                   </div>
+                   <div className="ev-item-body">
+                     <div className="row between">
+-                      <span className="meta num">{[e.publisher, fmtRelative(e.publishedAt)].filter(Boolean).join(" · ")}</span>
++                      <span className="meta num">{[e.sourceType === "DISCLOSURE" ? "공시" : "뉴스", e.publisher, fmtPublication(e, true)].filter(Boolean).join(" · ")}</span>
+                       <span className="meta num">
+-                        {EVIDENCE_UI.contribution} {(e.contributionScore ?? 0).toFixed(2)}
++                        {EVIDENCE_UI.contribution} {e.contributionScore == null ? "미제공" : e.contributionScore.toFixed(2)}
+                       </span>
+                     </div>
+-                    <span className="bar ev-item-bar">
++                    {e.contributionScore != null && <span className="bar ev-item-bar">
+                       <i style={{ width: `${pct01(e.contributionScore)}%`, background: meta.color }} />
+-                    </span>
+-                    {e.newsId === representativeId && <span className="badge ev-rep-badge">{EVIDENCE_UI.representative}</span>}
++                    </span>}
++                    {(e.evidenceId ?? e.documentId ?? e.newsId) === representativeId && <span className="badge ev-rep-badge">{EVIDENCE_UI.representative}</span>}
++                    <div className="lab mt-8">{e.title}</div>
+                     <div className="ev-item-quote">
+-                      <q>{e.evidenceSentence}</q>
++                      {e.evidenceSentence ? <q>{e.evidenceSentence}</q> : <span className="meta">원문 인용 미제공</span>}
+                     </div>
+                     <div className="ev-item-actions">
+-                      <button type="button" className="link-btn" onClick={() => void copyEvidenceSentence(e)}>
++                      <button type="button" className="link-btn" disabled={!e.evidenceSentence} onClick={() => void copyEvidenceSentence(e)}>
+                         {EVIDENCE_UI.copy}
+                       </button>
+                       <a href={e.originalUrl} target="_blank" rel="noreferrer" className="link-btn row" style={{ gap: 4 }}>
+diff --git a/FrontEnd/src/features/galaxy/SceneTip.tsx b/FrontEnd/src/features/galaxy/SceneTip.tsx
+--- a/FrontEnd/src/features/galaxy/SceneTip.tsx
++++ b/FrontEnd/src/features/galaxy/SceneTip.tsx
+@@ -1,7 +1,7 @@
+ import { useEffect, useRef, useState, type RefObject } from "react";
+ import type { ImpactDirection } from "@/api/types";
+ import { ImpactBadge, IndustryBadge, Skeleton, TypeBadge } from "@/components/ui";
+-import { fmtPctFrom01, fmtRelative, fmtScore } from "@/lib/format";
++import { fmtPctFrom01, fmtPublication, fmtScore } from "@/lib/format";
+ import type { SceneModel } from "@/lib/graph";
+ import { EVIDENCE_UI, SURPRISE_UI, TIP_NODE_HINT } from "@/lib/guide";
+ import { IMPACT_META, relationshipMeta } from "@/lib/meta";
+@@ -37,7 +37,7 @@
+ }
+ 
+ function impactLabelOf(v: ImpactDirection | null | undefined) {
+-  return (v && IMPACT_META[v]?.label) ?? IMPACT_META.NEUTRAL.label;
++  return (v && IMPACT_META[v]?.label) ?? "미분석";
+ }
+ 
+ /**
+@@ -68,7 +68,7 @@
+   // 3행 — 2행과 별도로 300ms 더 머물러야 대표 근거를 요청한다(스침 필터 이중화)
+   const debouncedEdgeId300 = useDebounced(edge?.id ?? null, 300);
+   const topEvId = open && edge && detail && detail.evidenceCount > 0 && debouncedEdgeId300 === edge.id ? debouncedEdgeId300 : null;
+-  const topEv = useTopEvidence(topEvId);
++  const topEv = useTopEvidence(topEvId, window_);
+ 
+   // 열려 있는 동안만 rAF 로 포인터를 따라간다. 스테이지 우·하단을 넘치면 좌·상으로 뒤집는다
+   useEffect(() => {
+@@ -179,7 +179,7 @@
+           // 캐시에 있는 문장은 상한과 무관하게 보여 준다 — 상한은 "새 요청" 을 막는 것이지 이미 받은 답을 가리는 것이 아니다
+           <>
+             <div className="ev-quote">
+-              <q>{topItem.evidenceSentence}</q> — {[topItem.publisher, fmtRelative(topItem.publishedAt)].filter(Boolean).join(" · ")}
++              {topItem.evidenceSentence ? <q>{topItem.evidenceSentence}</q> : "원문 인용 미제공"} — {[topItem.sourceType === "DISCLOSURE" ? "공시" : "뉴스", topItem.publisher, fmtPublication(topItem, true)].filter(Boolean).join(" · ")}
+             </div>
+             <div className="ev-more">{EVIDENCE_UI.hoverMore(detail.evidenceCount)}</div>
+           </>
+diff --git a/FrontEnd/src/features/news/KpiEvidenceDialog.tsx b/FrontEnd/src/features/news/KpiEvidenceDialog.tsx
+--- a/FrontEnd/src/features/news/KpiEvidenceDialog.tsx
++++ b/FrontEnd/src/features/news/KpiEvidenceDialog.tsx
+@@ -17,7 +17,7 @@
+   companies: "선택 뉴스 연결 기업",
+   sentiment: "긍정 / 부정 기업",
+   evidence: "대표 근거 문장",
+-  confidence: "분석 신뢰도",
++  confidence: "근거 신뢰도",
+ };
+ 
+ /**
+@@ -81,7 +81,7 @@
+             <span className="nm">
+               <b>{r.name}</b>
+               <span className="meta num">
+-                관련도 {fmtPctFrom01(r.relevanceScore)} · 영향도 {fmtPctFrom01(r.impactScore)}
++                관련도 {r.relevanceScore == null ? "미제공" : fmtPctFrom01(r.relevanceScore)} · 영향도 {r.impactScore == null ? "분석 전" : fmtPctFrom01(r.impactScore)}
+               </span>
+             </span>
+             <SentimentBadge value={r.sentiment} />
+@@ -156,7 +156,7 @@
+         {news.evidence.map((e, i) => (
+           <div key={i} className="evidence">
+             <q>{e.sentence}</q>
+-            <div className="meta num mt-8">신뢰도 {fmtPctFrom01(e.confidence)}</div>
++            <div className="meta num mt-8">신뢰도 {e.confidence == null ? "미제공" : fmtPctFrom01(e.confidence)}</div>
+           </div>
+         ))}
+       </div>
+@@ -166,19 +166,20 @@
+ 
+ function ConfidenceBasis({ news }: { news: NewsDetail }) {
+   if (!news.evidence.length) return <Empty>추출된 근거 문장이 없어 신뢰도를 계산할 수 없습니다.</Empty>;
+-  const parts = news.evidence.map((e) => e.confidence ?? 0);
++  const parts = news.evidence.map((e) => e.confidence).filter((value): value is number => value != null && Number.isFinite(value));
++  if (!parts.length) return <Empty>근거 문장은 있지만 신뢰도 값은 제공되지 않았습니다.</Empty>;
+   const avg = Math.round((parts.reduce((s, v) => s + v, 0) / parts.length) * 100);
+   const hasMissing = news.evidence.some((e) => e.confidence == null);
+   return (
+     <>
+       <div className="meta mt-8">
+-        근거 문장 {news.evidence.length}개의 신뢰도 평균입니다{hasMissing ? " (신뢰도가 없는 문장은 0으로 계산합니다)" : ""}.
++        신뢰도가 제공된 근거 문장 {parts.length}개의 평균입니다{hasMissing ? " (미제공 문장은 계산에서 제외)" : ""}. 주가 예측의 정확도를 의미하지 않습니다.
+       </div>
+       <div className="ev-list mt-12">
+         {news.evidence.map((e, i) => (
+           <div key={i} className="evidence">
+             <q>{e.sentence}</q>
+-            <div className="meta num mt-8">신뢰도 {fmtPctFrom01(e.confidence)}</div>
++            <div className="meta num mt-8">신뢰도 {e.confidence == null ? "미제공" : fmtPctFrom01(e.confidence)}</div>
+           </div>
+         ))}
+       </div>
+diff --git a/FrontEnd/src/features/news/NewsPage.tsx b/FrontEnd/src/features/news/NewsPage.tsx
+--- a/FrontEnd/src/features/news/NewsPage.tsx
++++ b/FrontEnd/src/features/news/NewsPage.tsx
+@@ -1,554 +1,480 @@
+-import { useEffect, useMemo, useState } from "react";
+-import { useNavigate, useSearchParams } from "react-router-dom";
+-import { useQueryClient } from "@tanstack/react-query";
+-import type { GraphEdge, LatestGraph, LatestGraphNode, NewsDetail, NewsRelatedCompany, RelationshipType, Sentiment } from "@/api/types";
+-import { fmtDateTime, fmtRelative, josa } from "@/lib/format";
+-import { SENTIMENTS, SENTIMENT_META, UNCLASSIFIED_INDUSTRY, marketLabel, relationshipMeta } from "@/lib/meta";
+-import { useCompany, useIndustries, useLatestGraph, useNewsDetail, useNewsFeed, useToggleScrap, useToggleWatch, useWatchedSet } from "@/lib/queries";
+-import { useSession } from "@/store/session";
+-import { useUi } from "@/store/ui";
+-import { CompanyAvatar, Empty, ErrorNotice, Icon, Kpi, ScoreBar, SentimentBadge, Skeleton } from "@/components/ui";
+-import DistributionDialog from "./DistributionDialog";
+-import KpiEvidenceDialog, { type KpiEvidenceKind } from "./KpiEvidenceDialog";
+-import RelationMap2D from "./RelationMap2D";
+-import "./news.css";
+-
+-/**
+- * 뉴스 (화면구성도 ⑦~⑨, 시안 A1). 좌측 컨텍스트 레일 + 우측 관계도.
+- * 관계도의 기업 노드를 누르면 좌측 목록이 그 기업 뉴스로 전환되고 브레드크럼이 복귀 경로를 보여준다.
+- */
+-export default function NewsPage() {
+-  const [params, setParams] = useSearchParams();
+-  const navigate = useNavigate();
+-  const qc = useQueryClient();
+-  const toast = useUi((s) => s.toast);
+-  const authed = useSession((s) => s.status === "authed");
+-  const openAuth = useUi((s) => s.openAuth);
+-
+-  const companyId = params.get("company");
+-  const [industryId, setIndustryId] = useState<string | null>(null);
+-  const [sentiment, setSentiment] = useState<Sentiment | null>(null);
+-  const [selectedId, setSelectedId] = useState<string | null>(null);
+-  /* 목록에서 뉴스를 고르면 — 1100px 이하(목록 아래에 분석이 세로로 쌓이는 레이아웃)에서는 선택 뉴스 카드(.map-card)로 바로 내려간다.
+-     넓은 화면은 두 컬럼이 나란히 보여 스크롤할 것이 없다. 스크롤 여백은 news.css 의 scroll-margin-top(헤더 높이) */
+-  const pickNews = (id: string) => {
+-    setSelectedId(id);
+-    if (!window.matchMedia("(max-width: 1100px)").matches) return;
+-    // .map-card 는 늘 그려져 있어 렌더를 기다릴 필요가 없다 (rAF 에 미루면 숨겨진 탭에서는 실행되지 않는다)
+-    document.querySelector(".map-card")?.scrollIntoView({ behavior: "smooth", block: "start" });
+-  };
+-  const [keywordInput, setKeywordInput] = useState("");
+-  const [keyword, setKeyword] = useState("");
+-  const [kpiModal, setKpiModal] = useState<KpiEvidenceKind | null>(null);
+-  const [showDist, setShowDist] = useState(false);
+-
+-  // 입력마다 요청이 나가지 않도록 디바운스한다 (live 모드에서 백엔드 호출 폭주 방지)
+-  useEffect(() => {
+-    const t = setTimeout(() => setKeyword(keywordInput.trim()), 300);
+-    return () => clearTimeout(t);
+-  }, [keywordInput]);
+-
+-  const industries = useIndustries();
+-  const universe = useLatestGraph(null);
+-  const company = useCompany(companyId);
+-  const feed = useNewsFeed({ companyId: companyId ?? undefined, industryId: companyId ? undefined : industryId ?? undefined, sentiment: sentiment ?? undefined, keyword: keyword || undefined, size: 20 });
+-  const items = useMemo(() => feed.data?.pages.flatMap((p) => p.items) ?? [], [feed.data]);
+-
+-  // 목록이 바뀌거나(필터 변경 등) 선택된 기사가 새 목록에 없으면 첫 기사를 기본값으로 본다.
+-  // effect에서 setState로 동기화하면 렌더가 한 번 더 캐스케이드되므로, 렌더링 중 파생값으로 계산한다.
+-  const activeId = selectedId && items.some((n) => n.newsId === selectedId) ? selectedId : items[0]?.newsId ?? null;
+-
+-  const detail = useNewsDetail(activeId);
+-  const toggleScrap = useToggleScrap();
+-  const toggleWatch = useToggleWatch();
+-  const watchedSet = useWatchedSet();
+-  // 백엔드 기업 상세의 watched 가 아직 항상 false 라 내 관심 목록과 합쳐 판단한다 (queries.useWatchedSet)
+-  const companyWatched = Boolean(company.data?.watched) || (companyId ? watchedSet.has(companyId) : false);
+-
+-  const setCompany = (id: string | null) => {
+-    const next = new URLSearchParams(params);
+-    if (id) next.set("company", id);
+-    else next.delete("company");
+-    setParams(next);
+-    setSentiment(null);
+-  };
+-
+-  /* 관계 지도 모델: 선택 뉴스가 직접 언급한 기업들. 1홉 확장은 관련 기업이 많은 뉴스에서 선이 한 점에
+-   * 뭉치거나 목록이 지나치게 길어지는 문제가 있었고, 무엇보다 '뉴스가 실제로 언급한 기업'만 보는 편이
+-   * 명확하다는 팀 합의로 기능 자체를 없앴다 — 은하 뷰의 3D 그래프를 여기 다시 그리지 않기로 한 것과
+-   * 같은 이유다(은하 페이지에 이미 1홉·다홉 탐색이 있다). */
+-  const seedIds = useMemo(() => {
+-    const d = detail.data;
+-    if (!d) return [] as string[];
+-    const weight = (r: NewsRelatedCompany) => (r.relevanceScore ?? 0) * (r.impactScore ?? 0);
+-    const sorted = d.relatedCompanies.slice().sort((a, b) => weight(b) - weight(a));
+-    const ids = sorted.map((r) => r.companyId);
+-    if (companyId && ids.includes(companyId)) return [companyId, ...ids.filter((x) => x !== companyId)];
+-    return ids;
+-  }, [detail.data, companyId]);
+-  const seedSet = useMemo(() => new Set(seedIds.filter((id) => universe.data?.nodes.some((n) => n.companyId === id))), [seedIds, universe.data]);
+-  const mapNodes: LatestGraphNode[] = useMemo(() => (universe.data ? universe.data.nodes.filter((n) => seedSet.has(n.companyId)) : []), [universe.data, seedSet]);
+-  const mapEdges = useMemo(
+-    () => (universe.data ? universe.data.edges.filter((e) => seedSet.has(e.sourceCompanyId) && seedSet.has(e.targetCompanyId)) : []),
+-    [universe.data, seedSet],
+-  );
+-
+-  const analysis = useMemo(() => (detail.data && universe.data ? analyze(detail.data, universe.data) : null), [detail.data, universe.data]);
+-
+-  const kpi = detail.data
+-    ? {
+-        companies: detail.data.relatedCompanies.length,
+-        pos: detail.data.relatedCompanies.filter((r) => r.sentiment === "POSITIVE").length,
+-        neg: detail.data.relatedCompanies.filter((r) => r.sentiment === "NEGATIVE").length,
+-        evidence: detail.data.evidence.length,
+-        confidence: detail.data.evidence.length ? Math.round((detail.data.evidence.reduce((s, e) => s + (e.confidence ?? 0), 0) / detail.data.evidence.length) * 100) : null,
+-      }
+-    : null;
+-
+-  /**
+-   * 산업·관계 유형 분포 — 새 API 호출 없이 관계 지도에 이미 쓰던 mapNodes/mapEdges만으로 계산한다.
+-   * 예전엔 랭킹 카드 옆에 항상 펼쳐 둔 카드였지만, 언급 기업이 몇 개 안 되는 뉴스가 대부분이라
+-   * 칩 한두 줄만 채워지고 카드 높이(랭킹 카드 기준)만큼 빈 공간이 크게 남는 문제가 있었다.
+-   * 항상 봐야 할 만큼 핵심적인 정보는 아니라고 보고 스크랩·원문 보기 버튼 옆의 보조 버튼 +
+-   * 모달(DistributionDialog)로 옮기고, 랭킹 카드가 하단 영역 전체를 쓰도록 바꿨다.
+-   */
+-  const industryDist = useMemo(() => {
+-    const m = new Map<string, number>();
+-    mapNodes.forEach((n) => {
+-      const key = n.industryName ?? UNCLASSIFIED_INDUSTRY;
+-      m.set(key, (m.get(key) ?? 0) + 1);
+-    });
+-    return [...m.entries()].sort((a, b) => b[1] - a[1]).map(([name, count]) => ({ name, count }));
+-  }, [mapNodes]);
+-  const relDist = useMemo(() => {
+-    const m = new Map<RelationshipType, number>();
+-    mapEdges.forEach((e) => m.set(e.relationshipType, (m.get(e.relationshipType) ?? 0) + 1));
+-    return [...m.entries()].sort((a, b) => b[1] - a[1]).map(([type, count]) => ({ type, count, meta: relationshipMeta(type) }));
+-  }, [mapEdges]);
+-
+-  return (
+-    <div className="page news-viewport">
+-      <div className="row between wrap" style={{ marginBottom: 14 }}>
+-        <span className="status-line">
+-          <i className="dot" />
+-          {universe.data ? `스냅샷 ${fmtDateTime(universe.data.asOfAt)} 기준 · 1시간 단위 갱신` : universe.isError ? "공개된 관계 스냅샷 없음 — 관계 지도는 분석 결과 게시 후 나타납니다" : "스냅샷 확인 중"}
+-        </span>
+-        <button
+-          type="button"
+-          className="btn btn-g btn-sm"
+-          onClick={() => {
+-            qc.invalidateQueries({ queryKey: ["news"] });
+-            qc.invalidateQueries({ queryKey: ["graph", "latest"] });
+-            toast("최신 뉴스·관계 데이터로 새로고침했습니다.", "success");
+-          }}
+-        >
+-          <Icon.Refresh /> 새로고침
+-        </button>
+-      </div>
+-
+-      <div className="news-page">
+-        {/* ---------------- 좌측 레일 ---------------- */}
+-        <section className="card news-rail" aria-label="뉴스 목록">
+-          {companyId ? (
+-            <>
+-              <div className="crumbs">
+-                <button type="button" onClick={() => setCompany(null)}>
+-                  전체 뉴스
+-                </button>
+-                <span aria-hidden="true">›</span>
+-                <b>{company.data?.name ?? "…"}</b>
+-                <button type="button" className="reset" onClick={() => setCompany(null)}>
+-                  전체로 <Icon.Close />
+-                </button>
+-              </div>
+-              <div className="company-ctx">
+-                {company.data && <CompanyAvatar name={company.data.name} stockCode={company.data.stockCode} market={company.data.market} industry={company.data.industries[0]?.name} size={40} />}
+-                <div className="grow">
+-                  <div className="nm">{company.data?.name ?? <Skeleton h={18} w={120} />} 뉴스</div>
+-                  <div className="meta num">
+-                    {[company.data?.stockCode, company.data?.industries.find((i) => i.primary)?.name, `${items.length}건${feed.hasNextPage ? "+" : ""}`].filter(Boolean).join(" · ")}
+-                  </div>
+-                </div>
+-              </div>
+-              <label className="field search-field mt-12">
+-                <Icon.Search />
+-                <input placeholder="제목으로 뉴스 검색" value={keywordInput} onChange={(e) => setKeywordInput(e.target.value)} aria-label="뉴스 검색" />
+-              </label>
+-              <div className="row wrap mt-12" style={{ gap: 7 }}>
+-                <button type="button" className={`chip chip-sm ${sentiment === null ? "on" : ""}`} onClick={() => setSentiment(null)}>
+-                  전체
+-                </button>
+-                {SENTIMENTS.map((s) => (
+-                  <button key={s} type="button" className={`chip chip-sm ${sentiment === s ? "on" : ""}`} onClick={() => setSentiment(s)}>
+-                    <i style={{ background: SENTIMENT_META[s].color }} />
+-                    {SENTIMENT_META[s].label}
+-                  </button>
+-                ))}
+-              </div>
+-            </>
+-          ) : (
+-            <>
+-              <div className="row between">
+-                <div>
+-                  <div className="kick">latest feed</div>
+-                  <h2 className="sect" style={{ marginTop: 6 }}>
+-                    최신 뉴스
+-                  </h2>
+-                </div>
+-                <select className="industry-select" value={industryId ?? ""} onChange={(e) => setIndustryId(e.target.value || null)} aria-label="산업 필터">
+-                  <option value="">전체 산업</option>
+-                  {industries.data?.items
+-                    .filter((i) => i.companyCount > 0)
+-                    .map((i) => (
+-                      <option key={i.industryId} value={i.industryId}>
+-                        {i.name}
+-                      </option>
+-                    ))}
+-                </select>
+-              </div>
+-              <label className="field search-field mt-12">
+-                <Icon.Search />
+-                <input placeholder="제목으로 뉴스 검색" value={keywordInput} onChange={(e) => setKeywordInput(e.target.value)} aria-label="뉴스 검색" />
+-              </label>
+-            </>
+-          )}
+-
+-          <div className="list scroll stack">
+-            {feed.isLoading && [0, 1, 2, 3].map((i) => <Skeleton key={i} h={110} style={{ borderRadius: 14 }} />)}
+-            {!feed.isLoading && feed.isError && !items.length && <ErrorNotice message="뉴스를 불러오지 못했습니다." onRetry={() => feed.refetch()} />}
+-            {!feed.isLoading && !feed.isError && !items.length && <Empty>조건에 맞는 뉴스가 없습니다.</Empty>}
+-            {items.map((n) => (
+-              <article key={n.newsId} className={`news-card ${n.newsId === activeId ? "on" : ""}`} onClick={() => pickNews(n.newsId)} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && pickNews(n.newsId)}>
+-                <div className="row between">
+-                  <div className="row" style={{ gap: 8 }}>
+-                    <SentimentBadge value={n.sentiment} />
+-                    <span className="lab">
+-                      연결 <b className="num">{n.relatedCompanies.length}</b>
+-                    </span>
+-                  </div>
+-                  <span className="meta num">{[n.publisher, fmtRelative(n.publishedAt)].filter(Boolean).join(" · ")}</span>
+-                </div>
+-                <div className="title clamp-2">{n.title}</div>
+-                <div className="summary clamp-2">{n.summary}</div>
+-              </article>
+-            ))}
+-            {feed.hasNextPage && (
+-              <button type="button" className="more-btn" onClick={() => feed.fetchNextPage()} disabled={feed.isFetchingNextPage}>
+-                {feed.isFetchingNextPage ? "불러오는 중…" : "더 보기"}
+-              </button>
+-            )}
+-          </div>
+-        </section>
+-
+-        {/* ---------------- 우측 ---------------- */}
+-        <section className="news-analysis-col" aria-label="관계 분석">
+-          <div className="kpi-row">
+-            <Kpi label="선택 뉴스 연결 기업" value={kpi?.companies ?? "-"} unit="개사" onClick={detail.data ? () => setKpiModal("companies") : undefined} />
+-            <Kpi
+-              label="긍정 / 부정 기업"
+-              value={kpi ? `${kpi.pos} / ${kpi.neg}` : "-"}
+-              tone={kpi && kpi.neg > kpi.pos ? "var(--neg-fg)" : undefined}
+-              onClick={detail.data ? () => setKpiModal("sentiment") : undefined}
+-            />
+-            <Kpi label="대표 근거 문장" value={kpi?.evidence ?? "-"} unit="개" onClick={detail.data ? () => setKpiModal("evidence") : undefined} />
+-            <Kpi label="분석 신뢰도" value={kpi?.confidence ?? "-"} unit="/100" onClick={detail.data ? () => setKpiModal("confidence") : undefined} />
+-          </div>
+-
+-          <div className="card map-card">
+-            <div className="map-head">
+-              {companyId && company.data ? (
+-                <div className="row" style={{ gap: 12, alignItems: "flex-start" }}>
+-                  <CompanyAvatar name={company.data.name} stockCode={company.data.stockCode} market={company.data.market} industry={company.data.industries[0]?.name} size={44} />
+-                  <div>
+-                    <div className="kick" style={{ color: "var(--primary-2)" }}>
+-                      focused company
+-                    </div>
+-                    <div className="ttl">{company.data.name}</div>
+-                    <div className="meta">선택 뉴스 「{detail.isError ? "불러오기 실패" : detail.data?.title.slice(0, 26) ?? "…"}…」 기준 관계망</div>
+-                  </div>
+-                </div>
+-              ) : (
+-                <div className="grow">
+-                  <div className="kick" style={{ color: "var(--primary-2)" }}>
+-                    selected news
+-                  </div>
+-                  {detail.isError ? (
+-                    <ErrorNotice message="선택한 뉴스를 불러오지 못했습니다." onRetry={() => detail.refetch()} />
+-                  ) : (
+-                    <>
+-                      <div className="ttl">{detail.data?.title ?? <Skeleton h={22} w={360} />}</div>
+-                      <div className="meta num mt-8">{detail.data ? [detail.data.publisher, fmtDateTime(detail.data.publishedAt), detail.data.author].filter(Boolean).join(" · ") : ""}</div>
+-                      {detail.data?.summary && <p className="map-summary">{detail.data.summary}</p>}
+-                    </>
+-                  )}
+-                </div>
+-              )}
+-              <div className="row" style={{ gap: 8, flex: "none" }}>
+-                {companyId && company.data ? (
+-                  <>
+-                    <button
+-                      type="button"
+-                      className={`btn btn-g btn-sm ${companyWatched ? "on" : ""}`}
+-                      onClick={() =>
+-                        authed
+-                          ? toggleWatch.mutate(
+-                              { companyId: company.data!.companyId, watched: companyWatched },
+-                              { onSuccess: (now) => toast(now ? "관심 기업으로 등록했습니다." : "관심 기업에서 해제했습니다.", "success") },
+-                            )
+-                          : openAuth("login")
+-                      }
+-                      style={{ color: companyWatched ? "var(--primary-2)" : undefined }}
+-                    >
+-                      <Icon.Star filled={companyWatched} /> {companyWatched ? "관심 기업" : "관심 기업 +"}
+-                    </button>
+-                    <button type="button" className="btn btn-g btn-sm" onClick={() => setShowDist(true)}>
+-                      산업·관계 분포
+-                    </button>
+-                    <button type="button" className="btn btn-p btn-sm" onClick={() => navigate(`/?company=${companyId}`)}>
+-                      기업 상세 ↗
+-                    </button>
+-                  </>
+-                ) : (
+-                  detail.data && (
+-                    <>
+-                      <button
+-                        type="button"
+-                        className="btn btn-g btn-sm"
+-                        onClick={() => (authed ? toggleScrap.mutate({ newsId: detail.data!.newsId, scrapped: detail.data!.scrapped }, { onSuccess: (now) => toast(now ? "스크랩했습니다." : "스크랩을 해제했습니다.", "success") }) : openAuth("login"))}
+-                        style={{ color: detail.data.scrapped ? "var(--primary-2)" : undefined }}
+-                      >
+-                        <Icon.Bookmark filled={detail.data.scrapped} /> {detail.data.scrapped ? "스크랩됨" : "스크랩"}
+-                      </button>
+-                      <button type="button" className="btn btn-g btn-sm" onClick={() => setShowDist(true)}>
+-                        산업·관계 분포
+-                      </button>
+-                      <a
+-                        className="btn btn-p btn-sm"
+-                        href={detail.data.originalUrl}
+-                        target="_blank"
+-                        rel="noreferrer"
+-                        style={{ flex: "none" }}
+-                      >
+-                        원문 보기 <Icon.External />
+-                      </a>
+-                    </>
+-                  )
+-                )}
+-              </div>
+-            </div>
+-            {/* <div className="map-tools">
+-              <span className="pill">
+-                RELATION MAP · {mapNodes.length} NODES · {mapEdges.length} EDGES
+-              </span>
+-              <TypeLegend />
+-            </div> */}
+-            <div className="map-stage">
+-              {mapNodes.length ? (
+-                <RelationMap2D
+-                  nodes={mapNodes}
+-                  edges={mapEdges}
+-                  related={detail.data?.relatedCompanies}
+-                  highlightId={companyId}
+-                  onPickCompany={(id) => setCompany(id)}
+-                  onOpenInGalaxy={(relationshipId) => navigate(`/?edge=${relationshipId}`)}
+-                />
+-              ) : (
+-                <div className="stage-loading">
+-                  <span className="kick">relation map</span>
+-                  <i />
+-                  <span>
+-                    {detail.isLoading || universe.isLoading
+-                      ? "관계 지도를 만드는 중"
+-                      : universe.isError
+-                        ? "공개된 관계 스냅샷이 없어 관계 지도를 표시할 수 없습니다"
+-                        : "이 뉴스와 연결된 기업이 그래프에 없습니다"}
+-                  </span>
+-                </div>
+-              )}
+-            </div>
+-          </div>
+-
+-          {/* ---------------- 하단 분석 ---------------- */}
+-          {/* "산업·관계 유형 분포" 카드를 스크랩·원문 보기 옆 모달로 옮기면서 이 영역을 랭킹
+-              카드 하나가 전부 쓰도록 바꿨다. 랭킹 목록은 한 줄에 기업 1개씩(.rank-list) 나열하되,
+-              예전엔 이름 아래 두 번째 줄로 내려가던 시장·종목코드와, 행 아래 별도 줄이던 "왜
+-              이어지는지" 설명을 모두 이름 오른쪽(같은 줄)으로 옮겨 항목의 상하 길이를 줄였다.
+-              점수 막대는 한 줄 전체 폭으로 늘어지지 않도록 고정 폭 래퍼(.rank-bar-wrap)로 감쌌다. */}
+-          <div className="analysis">
+-            <div className="card">
+-              <div className="kick">영향 분석</div>
+-              <div className="row between mt-8">
+-                <h2 className="sect">영향도가 큰 기업</h2>
+-                <span className="pill">점수순 · 100 기준</span>
+-              </div>
+-              <div className="rank-list">
+-                {!analysis && [0, 1, 2, 3].map((i) => <Skeleton key={i} h={44} style={{ marginTop: i ? 8 : 0 }} />)}
+-                {analysis?.ranking.map((r, i) => {
+-                  // 왜 이 기업까지 영향이 이어지는지 — 간접 전이(hop>0) 행에서만 있다. 예전엔 행
+-                  // 아래 별도 줄로 보여줬지만, 항목 높이를 줄이기 위해 이름 옆 meta 텍스트에
+-                  // 이어 붙였다(폭이 모자라면 말줄임). 문장 속 기업명 둘·관계 유형·점수(AA는 BB와
+-                  // CC 관계(점수 DD)로 이어져 있습니다)가 눈에 띄도록 각각 다른 색을 준다 — AA는 이
+-                  // 행 자체의 간접 전이 색(주황, 막대 색과 동일), BB는 직접 언급 색(파랑)으로 둘을
+-                  // 구분하고, CC는 관계 유형이 다른 화면에서도 쓰는 고유색(relationshipMeta), DD는
+-                  // 점수를 가리키는 별도 강조색(초록)을 쓴다.
+-                  const why =
+-                    r.hop > 0 && r.via && r.fromName
+-                      ? {
+-                          name: r.name,
+-                          from: r.fromName,
+-                          relLabel: relationshipMeta(r.via.relationshipType).label,
+-                          relColor: relationshipMeta(r.via.relationshipType).color,
+-                          score: Math.round(r.via.score),
+-                        }
+-                      : null;
+-                  const whyPlain = why ? `${why.name}${josa(why.name, "은", "는")} ${why.from}${josa(why.from, "과", "와")} '${why.relLabel}' 관계(점수 ${why.score})로 이어져 있습니다.` : null;
+-                  return (
+-                    <button key={r.id} type="button" className="rank" onClick={() => setCompany(r.id)} title={whyPlain ?? "이 기업 뉴스 보기"}>
+-                      <span className="rank-row">
+-                        <span className="kick num idx">{String(i + 1).padStart(2, "0")}</span>
+-                        <CompanyAvatar name={r.name} companyId={r.id} stockCode={r.stockCode} market={r.market} industry={r.industry} size={32} radius={16} />
+-                        <span className="nm">
+-                          <b>{r.name}</b>
+-                          <span className="meta num">
+-                            {[marketLabel(r.market), r.stockCode].filter(Boolean).join(" · ")}
+-                            {why && (
+-                              <>
+-                                {" · "}
+-                                <span className="why-hl" style={{ color: "#F5A623" }}>
+-                                  {why.name}
+-                                </span>
+-                                {josa(why.name, "은", "는")}{" "}
+-                                <span className="why-hl" style={{ color: "#829CFF" }}>
+-                                  {why.from}
+-                                </span>
+-                                {josa(why.from, "과", "와")} '
+-                                <span className="why-hl" style={{ color: why.relColor }}>
+-                                  {why.relLabel}
+-                                </span>
+-                                ' 관계(점수{" "}
+-                                <span className="why-hl" style={{ color: "#2AC769" }}>
+-                                  {why.score}
+-                                </span>
+-                                )로 이어져 있습니다.
+-                              </>
+-                            )}
+-                          </span>
+-                        </span>
+-                        <span className="rank-bar-wrap">
+-                          <ScoreBar score={r.score} color={r.hop === 0 ? "#829CFF" : "#F5A623"} />
+-                        </span>
+-                        <span className="sc">
+-                          <b className="num">{r.score}</b>
+-                          <span className="meta num">{r.hop === 0 ? "직접 언급" : `${r.hop} HOP`}</span>
+-                        </span>
+-                      </span>
+-                    </button>
+-                  );
+-                })}
+-              </div>
+-              <div className="row mt-12" style={{ gap: 16 }}>
+-                <span className="meta row" style={{ gap: 6 }}>
+-                  <i className="dot" style={{ background: "#829CFF" }} /> 직접 언급 (기사 관련도 × 영향도)
+-                </span>
+-                <span className="meta row" style={{ gap: 6 }}>
+-                  <i className="dot" style={{ background: "#F5A623" }} /> 간접 전이 (관계 점수로 감쇠)
+-                </span>
+-              </div>
+-              <div className="meta mt-8" style={{ lineHeight: 1.7 }}>
+-                기사 영향도에 관계 점수(0~1)를 곱해 계산한 프로토타입 점수이며, 투자 판단 자료가 아닙니다.
+-              </div>
+-            </div>
+-          </div>
+-        </section>
+-      </div>
+-
+-      <KpiEvidenceDialog kind={kpiModal} news={detail.data} onClose={() => setKpiModal(null)} onPickCompany={setCompany} />
+-      <DistributionDialog open={showDist} companyCount={mapNodes.length} industryDist={industryDist} relDist={relDist} onClose={() => setShowDist(false)} />
+-    </div>
+-  );
+-}
+-
+-/* ------------------------------------------------------------------ */
+-/* 분석: 영향도 랭킹 + 최강 전이 경로 (클라이언트 계산)                        */
+-/* ------------------------------------------------------------------ */
+-interface RankRow {
+-  id: string;
+-  name: string;
+-  stockCode: string;
+-  market: string;
+-  industry: string;
+-  score: number;
+-  hop: number;
+-  /** hop>0(간접 전이) 행에서 "왜 이 기업까지 이어지는지" 표시에 쓴다 */
+-  via: GraphEdge | null;
+-  fromName: string | null;
+-}
+-const DECAY = 0.82;
+-interface Best {
+-  score: number;
+-  hop: number;
+-  from: string | null;
+-  via: GraphEdge | null;
+-}
+-
+-function analyze(detail: NewsDetail, graph: LatestGraph) {
+-  const info = new Map(graph.nodes.map((n) => [n.companyId, n]));
+-  const adj = new Map<string, GraphEdge[]>();
+-  graph.edges.forEach((e) => {
+-    for (const id of [e.sourceCompanyId, e.targetCompanyId]) {
+-      if (!adj.has(id)) adj.set(id, []);
+-      adj.get(id)!.push(e);
+-    }
+-  });
+-  const best = new Map<string, Best>();
+-  detail.relatedCompanies.forEach((r) => {
+-    const s = Math.round((r.relevanceScore ?? 0) * (r.impactScore ?? 0) * 100);
+-    const cur = best.get(r.companyId);
+-    if (!cur || cur.score < s) best.set(r.companyId, { score: s, hop: 0, from: null, via: null });
+-  });
+-  // 1~2홉 전이
+-  const frontier = [...best.keys()];
+-  for (let hop = 1; hop <= 2; hop += 1) {
+-    const next: string[] = [];
+-    for (const id of frontier) {
+-      const b = best.get(id)!;
+-      if (b.hop !== hop - 1) continue;
+-      for (const e of adj.get(id) ?? []) {
+-        const o = e.sourceCompanyId === id ? e.targetCompanyId : e.sourceCompanyId;
+-        const s = Math.round(b.score * (e.score / 100) * DECAY);
+-        if (s < 3) continue;
+-        const cur = best.get(o);
+-        if (!cur || cur.score < s) {
+-          best.set(o, { score: s, hop, from: id, via: e });
+-          next.push(o);
+-        }
+-      }
+-    }
+-    frontier.push(...next);
+-  }
+-  const nameOf = (id: string) => info.get(id)?.name ?? detail.relatedCompanies.find((r) => r.companyId === id)?.name ?? id;
+-  const ranking: RankRow[] = [...best.entries()]
+-    .map(([id, b]) => {
+-      const n = info.get(id);
+-      const rel = detail.relatedCompanies.find((r) => r.companyId === id);
+-      return {
+-        id,
+-        name: n?.name ?? rel?.name ?? id,
+-        stockCode: n?.stockCode ?? "",
+-        market: n?.market ?? "",
+-        industry: n?.industryName ?? "",
+-        score: b.score,
+-        hop: b.hop,
+-        via: b.via,
+-        fromName: b.from ? nameOf(b.from) : null,
+-      };
+-    })
+-    .sort((a, b) => b.score - a.score)
+-    // 예전엔 세로 한 줄 목록이라 6개로 제한했다. 이제 카드형 그리드로 넓어진 하단 영역을 쓰므로
+-    // (기업이 많은 뉴스에서는 여러 열로 자연히 채워진다) 9개까지 보여준다.
+-    .slice(0, 9);
+-
+-  return { ranking };
+-}
+-
+-export { relationshipMeta };
++import { useEffect, useMemo, useState } from "react";
++import { useNavigate, useSearchParams } from "react-router-dom";
++import { useQueryClient } from "@tanstack/react-query";
++import type { LatestGraphNode, NewsRelatedCompany, RelationshipType, Sentiment } from "@/api/types";
++import { analyzeNewsImpact } from "@/lib/newsImpact";
++import { fmtDateTime, fmtPublication, josa, meanConfidence } from "@/lib/format";
++import { SENTIMENTS, SENTIMENT_META, UNCLASSIFIED_INDUSTRY, marketLabel, relationshipMeta } from "@/lib/meta";
++import { useCompany, useIndustries, useLatestGraph, useNewsDetail, useNewsFeed, useToggleScrap, useToggleWatch, useWatchedSet } from "@/lib/queries";
++import { useSession } from "@/store/session";
++import { useUi } from "@/store/ui";
++import { CompanyAvatar, Empty, ErrorNotice, Icon, Kpi, ScoreBar, SentimentBadge, Skeleton } from "@/components/ui";
++import DistributionDialog from "./DistributionDialog";
++import KpiEvidenceDialog, { type KpiEvidenceKind } from "./KpiEvidenceDialog";
++import RelationMap2D from "./RelationMap2D";
++import "./news.css";
++
++/**
++ * 뉴스 (화면구성도 ⑦~⑨, 시안 A1). 좌측 컨텍스트 레일 + 우측 관계도.
++ * 관계도의 기업 노드를 누르면 좌측 목록이 그 기업 뉴스로 전환되고 브레드크럼이 복귀 경로를 보여준다.
++ */
++export default function NewsPage() {
++  const [params, setParams] = useSearchParams();
++  const navigate = useNavigate();
++  const qc = useQueryClient();
++  const toast = useUi((s) => s.toast);
++  const authed = useSession((s) => s.status === "authed");
++  const openAuth = useUi((s) => s.openAuth);
++
++  const companyId = params.get("company");
++  const [industryId, setIndustryId] = useState<string | null>(null);
++  const [sentiment, setSentiment] = useState<Sentiment | null>(null);
++  const [selectedId, setSelectedId] = useState<string | null>(null);
++  /* 목록에서 뉴스를 고르면 — 1100px 이하(목록 아래에 분석이 세로로 쌓이는 레이아웃)에서는 선택 뉴스 카드(.map-card)로 바로 내려간다.
++     넓은 화면은 두 컬럼이 나란히 보여 스크롤할 것이 없다. 스크롤 여백은 news.css 의 scroll-margin-top(헤더 높이) */
++  const pickNews = (id: string) => {
++    setSelectedId(id);
++    if (!window.matchMedia("(max-width: 1100px)").matches) return;
++    // .map-card 는 늘 그려져 있어 렌더를 기다릴 필요가 없다 (rAF 에 미루면 숨겨진 탭에서는 실행되지 않는다)
++    document.querySelector(".map-card")?.scrollIntoView({ behavior: "smooth", block: "start" });
++  };
++  const [keywordInput, setKeywordInput] = useState("");
++  const [keyword, setKeyword] = useState("");
++  const [kpiModal, setKpiModal] = useState<KpiEvidenceKind | null>(null);
++  const [showDist, setShowDist] = useState(false);
++
++  // 입력마다 요청이 나가지 않도록 디바운스한다 (live 모드에서 백엔드 호출 폭주 방지)
++  useEffect(() => {
++    const t = setTimeout(() => setKeyword(keywordInput.trim()), 300);
++    return () => clearTimeout(t);
++  }, [keywordInput]);
++
++  const industries = useIndustries();
++  const universe = useLatestGraph(null);
++  const company = useCompany(companyId);
++  const feed = useNewsFeed({ companyId: companyId ?? undefined, industryId: companyId ? undefined : industryId ?? undefined, sentiment: sentiment ?? undefined, keyword: keyword || undefined, size: 20 });
++  const items = useMemo(() => feed.data?.pages.flatMap((p) => p.items) ?? [], [feed.data]);
++
++  // 목록이 바뀌거나(필터 변경 등) 선택된 기사가 새 목록에 없으면 첫 기사를 기본값으로 본다.
++  // effect에서 setState로 동기화하면 렌더가 한 번 더 캐스케이드되므로, 렌더링 중 파생값으로 계산한다.
++  const activeId = selectedId && items.some((n) => n.newsId === selectedId) ? selectedId : items[0]?.newsId ?? null;
++
++  const detail = useNewsDetail(activeId);
++  const toggleScrap = useToggleScrap();
++  const toggleWatch = useToggleWatch();
++  const watchedSet = useWatchedSet();
++  // 백엔드 기업 상세의 watched 가 아직 항상 false 라 내 관심 목록과 합쳐 판단한다 (queries.useWatchedSet)
++  const companyWatched = Boolean(company.data?.watched) || (companyId ? watchedSet.has(companyId) : false);
++
++  const setCompany = (id: string | null) => {
++    const next = new URLSearchParams(params);
++    if (id) next.set("company", id);
++    else next.delete("company");
++    setParams(next);
++    setSentiment(null);
++  };
++
++  /* 관계 지도 모델: 선택 뉴스가 직접 언급한 기업들. 1홉 확장은 관련 기업이 많은 뉴스에서 선이 한 점에
++   * 뭉치거나 목록이 지나치게 길어지는 문제가 있었고, 무엇보다 '뉴스가 실제로 언급한 기업'만 보는 편이
++   * 명확하다는 팀 합의로 기능 자체를 없앴다 — 은하 뷰의 3D 그래프를 여기 다시 그리지 않기로 한 것과
++   * 같은 이유다(은하 페이지에 이미 1홉·다홉 탐색이 있다). */
++  const seedIds = useMemo(() => {
++    const d = detail.data;
++    if (!d) return [] as string[];
++    const weight = (r: NewsRelatedCompany) => r.relevanceScore != null && r.impactScore != null
++      ? r.relevanceScore * Math.abs(r.impactScore) : -1;
++    const sorted = d.relatedCompanies.slice().sort((a, b) => weight(b) - weight(a));
++    const ids = sorted.map((r) => r.companyId);
++    if (companyId && ids.includes(companyId)) return [companyId, ...ids.filter((x) => x !== companyId)];
++    return ids;
++  }, [detail.data, companyId]);
++  const seedSet = useMemo(() => new Set(seedIds.filter((id) => universe.data?.nodes.some((n) => n.companyId === id))), [seedIds, universe.data]);
++  const mapNodes: LatestGraphNode[] = useMemo(() => (universe.data ? universe.data.nodes.filter((n) => seedSet.has(n.companyId)) : []), [universe.data, seedSet]);
++  const mapEdges = useMemo(
++    () => (universe.data ? universe.data.edges.filter((e) => seedSet.has(e.sourceCompanyId) && seedSet.has(e.targetCompanyId)) : []),
++    [universe.data, seedSet],
++  );
++
++  const analysis = useMemo(() => (detail.data && universe.data ? analyzeNewsImpact(detail.data, universe.data) : null), [detail.data, universe.data]);
++
++  const confidence = meanConfidence(detail.data?.evidence.map((e) => e.confidence) ?? []);
++  const kpi = detail.data
++    ? {
++        companies: detail.data.relatedCompanies.length,
++        pos: detail.data.relatedCompanies.filter((r) => r.sentiment === "POSITIVE").length,
++        neg: detail.data.relatedCompanies.filter((r) => r.sentiment === "NEGATIVE").length,
++        evidence: detail.data.evidence.length,
++        confidence: confidence == null ? null : Math.round(confidence * 100),
++      }
++    : null;
++
++  /**
++   * 산업·관계 유형 분포 — 새 API 호출 없이 관계 지도에 이미 쓰던 mapNodes/mapEdges만으로 계산한다.
++   * 예전엔 랭킹 카드 옆에 항상 펼쳐 둔 카드였지만, 언급 기업이 몇 개 안 되는 뉴스가 대부분이라
++   * 칩 한두 줄만 채워지고 카드 높이(랭킹 카드 기준)만큼 빈 공간이 크게 남는 문제가 있었다.
++   * 항상 봐야 할 만큼 핵심적인 정보는 아니라고 보고 스크랩·원문 보기 버튼 옆의 보조 버튼 +
++   * 모달(DistributionDialog)로 옮기고, 랭킹 카드가 하단 영역 전체를 쓰도록 바꿨다.
++   */
++  const industryDist = useMemo(() => {
++    const m = new Map<string, number>();
++    mapNodes.forEach((n) => {
++      const key = n.industryName ?? UNCLASSIFIED_INDUSTRY;
++      m.set(key, (m.get(key) ?? 0) + 1);
++    });
++    return [...m.entries()].sort((a, b) => b[1] - a[1]).map(([name, count]) => ({ name, count }));
++  }, [mapNodes]);
++  const relDist = useMemo(() => {
++    const m = new Map<RelationshipType, number>();
++    mapEdges.forEach((e) => m.set(e.relationshipType, (m.get(e.relationshipType) ?? 0) + 1));
++    return [...m.entries()].sort((a, b) => b[1] - a[1]).map(([type, count]) => ({ type, count, meta: relationshipMeta(type) }));
++  }, [mapEdges]);
++
++  return (
++    <div className="page news-viewport">
++      <div className="row between wrap" style={{ marginBottom: 14 }}>
++        <span className="status-line">
++          <i className="dot" />
++          {universe.data ? `선택한 분석 데이터 · ${fmtDateTime(universe.data.asOfAt)} 기준` : universe.isError ? "공개된 관계 스냅샷 없음 — 관계 지도는 분석 결과 게시 후 나타납니다" : "스냅샷 확인 중"}
++        </span>
++        <button
++          type="button"
++          className="btn btn-g btn-sm"
++          onClick={() => {
++            qc.invalidateQueries({ queryKey: ["news"] });
++            qc.invalidateQueries({ queryKey: ["graph", "latest"] });
++            toast("최신 뉴스·관계 데이터로 새로고침했습니다.", "success");
++          }}
++        >
++          <Icon.Refresh /> 새로고침
++        </button>
++      </div>
++
++      <div className="news-page">
++        {/* ---------------- 좌측 레일 ---------------- */}
++        <section className="card news-rail" aria-label="뉴스 목록">
++          {companyId ? (
++            <>
++              <div className="crumbs">
++                <button type="button" onClick={() => setCompany(null)}>
++                  전체 뉴스
++                </button>
++                <span aria-hidden="true">›</span>
++                <b>{company.data?.name ?? "…"}</b>
++                <button type="button" className="reset" onClick={() => setCompany(null)}>
++                  전체로 <Icon.Close />
++                </button>
++              </div>
++              <div className="company-ctx">
++                {company.data && <CompanyAvatar name={company.data.name} stockCode={company.data.stockCode} market={company.data.market} industry={company.data.industries[0]?.name} size={40} />}
++                <div className="grow">
++                  <div className="nm">{company.data?.name ?? <Skeleton h={18} w={120} />} 뉴스</div>
++                  <div className="meta num">
++                    {[company.data?.stockCode, company.data?.industries.find((i) => i.primary)?.name, `${items.length}건${feed.hasNextPage ? "+" : ""}`].filter(Boolean).join(" · ")}
++                  </div>
++                </div>
++              </div>
++              <label className="field search-field mt-12">
++                <Icon.Search />
++                <input placeholder="제목으로 뉴스 검색" value={keywordInput} onChange={(e) => setKeywordInput(e.target.value)} aria-label="뉴스 검색" />
++              </label>
++              <div className="row wrap mt-12" style={{ gap: 7 }}>
++                <button type="button" className={`chip chip-sm ${sentiment === null ? "on" : ""}`} onClick={() => setSentiment(null)}>
++                  전체
++                </button>
++                {SENTIMENTS.map((s) => (
++                  <button key={s} type="button" className={`chip chip-sm ${sentiment === s ? "on" : ""}`} onClick={() => setSentiment(s)}>
++                    <i style={{ background: SENTIMENT_META[s].color }} />
++                    {SENTIMENT_META[s].label}
++                  </button>
++                ))}
++              </div>
++            </>
++          ) : (
++            <>
++              <div className="row between">
++                <div>
++                  <div className="kick">latest feed</div>
++                  <h2 className="sect" style={{ marginTop: 6 }}>
++                    최신 뉴스
++                  </h2>
++                </div>
++                <select className="industry-select" value={industryId ?? ""} onChange={(e) => setIndustryId(e.target.value || null)} aria-label="산업 필터">
++                  <option value="">전체 산업</option>
++                  {industries.data?.items
++                    .filter((i) => i.companyCount > 0)
++                    .map((i) => (
++                      <option key={i.industryId} value={i.industryId}>
++                        {i.name}
++                      </option>
++                    ))}
++                </select>
++              </div>
++              <label className="field search-field mt-12">
++                <Icon.Search />
++                <input placeholder="제목으로 뉴스 검색" value={keywordInput} onChange={(e) => setKeywordInput(e.target.value)} aria-label="뉴스 검색" />
++              </label>
++            </>
++          )}
++
++          <div className="list scroll stack">
++            {feed.isLoading && [0, 1, 2, 3].map((i) => <Skeleton key={i} h={110} style={{ borderRadius: 14 }} />)}
++            {!feed.isLoading && feed.isError && !items.length && <ErrorNotice message="뉴스를 불러오지 못했습니다." onRetry={() => feed.refetch()} />}
++            {!feed.isLoading && !feed.isError && !items.length && <Empty>조건에 맞는 뉴스가 없습니다.</Empty>}
++            {items.map((n) => (
++              <article key={n.newsId} className={`news-card ${n.newsId === activeId ? "on" : ""}`} onClick={() => pickNews(n.newsId)} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && pickNews(n.newsId)}>
++                <div className="row between">
++                  <div className="row" style={{ gap: 8 }}>
++                    <SentimentBadge value={n.sentiment} />
++                    <span className="lab">
++                      연결 <b className="num">{n.relatedCompanies.length}</b>
++                    </span>
++                  </div>
++                  <span className="meta num">{[n.publisher, fmtPublication(n, true)].filter(Boolean).join(" · ")}</span>
++                </div>
++                <div className="title clamp-2">{n.title}</div>
++                <div className="summary clamp-2">{n.summary}</div>
++              </article>
++            ))}
++            {feed.hasNextPage && (
++              <button type="button" className="more-btn" onClick={() => feed.fetchNextPage()} disabled={feed.isFetchingNextPage}>
++                {feed.isFetchingNextPage ? "불러오는 중…" : "더 보기"}
++              </button>
++            )}
++          </div>
++        </section>
++
++        {/* ---------------- 우측 ---------------- */}
++        <section className="news-analysis-col" aria-label="관계 분석">
++          <div className="kpi-row">
++            <Kpi label="선택 뉴스 연결 기업" value={kpi?.companies ?? "-"} unit="개사" onClick={detail.data ? () => setKpiModal("companies") : undefined} />
++            <Kpi
++              label="긍정 / 부정 기업"
++              value={kpi ? `${kpi.pos} / ${kpi.neg}` : "-"}
++              tone={kpi && kpi.neg > kpi.pos ? "var(--neg-fg)" : undefined}
++              onClick={detail.data ? () => setKpiModal("sentiment") : undefined}
++            />
++            <Kpi label="대표 근거 문장" value={kpi?.evidence ?? "-"} unit="개" onClick={detail.data ? () => setKpiModal("evidence") : undefined} />
++            <Kpi label="근거 신뢰도" value={kpi?.confidence ?? "미제공"} unit={kpi?.confidence != null ? "/100" : ""} onClick={detail.data ? () => setKpiModal("confidence") : undefined} />
++          </div>
++
++          <div className="card map-card">
++            <div className="map-head">
++              {companyId && company.data ? (
++                <div className="row" style={{ gap: 12, alignItems: "flex-start" }}>
++                  <CompanyAvatar name={company.data.name} stockCode={company.data.stockCode} market={company.data.market} industry={company.data.industries[0]?.name} size={44} />
++                  <div>
++                    <div className="kick" style={{ color: "var(--primary-2)" }}>
++                      focused company
++                    </div>
++                    <div className="ttl">{company.data.name}</div>
++                    <div className="meta">선택 뉴스 「{detail.isError ? "불러오기 실패" : detail.data?.title.slice(0, 26) ?? "…"}…」 기준 관계망</div>
++                  </div>
++                </div>
++              ) : (
++                <div className="grow">
++                  <div className="kick" style={{ color: "var(--primary-2)" }}>
++                    selected news
++                  </div>
++                  {detail.isError ? (
++                    <ErrorNotice message="선택한 뉴스를 불러오지 못했습니다." onRetry={() => detail.refetch()} />
++                  ) : (
++                    <>
++                      <div className="ttl">{detail.data?.title ?? <Skeleton h={22} w={360} />}</div>
++                      <div className="meta num mt-8">{detail.data ? [detail.data.publisher, fmtPublication(detail.data), detail.data.author].filter(Boolean).join(" · ") : ""}</div>
++                      {detail.data?.summary && <p className="map-summary">{detail.data.summary}</p>}
++                    </>
++                  )}
++                </div>
++              )}
++              <div className="row" style={{ gap: 8, flex: "none" }}>
++                {companyId && company.data ? (
++                  <>
++                    <button
++                      type="button"
++                      className={`btn btn-g btn-sm ${companyWatched ? "on" : ""}`}
++                      onClick={() =>
++                        authed
++                          ? toggleWatch.mutate(
++                              { companyId: company.data!.companyId, watched: companyWatched },
++                              { onSuccess: (now) => toast(now ? "관심 기업으로 등록했습니다." : "관심 기업에서 해제했습니다.", "success") },
++                            )
++                          : openAuth("login")
++                      }
++                      style={{ color: companyWatched ? "var(--primary-2)" : undefined }}
++                    >
++                      <Icon.Star filled={companyWatched} /> {companyWatched ? "관심 기업" : "관심 기업 +"}
++                    </button>
++                    <button type="button" className="btn btn-g btn-sm" onClick={() => setShowDist(true)}>
++                      산업·관계 분포
++                    </button>
++                    <button type="button" className="btn btn-p btn-sm" onClick={() => navigate(`/?company=${companyId}`)}>
++                      기업 상세 ↗
++                    </button>
++                  </>
++                ) : (
++                  detail.data && (
++                    <>
++                      <button
++                        type="button"
++                        className="btn btn-g btn-sm"
++                        onClick={() => (authed ? toggleScrap.mutate({ newsId: detail.data!.newsId, scrapped: detail.data!.scrapped }, { onSuccess: (now) => toast(now ? "스크랩했습니다." : "스크랩을 해제했습니다.", "success") }) : openAuth("login"))}
++                        style={{ color: detail.data.scrapped ? "var(--primary-2)" : undefined }}
++                      >
++                        <Icon.Bookmark filled={detail.data.scrapped} /> {detail.data.scrapped ? "스크랩됨" : "스크랩"}
++                      </button>
++                      <button type="button" className="btn btn-g btn-sm" onClick={() => setShowDist(true)}>
++                        산업·관계 분포
++                      </button>
++                      <a
++                        className="btn btn-p btn-sm"
++                        href={detail.data.originalUrl}
++                        target="_blank"
++                        rel="noreferrer"
++                        style={{ flex: "none" }}
++                      >
++                        원문 보기 <Icon.External />
++                      </a>
++                    </>
++                  )
++                )}
++              </div>
++            </div>
++            {/* <div className="map-tools">
++              <span className="pill">
++                RELATION MAP · {mapNodes.length} NODES · {mapEdges.length} EDGES
++              </span>
++              <TypeLegend />
++            </div> */}
++            <div className="map-stage">
++              {mapNodes.length ? (
++                <RelationMap2D
++                  nodes={mapNodes}
++                  edges={mapEdges}
++                  related={detail.data?.relatedCompanies}
++                  highlightId={companyId}
++                  onPickCompany={(id) => setCompany(id)}
++                  onOpenInGalaxy={(relationshipId) => navigate(`/?edge=${relationshipId}`)}
++                />
++              ) : (
++                <div className="stage-loading">
++                  <span className="kick">relation map</span>
++                  <i />
++                  <span>
++                    {detail.isLoading || universe.isLoading
++                      ? "관계 지도를 만드는 중"
++                      : universe.isError
++                        ? "공개된 관계 스냅샷이 없어 관계 지도를 표시할 수 없습니다"
++                        : "이 뉴스와 연결된 기업이 그래프에 없습니다"}
++                  </span>
++                </div>
++              )}
++            </div>
++          </div>
++
++          {/* ---------------- 하단 분석 ---------------- */}
++          {/* "산업·관계 유형 분포" 카드를 스크랩·원문 보기 옆 모달로 옮기면서 이 영역을 랭킹
++              카드 하나가 전부 쓰도록 바꿨다. 랭킹 목록은 한 줄에 기업 1개씩(.rank-list) 나열하되,
++              예전엔 이름 아래 두 번째 줄로 내려가던 시장·종목코드와, 행 아래 별도 줄이던 "왜
++              이어지는지" 설명을 모두 이름 오른쪽(같은 줄)으로 옮겨 항목의 상하 길이를 줄였다.
++              점수 막대는 한 줄 전체 폭으로 늘어지지 않도록 고정 폭 래퍼(.rank-bar-wrap)로 감쌌다. */}
++          <div className="analysis">
++            <div className="card">
++              <div className="kick">영향 분석</div>
++              <div className="row between mt-8">
++                <h2 className="sect">기업별 영향 분석</h2>
++                <span className="pill">{analysis?.hasScores ? "분석된 점수순 · 100 기준" : "영향 점수 분석 전"}</span>
++              </div>
++              <div className="rank-list">
++                {!analysis && [0, 1, 2, 3].map((i) => <Skeleton key={i} h={44} style={{ marginTop: i ? 8 : 0 }} />)}
++                {analysis?.ranking.map((r, i) => {
++                  // 왜 이 기업까지 영향이 이어지는지 — 간접 전이(hop>0) 행에서만 있다. 예전엔 행
++                  // 아래 별도 줄로 보여줬지만, 항목 높이를 줄이기 위해 이름 옆 meta 텍스트에
++                  // 이어 붙였다(폭이 모자라면 말줄임). 문장 속 기업명 둘·관계 유형·점수(AA는 BB와
++                  // CC 관계(점수 DD)로 이어져 있습니다)가 눈에 띄도록 각각 다른 색을 준다 — AA는 이
++                  // 행 자체의 간접 전이 색(주황, 막대 색과 동일), BB는 직접 언급 색(파랑)으로 둘을
++                  // 구분하고, CC는 관계 유형이 다른 화면에서도 쓰는 고유색(relationshipMeta), DD는
++                  // 점수를 가리키는 별도 강조색(초록)을 쓴다.
++                  const why =
++                    r.hop > 0 && r.via && r.fromName
++                      ? {
++                          name: r.name,
++                          from: r.fromName,
++                          relLabel: relationshipMeta(r.via.relationshipType).label,
++                          relColor: relationshipMeta(r.via.relationshipType).color,
++                          score: Math.round(r.via.score),
++                        }
++                      : null;
++                  const whyPlain = why ? `${why.name}${josa(why.name, "은", "는")} ${why.from}${josa(why.from, "과", "와")} '${why.relLabel}' 관계(점수 ${why.score})로 이어져 있습니다.` : null;
++                  return (
++                    <button key={r.id} type="button" className="rank" onClick={() => setCompany(r.id)} title={whyPlain ?? "이 기업 뉴스 보기"}>
++                      <span className="rank-row">
++                        <span className="kick num idx">{r.score == null ? "—" : String(i + 1).padStart(2, "0")}</span>
++                        <CompanyAvatar name={r.name} companyId={r.id} stockCode={r.stockCode} market={r.market} industry={r.industry} size={32} radius={16} />
++                        <span className="nm">
++                          <b>{r.name}</b>
++                          <span className="meta num">
++                            {[marketLabel(r.market), r.stockCode].filter(Boolean).join(" · ")}
++                            {why && (
++                              <>
++                                {" · "}
++                                <span className="why-hl" style={{ color: "#F5A623" }}>
++                                  {why.name}
++                                </span>
++                                {josa(why.name, "은", "는")}{" "}
++                                <span className="why-hl" style={{ color: "#829CFF" }}>
++                                  {why.from}
++                                </span>
++                                {josa(why.from, "과", "와")} '
++                                <span className="why-hl" style={{ color: why.relColor }}>
++                                  {why.relLabel}
++                                </span>
++                                ' 관계(점수{" "}
++                                <span className="why-hl" style={{ color: "#2AC769" }}>
++                                  {why.score}
++                                </span>
++                                )로 이어져 있습니다.
++                              </>
++                            )}
++                          </span>
++                        </span>
++                        <span className="rank-bar-wrap">
++                          {r.score != null && <ScoreBar score={r.score} color={r.hop === 0 ? "#829CFF" : "#F5A623"} />}
++                        </span>
++                        <span className="sc">
++                          <b className="num" style={r.score == null ? { fontSize: 14 } : undefined}>{r.score ?? "분석 전"}</b>
++                          <span className="meta num">{r.hop === 0 ? "직접 언급" : `${r.hop} HOP`}</span>
++                        </span>
++                      </span>
++                    </button>
++                  );
++                })}
++              </div>
++              {analysis?.hasScores && <div className="row mt-12" style={{ gap: 16 }}>
++                <span className="meta row" style={{ gap: 6 }}>
++                  <i className="dot" style={{ background: "#829CFF" }} /> 직접 언급 (기사 관련도 × 영향도)
++                </span>
++                <span className="meta row" style={{ gap: 6 }}>
++                  <i className="dot" style={{ background: "#F5A623" }} /> 간접 전이 (관계 점수로 감쇠)
++                </span>
++              </div>}
++              <div className="meta mt-8" style={{ lineHeight: 1.7 }}>
++                {analysis?.hasScores
++                  ? "간접 전이는 제공된 기사 영향도와 관계 점수로 계산한 참고값이며, GNN 예측 결과가 아닙니다."
++                  : "기업별 감성은 위 배지에서 확인할 수 있습니다. 별도의 영향 점수가 없어 순위와 간접 전이를 계산하지 않았습니다."}
++              </div>
++            </div>
++          </div>
++        </section>
++      </div>
++
++      <KpiEvidenceDialog kind={kpiModal} news={detail.data} onClose={() => setKpiModal(null)} onPickCompany={setCompany} />
++      <DistributionDialog open={showDist} companyCount={mapNodes.length} industryDist={industryDist} relDist={relDist} onClose={() => setShowDist(false)} />
++    </div>
++  );
++}
++
++/* ------------------------------------------------------------------ */
++/* 분석: 영향도 랭킹 + 최강 전이 경로 (클라이언트 계산)                        */
++/* ------------------------------------------------------------------ */
++
++export { relationshipMeta };
+diff --git a/FrontEnd/src/lib/analysisRun.ts b/FrontEnd/src/lib/analysisRun.ts
+new file mode 100644
+--- /dev/null
++++ b/FrontEnd/src/lib/analysisRun.ts
+@@ -0,0 +1,9 @@
++import type { QueryClient } from "@tanstack/react-query";
++
++const ANALYSIS_QUERY_ROOTS = new Set(["news", "graph", "relationship", "company", "companies", "industries"]);
++export const isAnalysisQuery = (query: { queryKey: readonly unknown[] }) => ANALYSIS_QUERY_ROOTS.has(String(query.queryKey[0]));
++
++export async function resetAnalysisQueries(client: QueryClient) {
++  await client.cancelQueries({ predicate: isAnalysisQuery });
++  await client.resetQueries({ predicate: isAnalysisQuery });
++}
+diff --git a/FrontEnd/src/lib/format.ts b/FrontEnd/src/lib/format.ts
+--- a/FrontEnd/src/lib/format.ts
++++ b/FrontEnd/src/lib/format.ts
+@@ -15,6 +15,25 @@
+   }).formatToParts(d);
+   const g = (t: string) => p.find((x) => x.type === t)?.value ?? "";
+   return `${g("year")}. ${g("month")}. ${g("day")}. ${g("hour")}:${g("minute")}`;
++}
++
++/** A raw calendar date is not a verified instant: never convert it through Date. */
++export function fmtPublication(
++  document: { publishedAt?: string | null; publishedAtRaw?: string | null },
++  relative = false,
++) {
++  if (document.publishedAt && Number.isFinite(Date.parse(document.publishedAt))) {
++    return relative ? fmtRelative(document.publishedAt) : fmtDateTime(document.publishedAt);
++  }
++  const raw = document.publishedAtRaw?.trim();
++  const date = raw?.match(/^(\d{4})[-/.]?(\d{2})[-/.]?(\d{2})(?:\D|$)/);
++  return date ? `${date[1]}. ${date[2]}. ${date[3]}. (시각 미확인)` : "발행 시각 미확인";
++}
++
++/** Missing confidence is not zero; summarize only supplied numeric values. */
++export function meanConfidence(values: readonly (number | null | undefined)[]) {
++  const known = values.filter((value): value is number => value != null && Number.isFinite(value));
++  return known.length ? known.reduce((sum, value) => sum + value, 0) / known.length : null;
+ }
+ 
+ export function fmtDate(iso: string | null | undefined, tz?: string) {
+diff --git a/FrontEnd/src/lib/guide.ts b/FrontEnd/src/lib/guide.ts
+--- a/FrontEnd/src/lib/guide.ts
++++ b/FrontEnd/src/lib/guide.ts
+@@ -188,10 +188,10 @@
+   /** 이 아래(0~1)면 신뢰 낮음 표시 */
+   lowConfidenceBelow: 0.4,
+   confidence: (pctText: string) => `신뢰 ${pctText}`,
+-  noEvidence: "근거 뉴스 없음 · 점수는 누적 데이터 기반",
++  noEvidence: "선택한 기간에 표시할 뉴스·공시 근거가 없습니다",
+   hoverMore: (n: number) => `근거 ${n}건 · 클릭해서 전체 보기`,
+   hoverCapped: (n: number) => `근거 ${n}건 · 클릭해서 보기`,
+-  timelineKicker: "근거 뉴스",
++  timelineKicker: "근거 뉴스·공시",
+   timelineOrder: "시간순",
+   timelineSummary: (n: number, latest: string) => `최근 근거 ${n}건 · 가장 최근 ${latest}`,
+   representative: "대표 근거",
+@@ -199,7 +199,6 @@
+   copy: "문장 복사",
+   copied: "근거 문장을 복사했습니다",
+   original: "원문",
+-  disclosure: "공시는 점수에 반영되지만 원문 문장은 공개하지 않습니다",
+   more: "더 보기",
+   /** 오래된 근거의 불투명도 — 숨기지 않고 물러나게만 */
+   ageOpacity: [
+diff --git a/FrontEnd/src/lib/newsImpact.ts b/FrontEnd/src/lib/newsImpact.ts
+new file mode 100644
+--- /dev/null
++++ b/FrontEnd/src/lib/newsImpact.ts
+@@ -0,0 +1,87 @@
++import type { GraphEdge, NewsDetail, LatestGraph } from "@/api/types";
++
++interface RankRow {
++  id: string;
++  name: string;
++  stockCode: string;
++  market: string;
++  industry: string;
++  score: number | null;
++  hop: number;
++  /** hop>0(간접 전이) 행에서 "왜 이 기업까지 이어지는지" 표시에 쓴다 */
++  via: GraphEdge | null;
++  fromName: string | null;
++}
++const DECAY = 0.82;
++interface Best {
++  score: number;
++  hop: number;
++  from: string | null;
++  via: GraphEdge | null;
++}
++
++export function analyzeNewsImpact(detail: NewsDetail, graph: LatestGraph) {
++  const info = new Map(graph.nodes.map((n) => [n.companyId, n]));
++  const adj = new Map<string, GraphEdge[]>();
++  graph.edges.forEach((e) => {
++    for (const id of [e.sourceCompanyId, e.targetCompanyId]) {
++      if (!adj.has(id)) adj.set(id, []);
++      adj.get(id)!.push(e);
++    }
++  });
++  const best = new Map<string, Best>();
++  detail.relatedCompanies.forEach((r) => {
++    if (r.relevanceScore == null || r.impactScore == null) return;
++    const s = Math.round(r.relevanceScore * Math.abs(r.impactScore) * 100);
++    const cur = best.get(r.companyId);
++    if (!cur || cur.score < s) best.set(r.companyId, { score: s, hop: 0, from: null, via: null });
++  });
++  // 1~2홉 전이
++  const frontier = [...best.keys()];
++  for (let hop = 1; hop <= 2; hop += 1) {
++    const next: string[] = [];
++    for (const id of frontier) {
++      const b = best.get(id)!;
++      if (b.hop !== hop - 1) continue;
++      for (const e of adj.get(id) ?? []) {
++        const o = e.sourceCompanyId === id ? e.targetCompanyId : e.sourceCompanyId;
++        const s = Math.round(b.score * (e.score / 100) * DECAY);
++        if (s < 3) continue;
++        const cur = best.get(o);
++        if (!cur || cur.score < s) {
++          best.set(o, { score: s, hop, from: id, via: e });
++          next.push(o);
++        }
++      }
++    }
++    frontier.push(...next);
++  }
++  const nameOf = (id: string) => info.get(id)?.name ?? detail.relatedCompanies.find((r) => r.companyId === id)?.name ?? id;
++  const ranking: RankRow[] = [...best.entries()]
++    .map(([id, b]) => {
++      const n = info.get(id);
++      const rel = detail.relatedCompanies.find((r) => r.companyId === id);
++      return {
++        id,
++        name: n?.name ?? rel?.name ?? id,
++        stockCode: n?.stockCode ?? "",
++        market: n?.market ?? "",
++        industry: n?.industryName ?? "",
++        score: b.score,
++        hop: b.hop,
++        via: b.via,
++        fromName: b.from ? nameOf(b.from) : null,
++      };
++    })
++    .sort((a, b) => b.score - a.score);
++  for (const related of detail.relatedCompanies) {
++    if (best.has(related.companyId)) continue;
++    const node = info.get(related.companyId);
++    ranking.push({ id: related.companyId, name: node?.name ?? related.name,
++      stockCode: node?.stockCode ?? "", market: node?.market ?? "", industry: node?.industryName ?? "",
++      score: null, hop: 0, via: null, fromName: null });
++  }
++    // 예전엔 세로 한 줄 목록이라 6개로 제한했다. 이제 카드형 그리드로 넓어진 하단 영역을 쓰므로
++    // (기업이 많은 뉴스에서는 여러 열로 자연히 채워진다) 9개까지 보여준다.
++  return { ranking: ranking.slice(0, 9), hasScores: best.size > 0 };
++}
+diff --git a/FrontEnd/src/lib/queries.ts b/FrontEnd/src/lib/queries.ts
+--- a/FrontEnd/src/lib/queries.ts
++++ b/FrontEnd/src/lib/queries.ts
+@@ -17,6 +17,16 @@
+ /** 쿼리 키에 들어가는 세션 키 — 컴포넌트가 prefetch 옵션을 만들 때 같은 키를 쓰도록 공개한다 */
+ export const useSessionKey = useKey;
+ 
++export function useActiveAnalysisRun() {
++  return useQuery({
++    queryKey: ["analysis-runs", "active"],
++    queryFn: () => api.analysisRuns.active(),
++    staleTime: 15_000,
++    refetchInterval: 30_000,
++    refetchOnWindowFocus: true,
++  });
++}
++
+ /* ------------------------------ 기준 정보 ------------------------------ */
+ export function useIndustries() {
+   return useQuery({ queryKey: ["industries"], queryFn: () => api.companies.industries(), staleTime: 60 * 60_000 });
+@@ -79,15 +89,15 @@
+ const TOP_EVIDENCE_SESSION_CAP = 60;
+ let topEvidenceCallCount = 0;
+ 
+-export function useTopEvidence(relationshipId: string | null) {
++export function useTopEvidence(relationshipId: string | null, window: T.MetricWindow = "30D") {
+   const capped = topEvidenceCallCount >= TOP_EVIDENCE_SESSION_CAP;
+   const query = useQuery({
+-    queryKey: ["relationship", "evidence", "top", relationshipId],
++    queryKey: ["relationship", "evidence", "top", relationshipId, window],
+     queryFn: () => {
+       topEvidenceCallCount += 1;
+       // api.graphs.evidence 는 signal 을 받지 않는다(RequestOptions·contract 어디에도 없음) — react-query 가
+       // 키 변경 시 이전 관찰을 알아서 버려 주므로 취소 전달은 생략한다.
+-      return api.graphs.evidence(relationshipId!, { size: 1 });
++      return api.graphs.evidence(relationshipId!, { size: 1, window });
+     },
+     enabled: Boolean(relationshipId) && !capped,
+     staleTime: 5 * 60_000,
+@@ -95,10 +105,10 @@
+   return { ...query, capped };
+ }
+ 
+-export function useRelationshipEvidence(relationshipId: string | null) {
+-  return useInfiniteQuery({
+-    queryKey: ["relationship", "evidence", relationshipId],
+-    queryFn: ({ pageParam }) => api.graphs.evidence(relationshipId!, { cursor: pageParam, size: 10 }),
++export function useRelationshipEvidence(relationshipId: string | null, window: T.MetricWindow = "30D") {
++  return useInfiniteQuery({
++    queryKey: ["relationship", "evidence", relationshipId, window],
++    queryFn: ({ pageParam }) => api.graphs.evidence(relationshipId!, { cursor: pageParam, size: 10, window }),
+     initialPageParam: undefined as string | undefined,
+     getNextPageParam: (last) => last.nextCursor ?? undefined,
+     enabled: Boolean(relationshipId),
+diff --git a/FrontEnd/src/styles/global.css b/FrontEnd/src/styles/global.css
+--- a/FrontEnd/src/styles/global.css
++++ b/FrontEnd/src/styles/global.css
+@@ -30,8 +30,24 @@
+   --shadow-card: 0 20px 58px rgba(0, 0, 0, 0.18);
+   --font: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", "Apple SD Gothic Neo", Arial, sans-serif;
+   --mono: ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
+-  --header-h: 60px;
+-}
++  --header-h: 60px;
++}
++
++.analysis-run-label {
++  display: block;
++  max-width: 250px;
++  font-size: 10px;
++  font-weight: 400;
++  letter-spacing: 0;
++  line-height: 1.4;
++  color: var(--text-4);
++  overflow: hidden;
++  text-overflow: ellipsis;
++  white-space: nowrap;
++}
++@media (max-width: 480px) {
++  .analysis-run-label { max-width: 210px; }
++}
+ 
+ *,
+ *::before,

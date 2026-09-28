@@ -1,0 +1,11 @@
+[Unit]
+Description=Add evidence sentences and sentiment to newly matched news
+
+[Timer]
+OnBootSec=3min
+OnUnitInactiveSec=10min
+AccuracySec=30s
+Unit=cosmos-news-enrich.service
+
+[Install]
+WantedBy=timers.target

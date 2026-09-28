@@ -1,0 +1,907 @@
+{
+  "schema": "cosmos-historical-company-context-1",
+  "records": [
+    {
+      "record_id": "dsme_name_ticker_20190314",
+      "ticker": "042660",
+      "entity_id": "KRX_ISSUER:042660",
+      "observed_at": "2019-03-14",
+      "published_at": "2019-03-14",
+      "source_url": "https://kind.krx.co.kr/external/2019/03/14/001750/20190314003471/00636.htm",
+      "display_name": "대우조선해양(주)",
+      "aliases": [],
+      "business": "",
+      "relationships": [
+        "관측일 2019-03-14: 2019-03-14 작성 공시의 발행회사 정보는 대우조선해양(주)와 회사코드 042660을 함께 기재한다. 근거: https://kind.krx.co.kr/external/2019/03/14/001750/20190314003471/00636.htm"
+      ],
+      "limitations": [
+        "관측 시점의 자료이며 이후 소유·사업 관계의 불변, 기사의 신규 사건 또는 실제 주가 영향을 증명하지 않는다.",
+        "이 기록은 KRX 공시의 이름·종목 대응이며 DART 법인코드의 과거 대응을 별도 검증한 것이 아니다."
+      ],
+      "not_before": null,
+      "not_after": null
+    },
+    {
+      "record_id": "dsme_name_20200925_in_20201019_amendment",
+      "ticker": "042660",
+      "entity_id": "KRX_ISSUER:042660",
+      "observed_at": "2020-09-25",
+      "published_at": "2020-10-19",
+      "source_url": "https://kind.krx.co.kr/external/2020/10/19/000420/20201019001023/11306.htm",
+      "display_name": "대우조선해양(주)",
+      "aliases": [],
+      "business": "",
+      "relationships": [
+        "관측일 2019-03-14: 2019-03-14 작성 공시의 발행회사 정보는 대우조선해양(주)와 회사코드 042660을 함께 기재한다. 근거: https://kind.krx.co.kr/external/2019/03/14/001750/20190314003471/00636.htm",
+        "관측일 2020-09-25: 2020-10-19 정정본에 남은 2020-09-25 원 보고서 표지의 회사명은 대우조선해양(주)다. 근거: https://kind.krx.co.kr/external/2020/10/19/000420/20201019001023/11306.htm https://kind.krx.co.kr/external/2019/03/14/001750/20190314003471/00636.htm"
+      ],
+      "limitations": [
+        "관측 시점의 자료이며 이후 소유·사업 관계의 불변, 기사의 신규 사건 또는 실제 주가 영향을 증명하지 않는다.",
+        "이 기록은 KRX 공시의 이름·종목 대응이며 DART 법인코드의 과거 대응을 별도 검증한 것이 아니다."
+      ],
+      "not_before": null,
+      "not_after": null
+    },
+    {
+      "record_id": "shinhan_holding_name_ticker_snapshot_20210630",
+      "ticker": "055550",
+      "entity_id": "KRX_ISSUER:055550",
+      "observed_at": "2021-06-30",
+      "published_at": "2021-10-19",
+      "source_url": "https://kind.krx.co.kr/external/2021/10/19/000045/20211019000053/10601.htm",
+      "display_name": "㈜신한금융지주회사",
+      "aliases": [],
+      "business": "",
+      "relationships": [
+        "관측일 2021-06-30: 신한카드의 2021-10-19 투자설명서에 있는 2021-06-30 기준 계열회사 표는 상장회사 ㈜신한금융지주회사와 종목코드 055550을 함께 제시한다. 근거: https://kind.krx.co.kr/external/2021/10/19/000045/20211019000053/10601.htm",
+        "관측일 2021-06-30: 같은 계열회사 표는 상장 지주회사와 비상장 ㈜신한은행을 별도 행에 기재한다. 근거: https://kind.krx.co.kr/external/2021/10/19/000045/20211019000053/10601.htm"
+      ],
+      "limitations": [
+        "관측 시점의 자료이며 이후 소유·사업 관계의 불변, 기사의 신규 사건 또는 실제 주가 영향을 증명하지 않는다.",
+        "이 기록은 KRX 공시의 이름·종목 대응이며 DART 법인코드의 과거 대응을 별도 검증한 것이 아니다.",
+        "계열사 목록만으로 지분율·영구 소유관계·모든 은행 사건의 지주 직접 귀속을 생성하지 않는다."
+      ],
+      "not_before": null,
+      "not_after": null
+    },
+    {
+      "record_id": "hce_name_ticker_20210315",
+      "ticker": "267270",
+      "entity_id": "KRX_ISSUER:267270",
+      "observed_at": "2021-03-15",
+      "published_at": "2021-03-15",
+      "source_url": "https://kind.krx.co.kr/external/2021/03/15/001726/20210315003938/11011.htm",
+      "display_name": "현대건설기계 주식회사",
+      "aliases": [],
+      "business": "",
+      "relationships": [
+        "관측일 2021-03-15: 현대건설기계 제4기 사업보고서의 법적명칭은 현대건설기계 주식회사이며 계열회사 목록에서 267270을 함께 제시한다. 근거: https://kind.krx.co.kr/external/2021/03/15/001726/20210315003938/11011.htm",
+        "관측일 2017-04-03: 보고서는 회사 설립일을 2017-04-03으로 기재한다. 근거: https://kind.krx.co.kr/external/2021/03/15/001726/20210315003938/11011.htm",
+        "관측일 2017-04-01: 현대중공업 건설장비사업부문이 2017-04-01을 분할기일로 인적분할되어 현대건설기계가 신설되었다고 설명한다. 근거: https://kind.krx.co.kr/external/2021/03/15/001726/20210315003938/11011.htm",
+        "관측일 2021-03-15: 2021-03-15 공개 사업보고서는 설립 이후 상호 변경이 없다고 기재한다. 근거: https://kind.krx.co.kr/external/2021/03/15/001726/20210315003938/11011.htm"
+      ],
+      "limitations": [
+        "관측 시점의 자료이며 이후 소유·사업 관계의 불변, 기사의 신규 사건 또는 실제 주가 영향을 증명하지 않는다.",
+        "이 기록은 KRX 공시의 이름·종목 대응이며 DART 법인코드의 과거 대응을 별도 검증한 것이 아니다.",
+        "이 문장 속 2017년 현대중공업을 2019년 신설된 329180 법인으로 매핑하지 않는다.",
+        "이 2021년 문서를 2017~2020년에 이미 이용 가능했던 근거로 소급하지 않는다. 향후 명칭 유지도 보증하지 않는다."
+      ],
+      "not_before": null,
+      "not_after": null
+    },
+    {
+      "record_id": "hce_name_ticker_20210528",
+      "ticker": "267270",
+      "entity_id": "KRX_ISSUER:267270",
+      "observed_at": "2021-05-28",
+      "published_at": "2021-05-28",
+      "source_url": "https://kind.krx.co.kr/external/2021/05/28/000434/20210528000040/99602.htm",
+      "display_name": "현대건설기계(주)",
+      "aliases": [],
+      "business": "",
+      "relationships": [
+        "관측일 2021-05-28: 2021-05-28 발행회사 정보에 현대건설기계(주)와 회사코드 267270이 함께 나온다. 근거: https://kind.krx.co.kr/external/2021/05/28/000434/20210528000040/99602.htm"
+      ],
+      "limitations": [
+        "관측 시점의 자료이며 이후 소유·사업 관계의 불변, 기사의 신규 사건 또는 실제 주가 영향을 증명하지 않는다.",
+        "이 기록은 KRX 공시의 이름·종목 대응이며 DART 법인코드의 과거 대응을 별도 검증한 것이 아니다."
+      ],
+      "not_before": null,
+      "not_after": null
+    },
+    {
+      "record_id": "hce_name_ticker_20220315_amendment",
+      "ticker": "267270",
+      "entity_id": "KRX_ISSUER:267270",
+      "observed_at": "2022-03-15",
+      "published_at": "2022-03-15",
+      "source_url": "https://kind.krx.co.kr/external/2022/03/15/001524/20220315003623/11011.htm",
+      "display_name": "현대건설기계 주식회사",
+      "aliases": [],
+      "business": "",
+      "relationships": [
+        "관측일 2022-03-15: 2022-03-15 기재정정 사업보고서에서 현대건설기계 주식회사와 267270을 확인하며 설립 이후 상호 변경 없음이라는 문구도 있다. 근거: https://kind.krx.co.kr/external/2022/03/15/001524/20220315003623/11011.htm",
+        "관측일 2022-03-15: 같은 2022-03-15 보고서는 현대건설기계 267270과 현대두산인프라코어 042670을 별도 회사·종목으로 나열한다. 근거: https://kind.krx.co.kr/external/2022/03/15/001524/20220315003623/11011.htm"
+      ],
+      "limitations": [
+        "관측 시점의 자료이며 이후 소유·사업 관계의 불변, 기사의 신규 사건 또는 실제 주가 영향을 증명하지 않는다.",
+        "이 기록은 KRX 공시의 이름·종목 대응이며 DART 법인코드의 과거 대응을 별도 검증한 것이 아니다.",
+        "현재 별칭/합병 상태를 근거로 당시 두 회사를 같은 법인으로 합치지 않는다."
+      ],
+      "not_before": null,
+      "not_after": null
+    },
+    {
+      "record_id": "hhi_name_ticker_new_listing_20210917",
+      "ticker": "329180",
+      "entity_id": "KRX_ISSUER:329180",
+      "observed_at": "2021-09-17",
+      "published_at": "2021-09-17",
+      "source_url": "https://kind.krx.co.kr/external/2021/09/17/000210/20210917000508/00636.htm",
+      "display_name": "현대중공업(주)",
+      "aliases": [],
+      "business": "",
+      "relationships": [
+        "관측일 2019-06-03: 정정공시는 2019-06-03 분할 완료를 설명하면서 한국조선해양은 분할존속회사, 현대중공업은 분할신설회사로 구별한다. 근거: https://kind.krx.co.kr/external/2021/01/22/000579/20210122001526/11306.htm https://kind.krx.co.kr/external/2021/09/17/000210/20210917000508/00636.htm",
+        "관측일 2021-01-22: 해당 정정공시는 원 본문 속 현대중공업 주식회사가 분할존속 한국조선해양을 의미한다고 명시한다. 근거: https://kind.krx.co.kr/external/2021/01/22/000579/20210122001526/11306.htm https://kind.krx.co.kr/external/2021/09/17/000210/20210917000508/00636.htm",
+        "관측일 2021-09-17: 2021-09-17 보고서는 현대중공업(주), 회사코드 329180 및 유가증권시장 신규상장에 따른 보고임을 함께 제시한다. 근거: https://kind.krx.co.kr/external/2021/09/17/000210/20210917000508/00636.htm"
+      ],
+      "limitations": [
+        "관측 시점의 자료이며 이후 소유·사업 관계의 불변, 기사의 신규 사건 또는 실제 주가 영향을 증명하지 않는다.",
+        "이 기록은 KRX 공시의 이름·종목 대응이며 DART 법인코드의 과거 대응을 별도 검증한 것이 아니다.",
+        "이 공시의 문서별 해석을 모든 기사에 강제하지 않는다. 대신 과거 거래/명칭만으로 신설 329180 귀속이 확정되지 않음을 보여주는 근거로 사용한다.",
+        "이 상장 보고만으로 상장 전 거래 가능한 주식 가격의 존재를 가정하지 않는다."
+      ],
+      "not_before": null,
+      "not_after": null
+    },
+    {
+      "record_id": "hhi_name_observed_in_2022_notes",
+      "ticker": "329180",
+      "entity_id": "KRX_ISSUER:329180",
+      "observed_at": "2021-12-31",
+      "published_at": "2022-02-23",
+      "source_url": "https://kind.krx.co.kr/external/2022/02/23/000673/20220223001774/00660.htm",
+      "display_name": "현대중공업 주식회사",
+      "aliases": [],
+      "business": "",
+      "relationships": [
+        "관측일 2019-06-03: 정정공시는 2019-06-03 분할 완료를 설명하면서 한국조선해양은 분할존속회사, 현대중공업은 분할신설회사로 구별한다. 근거: https://kind.krx.co.kr/external/2021/01/22/000579/20210122001526/11306.htm https://kind.krx.co.kr/external/2021/09/17/000210/20210917000508/00636.htm",
+        "관측일 2021-01-22: 해당 정정공시는 원 본문 속 현대중공업 주식회사가 분할존속 한국조선해양을 의미한다고 명시한다. 근거: https://kind.krx.co.kr/external/2021/01/22/000579/20210122001526/11306.htm https://kind.krx.co.kr/external/2021/09/17/000210/20210917000508/00636.htm",
+        "관측일 2021-09-17: 2021-09-17 보고서는 현대중공업(주), 회사코드 329180 및 유가증권시장 신규상장에 따른 보고임을 함께 제시한다. 근거: https://kind.krx.co.kr/external/2021/09/17/000210/20210917000508/00636.htm",
+        "관측일 2019-06-01: 2022-02-23 공개 현대중공업 재무제표 주석은 2019-06-01을 분할기일로 한국조선해양(분할 전 현대중공업)에서 물적분할되어 신설되었다고 설명한다. 근거: https://kind.krx.co.kr/external/2022/02/23/000673/20220223001774/00660.htm https://kind.krx.co.kr/external/2021/09/17/000210/20210917000508/00636.htm"
+      ],
+      "limitations": [
+        "관측 시점의 자료이며 이후 소유·사업 관계의 불변, 기사의 신규 사건 또는 실제 주가 영향을 증명하지 않는다.",
+        "이 기록은 KRX 공시의 이름·종목 대응이며 DART 법인코드의 과거 대응을 별도 검증한 것이 아니다.",
+        "이 공시의 문서별 해석을 모든 기사에 강제하지 않는다. 대신 과거 거래/명칭만으로 신설 329180 귀속이 확정되지 않음을 보여주는 근거로 사용한다.",
+        "이 상장 보고만으로 상장 전 거래 가능한 주식 가격의 존재를 가정하지 않는다.",
+        "분할기일 2019-06-01과 완료일 2019-06-03을 서로 덮어쓰지 않는다."
+      ],
+      "not_before": null,
+      "not_after": null
+    },
+    {
+      "record_id": "alphabet_2019q3_GOOG",
+      "ticker": "GOOG",
+      "entity_id": "SEC_CIK:0001652044",
+      "observed_at": "2019-09-30",
+      "published_at": "2019-10-29",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/1652044/000165204419000032/goog10-qq32019.htm",
+      "display_name": "Alphabet Inc.",
+      "aliases": [],
+      "business": "Google 부문에 광고, Android, Chrome, 하드웨어, Google Cloud, Maps, Play, Search, YouTube를 포함한다.",
+      "relationships": [
+        "공개 자료에서 관측한 항목: {\"relationship_type\":\"reported_business_segment\",\"reported_segments\":[\"Google\",\"Other Bets\"],\"trading_tickers\":[\"GOOGL\",\"GOOG\"]}"
+      ],
+      "limitations": [
+        "관측 시점의 자료이며 이후 소유·사업 관계의 불변, 기사의 신규 사건 또는 실제 주가 영향을 증명하지 않는다.",
+        "거래 티커·제품·사업부문·자회사는 각각 구분하며 같은 법인의 사명으로 자동 등록하지 않는다."
+      ],
+      "not_before": null,
+      "not_after": null
+    },
+    {
+      "record_id": "alphabet_2019_10k_GOOG",
+      "ticker": "GOOG",
+      "entity_id": "SEC_CIK:0001652044",
+      "observed_at": "2019-12-31",
+      "published_at": "2020-02-04",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/1652044/000165204420000008/goog10-k2019.htm",
+      "display_name": "Alphabet Inc.",
+      "aliases": [],
+      "business": "Google의 광고, 검색, YouTube, Play 및 앱 내 구매, 클라우드, 하드웨어 사업을 보고한다.",
+      "relationships": [
+        "공개 자료에서 관측한 항목: {\"relationship_type\":\"reported_business_segment\",\"reported_segments\":[\"Google\",\"Other Bets\"],\"trading_tickers\":[\"GOOGL\",\"GOOG\"]}"
+      ],
+      "limitations": [
+        "관측 시점의 자료이며 이후 소유·사업 관계의 불변, 기사의 신규 사건 또는 실제 주가 영향을 증명하지 않는다.",
+        "거래 티커·제품·사업부문·자회사는 각각 구분하며 같은 법인의 사명으로 자동 등록하지 않는다."
+      ],
+      "not_before": null,
+      "not_after": null
+    },
+    {
+      "record_id": "alphabet_2020q2_GOOG",
+      "ticker": "GOOG",
+      "entity_id": "SEC_CIK:0001652044",
+      "observed_at": "2020-06-30",
+      "published_at": "2020-07-31",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/1652044/000165204420000032/goog-20200630.htm",
+      "display_name": "Alphabet Inc.",
+      "aliases": [],
+      "business": "",
+      "relationships": [
+        "공개 자료에서 관측한 항목: {\"relationship_type\":\"reported_business_segment\",\"reported_segments\":[\"Google\",\"Other Bets\"],\"trading_tickers\":[\"GOOGL\",\"GOOG\"]}"
+      ],
+      "limitations": [
+        "관측 시점의 자료이며 이후 소유·사업 관계의 불변, 기사의 신규 사건 또는 실제 주가 영향을 증명하지 않는다.",
+        "거래 티커·제품·사업부문·자회사는 각각 구분하며 같은 법인의 사명으로 자동 등록하지 않는다."
+      ],
+      "not_before": null,
+      "not_after": null
+    },
+    {
+      "record_id": "alphabet_2020_10k_GOOG",
+      "ticker": "GOOG",
+      "entity_id": "SEC_CIK:0001652044",
+      "observed_at": "2020-12-31",
+      "published_at": "2021-02-03",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/1652044/000165204421000010/goog-20201231.htm",
+      "display_name": "Alphabet Inc.",
+      "aliases": [],
+      "business": "Google Services는 광고 중심 사업이며 Google Cloud를 별도 보고한다.",
+      "relationships": [
+        "공개 자료에서 관측한 항목: {\"relationship_type\":\"reported_business_segment\",\"reported_segments\":[\"Google Services\",\"Google Cloud\",\"Other Bets\"],\"trading_tickers\":[\"GOOGL\",\"GOOG\"]}"
+      ],
+      "limitations": [
+        "관측 시점의 자료이며 이후 소유·사업 관계의 불변, 기사의 신규 사건 또는 실제 주가 영향을 증명하지 않는다.",
+        "거래 티커·제품·사업부문·자회사는 각각 구분하며 같은 법인의 사명으로 자동 등록하지 않는다."
+      ],
+      "not_before": null,
+      "not_after": null
+    },
+    {
+      "record_id": "alphabet_2021q1_GOOG",
+      "ticker": "GOOG",
+      "entity_id": "SEC_CIK:0001652044",
+      "observed_at": "2021-03-31",
+      "published_at": "2021-04-28",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/1652044/000165204421000020/goog-20210331.htm",
+      "display_name": "Alphabet Inc.",
+      "aliases": [],
+      "business": "Alphabet이 Google Services와 Google Cloud를 자체 보고부문으로 보고했다.",
+      "relationships": [
+        "공개 자료에서 관측한 항목: {\"relationship_type\":\"reported_business_segment\",\"reported_segments\":[\"Google Services\",\"Google Cloud\",\"Other Bets\"],\"trading_tickers\":[\"GOOGL\",\"GOOG\"]}"
+      ],
+      "limitations": [
+        "관측 시점의 자료이며 이후 소유·사업 관계의 불변, 기사의 신규 사건 또는 실제 주가 영향을 증명하지 않는다.",
+        "거래 티커·제품·사업부문·자회사는 각각 구분하며 같은 법인의 사명으로 자동 등록하지 않는다."
+      ],
+      "not_before": null,
+      "not_after": null
+    },
+    {
+      "record_id": "alphabet_2021_10k_GOOG",
+      "ticker": "GOOG",
+      "entity_id": "SEC_CIK:0001652044",
+      "observed_at": "2021-12-31",
+      "published_at": "2022-02-02",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/1652044/000165204422000019/goog-20211231.htm",
+      "display_name": "Alphabet Inc.",
+      "aliases": [],
+      "business": "",
+      "relationships": [
+        "공개 자료에서 관측한 항목: {\"relationship_type\":\"reported_business_segment\",\"reported_segments\":[\"Google Services\",\"Google Cloud\",\"Other Bets\"],\"trading_tickers\":[\"GOOGL\",\"GOOG\"]}"
+      ],
+      "limitations": [
+        "관측 시점의 자료이며 이후 소유·사업 관계의 불변, 기사의 신규 사건 또는 실제 주가 영향을 증명하지 않는다.",
+        "거래 티커·제품·사업부문·자회사는 각각 구분하며 같은 법인의 사명으로 자동 등록하지 않는다."
+      ],
+      "not_before": null,
+      "not_after": null
+    },
+    {
+      "record_id": "alphabet_2022q1_GOOG",
+      "ticker": "GOOG",
+      "entity_id": "SEC_CIK:0001652044",
+      "observed_at": "2022-03-31",
+      "published_at": "2022-04-27",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/1652044/000165204422000029/goog-20220331.htm",
+      "display_name": "Alphabet Inc.",
+      "aliases": [],
+      "business": "Alphabet은 Google을 가장 큰 사업으로 설명하고 Google Services와 Google Cloud 부문을 보고했다.",
+      "relationships": [
+        "공개 자료에서 관측한 항목: {\"relationship_type\":\"reported_business_segment\",\"reported_segments\":[\"Google Services\",\"Google Cloud\",\"Other Bets\"],\"trading_tickers\":[\"GOOGL\",\"GOOG\"]}"
+      ],
+      "limitations": [
+        "관측 시점의 자료이며 이후 소유·사업 관계의 불변, 기사의 신규 사건 또는 실제 주가 영향을 증명하지 않는다.",
+        "거래 티커·제품·사업부문·자회사는 각각 구분하며 같은 법인의 사명으로 자동 등록하지 않는다."
+      ],
+      "not_before": null,
+      "not_after": null
+    },
+    {
+      "record_id": "alphabet_2022q3_GOOG",
+      "ticker": "GOOG",
+      "entity_id": "SEC_CIK:0001652044",
+      "observed_at": "2022-09-30",
+      "published_at": "2022-10-26",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/1652044/000165204422000090/goog-20220930.htm",
+      "display_name": "Alphabet Inc.",
+      "aliases": [],
+      "business": "Google LLC를 Alphabet의 자회사로 명시하며 Google을 Alphabet의 사업으로 보고했다.",
+      "relationships": [
+        "공개 자료에서 관측한 항목: {\"relationship_type\":\"subsidiary_and_business\",\"reported_segments\":[\"Google Services\",\"Google Cloud\",\"Other Bets\"],\"trading_tickers\":[\"GOOGL\",\"GOOG\"]}"
+      ],
+      "limitations": [
+        "관측 시점의 자료이며 이후 소유·사업 관계의 불변, 기사의 신규 사건 또는 실제 주가 영향을 증명하지 않는다.",
+        "거래 티커·제품·사업부문·자회사는 각각 구분하며 같은 법인의 사명으로 자동 등록하지 않는다."
+      ],
+      "not_before": null,
+      "not_after": null
+    },
+    {
+      "record_id": "alphabet_2019q3_GOOGL",
+      "ticker": "GOOGL",
+      "entity_id": "SEC_CIK:0001652044",
+      "observed_at": "2019-09-30",
+      "published_at": "2019-10-29",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/1652044/000165204419000032/goog10-qq32019.htm",
+      "display_name": "Alphabet Inc.",
+      "aliases": [],
+      "business": "Google 부문에 광고, Android, Chrome, 하드웨어, Google Cloud, Maps, Play, Search, YouTube를 포함한다.",
+      "relationships": [
+        "공개 자료에서 관측한 항목: {\"relationship_type\":\"reported_business_segment\",\"reported_segments\":[\"Google\",\"Other Bets\"],\"trading_tickers\":[\"GOOGL\",\"GOOG\"]}"
+      ],
+      "limitations": [
+        "관측 시점의 자료이며 이후 소유·사업 관계의 불변, 기사의 신규 사건 또는 실제 주가 영향을 증명하지 않는다.",
+        "거래 티커·제품·사업부문·자회사는 각각 구분하며 같은 법인의 사명으로 자동 등록하지 않는다."
+      ],
+      "not_before": null,
+      "not_after": null
+    },
+    {
+      "record_id": "alphabet_2019_10k_GOOGL",
+      "ticker": "GOOGL",
+      "entity_id": "SEC_CIK:0001652044",
+      "observed_at": "2019-12-31",
+      "published_at": "2020-02-04",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/1652044/000165204420000008/goog10-k2019.htm",
+      "display_name": "Alphabet Inc.",
+      "aliases": [],
+      "business": "Google의 광고, 검색, YouTube, Play 및 앱 내 구매, 클라우드, 하드웨어 사업을 보고한다.",
+      "relationships": [
+        "공개 자료에서 관측한 항목: {\"relationship_type\":\"reported_business_segment\",\"reported_segments\":[\"Google\",\"Other Bets\"],\"trading_tickers\":[\"GOOGL\",\"GOOG\"]}"
+      ],
+      "limitations": [
+        "관측 시점의 자료이며 이후 소유·사업 관계의 불변, 기사의 신규 사건 또는 실제 주가 영향을 증명하지 않는다.",
+        "거래 티커·제품·사업부문·자회사는 각각 구분하며 같은 법인의 사명으로 자동 등록하지 않는다."
+      ],
+      "not_before": null,
+      "not_after": null
+    },
+    {
+      "record_id": "alphabet_2020q2_GOOGL",
+      "ticker": "GOOGL",
+      "entity_id": "SEC_CIK:0001652044",
+      "observed_at": "2020-06-30",
+      "published_at": "2020-07-31",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/1652044/000165204420000032/goog-20200630.htm",
+      "display_name": "Alphabet Inc.",
+      "aliases": [],
+      "business": "",
+      "relationships": [
+        "공개 자료에서 관측한 항목: {\"relationship_type\":\"reported_business_segment\",\"reported_segments\":[\"Google\",\"Other Bets\"],\"trading_tickers\":[\"GOOGL\",\"GOOG\"]}"
+      ],
+      "limitations": [
+        "관측 시점의 자료이며 이후 소유·사업 관계의 불변, 기사의 신규 사건 또는 실제 주가 영향을 증명하지 않는다.",
+        "거래 티커·제품·사업부문·자회사는 각각 구분하며 같은 법인의 사명으로 자동 등록하지 않는다."
+      ],
+      "not_before": null,
+      "not_after": null
+    },
+    {
+      "record_id": "alphabet_2020_10k_GOOGL",
+      "ticker": "GOOGL",
+      "entity_id": "SEC_CIK:0001652044",
+      "observed_at": "2020-12-31",
+      "published_at": "2021-02-03",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/1652044/000165204421000010/goog-20201231.htm",
+      "display_name": "Alphabet Inc.",
+      "aliases": [],
+      "business": "Google Services는 광고 중심 사업이며 Google Cloud를 별도 보고한다.",
+      "relationships": [
+        "공개 자료에서 관측한 항목: {\"relationship_type\":\"reported_business_segment\",\"reported_segments\":[\"Google Services\",\"Google Cloud\",\"Other Bets\"],\"trading_tickers\":[\"GOOGL\",\"GOOG\"]}"
+      ],
+      "limitations": [
+        "관측 시점의 자료이며 이후 소유·사업 관계의 불변, 기사의 신규 사건 또는 실제 주가 영향을 증명하지 않는다.",
+        "거래 티커·제품·사업부문·자회사는 각각 구분하며 같은 법인의 사명으로 자동 등록하지 않는다."
+      ],
+      "not_before": null,
+      "not_after": null
+    },
+    {
+      "record_id": "alphabet_2021q1_GOOGL",
+      "ticker": "GOOGL",
+      "entity_id": "SEC_CIK:0001652044",
+      "observed_at": "2021-03-31",
+      "published_at": "2021-04-28",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/1652044/000165204421000020/goog-20210331.htm",
+      "display_name": "Alphabet Inc.",
+      "aliases": [],
+      "business": "Alphabet이 Google Services와 Google Cloud를 자체 보고부문으로 보고했다.",
+      "relationships": [
+        "공개 자료에서 관측한 항목: {\"relationship_type\":\"reported_business_segment\",\"reported_segments\":[\"Google Services\",\"Google Cloud\",\"Other Bets\"],\"trading_tickers\":[\"GOOGL\",\"GOOG\"]}"
+      ],
+      "limitations": [
+        "관측 시점의 자료이며 이후 소유·사업 관계의 불변, 기사의 신규 사건 또는 실제 주가 영향을 증명하지 않는다.",
+        "거래 티커·제품·사업부문·자회사는 각각 구분하며 같은 법인의 사명으로 자동 등록하지 않는다."
+      ],
+      "not_before": null,
+      "not_after": null
+    },
+    {
+      "record_id": "alphabet_2021_10k_GOOGL",
+      "ticker": "GOOGL",
+      "entity_id": "SEC_CIK:0001652044",
+      "observed_at": "2021-12-31",
+      "published_at": "2022-02-02",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/1652044/000165204422000019/goog-20211231.htm",
+      "display_name": "Alphabet Inc.",
+      "aliases": [],
+      "business": "",
+      "relationships": [
+        "공개 자료에서 관측한 항목: {\"relationship_type\":\"reported_business_segment\",\"reported_segments\":[\"Google Services\",\"Google Cloud\",\"Other Bets\"],\"trading_tickers\":[\"GOOGL\",\"GOOG\"]}"
+      ],
+      "limitations": [
+        "관측 시점의 자료이며 이후 소유·사업 관계의 불변, 기사의 신규 사건 또는 실제 주가 영향을 증명하지 않는다.",
+        "거래 티커·제품·사업부문·자회사는 각각 구분하며 같은 법인의 사명으로 자동 등록하지 않는다."
+      ],
+      "not_before": null,
+      "not_after": null
+    },
+    {
+      "record_id": "alphabet_2022q1_GOOGL",
+      "ticker": "GOOGL",
+      "entity_id": "SEC_CIK:0001652044",
+      "observed_at": "2022-03-31",
+      "published_at": "2022-04-27",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/1652044/000165204422000029/goog-20220331.htm",
+      "display_name": "Alphabet Inc.",
+      "aliases": [],
+      "business": "Alphabet은 Google을 가장 큰 사업으로 설명하고 Google Services와 Google Cloud 부문을 보고했다.",
+      "relationships": [
+        "공개 자료에서 관측한 항목: {\"relationship_type\":\"reported_business_segment\",\"reported_segments\":[\"Google Services\",\"Google Cloud\",\"Other Bets\"],\"trading_tickers\":[\"GOOGL\",\"GOOG\"]}"
+      ],
+      "limitations": [
+        "관측 시점의 자료이며 이후 소유·사업 관계의 불변, 기사의 신규 사건 또는 실제 주가 영향을 증명하지 않는다.",
+        "거래 티커·제품·사업부문·자회사는 각각 구분하며 같은 법인의 사명으로 자동 등록하지 않는다."
+      ],
+      "not_before": null,
+      "not_after": null
+    },
+    {
+      "record_id": "alphabet_2022q3_GOOGL",
+      "ticker": "GOOGL",
+      "entity_id": "SEC_CIK:0001652044",
+      "observed_at": "2022-09-30",
+      "published_at": "2022-10-26",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/1652044/000165204422000090/goog-20220930.htm",
+      "display_name": "Alphabet Inc.",
+      "aliases": [],
+      "business": "Google LLC를 Alphabet의 자회사로 명시하며 Google을 Alphabet의 사업으로 보고했다.",
+      "relationships": [
+        "공개 자료에서 관측한 항목: {\"relationship_type\":\"subsidiary_and_business\",\"reported_segments\":[\"Google Services\",\"Google Cloud\",\"Other Bets\"],\"trading_tickers\":[\"GOOGL\",\"GOOG\"]}"
+      ],
+      "limitations": [
+        "관측 시점의 자료이며 이후 소유·사업 관계의 불변, 기사의 신규 사건 또는 실제 주가 영향을 증명하지 않는다.",
+        "거래 티커·제품·사업부문·자회사는 각각 구분하며 같은 법인의 사명으로 자동 등록하지 않는다."
+      ],
+      "not_before": null,
+      "not_after": null
+    },
+    {
+      "record_id": "facebook_2019q3_META",
+      "ticker": "META",
+      "entity_id": "SEC_CIK:0001326801",
+      "observed_at": "2019-09-30",
+      "published_at": "2019-10-31",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680119000069/fb-09302019x10q.htm",
+      "display_name": "Facebook, Inc.",
+      "aliases": [],
+      "business": "이 기록은 당시 회사명·상장 발행인 식별용이다.",
+      "relationships": [
+        "공개 자료에서 관측한 항목: {\"identity_type\":\"historical_registrant_name\",\"trading_tickers\":[\"FB\"]}"
+      ],
+      "limitations": [
+        "관측 시점의 자료이며 이후 소유·사업 관계의 불변, 기사의 신규 사건 또는 실제 주가 영향을 증명하지 않는다.",
+        "거래 티커·제품·사업부문·자회사는 각각 구분하며 같은 법인의 사명으로 자동 등록하지 않는다."
+      ],
+      "not_before": null,
+      "not_after": null
+    },
+    {
+      "record_id": "facebook_2019_10k_META",
+      "ticker": "META",
+      "entity_id": "SEC_CIK:0001326801",
+      "observed_at": "2019-12-31",
+      "published_at": "2020-01-30",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680120000013/fb-12312019x10k.htm",
+      "display_name": "Facebook, Inc.",
+      "aliases": [],
+      "business": "Facebook, Instagram, Messenger, WhatsApp, Oculus 제품을 설명하며 주된 매출원은 광고다.",
+      "relationships": [
+        "공개 자료에서 관측한 항목: {\"products\":[\"Facebook\",\"Instagram\",\"Messenger\",\"WhatsApp\",\"Oculus\"],\"relationship_type\":\"reported_products_not_legal_subsidiary_chain\",\"trading_tickers\":[\"FB\"]}"
+      ],
+      "limitations": [
+        "관측 시점의 자료이며 이후 소유·사업 관계의 불변, 기사의 신규 사건 또는 실제 주가 영향을 증명하지 않는다.",
+        "거래 티커·제품·사업부문·자회사는 각각 구분하며 같은 법인의 사명으로 자동 등록하지 않는다."
+      ],
+      "not_before": null,
+      "not_after": null
+    },
+    {
+      "record_id": "facebook_2020q2_META",
+      "ticker": "META",
+      "entity_id": "SEC_CIK:0001326801",
+      "observed_at": "2020-06-30",
+      "published_at": "2020-07-31",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680120000076/fb-06302020x10q.htm",
+      "display_name": "Facebook, Inc.",
+      "aliases": [],
+      "business": "Facebook, Instagram, Messenger 및 제휴 웹·앱의 광고 노출로 광고 매출을 얻는다.",
+      "relationships": [
+        "공개 자료에서 관측한 항목: {\"relationship_type\":\"reported_products_not_legal_subsidiary_chain\",\"trading_tickers\":[\"FB\"]}"
+      ],
+      "limitations": [
+        "관측 시점의 자료이며 이후 소유·사업 관계의 불변, 기사의 신규 사건 또는 실제 주가 영향을 증명하지 않는다.",
+        "거래 티커·제품·사업부문·자회사는 각각 구분하며 같은 법인의 사명으로 자동 등록하지 않는다."
+      ],
+      "not_before": null,
+      "not_after": null
+    },
+    {
+      "record_id": "facebook_2020_10k_META",
+      "ticker": "META",
+      "entity_id": "SEC_CIK:0001326801",
+      "observed_at": "2020-12-31",
+      "published_at": "2021-01-28",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680121000014/fb-20201231.htm",
+      "display_name": "Facebook, Inc.",
+      "aliases": [],
+      "business": "Facebook, Instagram, Messenger 및 제휴 웹·앱 광고가 주요 매출 경로다.",
+      "relationships": [
+        "공개 자료에서 관측한 항목: {\"relationship_type\":\"reported_products_not_legal_subsidiary_chain\",\"trading_tickers\":[\"FB\"]}"
+      ],
+      "limitations": [
+        "관측 시점의 자료이며 이후 소유·사업 관계의 불변, 기사의 신규 사건 또는 실제 주가 영향을 증명하지 않는다.",
+        "거래 티커·제품·사업부문·자회사는 각각 구분하며 같은 법인의 사명으로 자동 등록하지 않는다."
+      ],
+      "not_before": null,
+      "not_after": null
+    },
+    {
+      "record_id": "facebook_2021q3_META",
+      "ticker": "META",
+      "entity_id": "SEC_CIK:0001326801",
+      "observed_at": "2021-09-30",
+      "published_at": "2021-10-26",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680121000065/fb-20210930.htm",
+      "display_name": "Facebook, Inc.",
+      "aliases": [],
+      "business": "Facebook, Instagram, Messenger 및 제휴 웹·앱 광고가 주요 매출 경로다.",
+      "relationships": [
+        "공개 자료에서 관측한 항목: {\"relationship_type\":\"reported_products_not_legal_subsidiary_chain\",\"trading_tickers\":[\"FB\"]}"
+      ],
+      "limitations": [
+        "관측 시점의 자료이며 이후 소유·사업 관계의 불변, 기사의 신규 사건 또는 실제 주가 영향을 증명하지 않는다.",
+        "거래 티커·제품·사업부문·자회사는 각각 구분하며 같은 법인의 사명으로 자동 등록하지 않는다."
+      ],
+      "not_before": null,
+      "not_after": null
+    },
+    {
+      "record_id": "meta_20211028_name_change_META",
+      "ticker": "META",
+      "entity_id": "SEC_CIK:0001326801",
+      "observed_at": "2021-10-28",
+      "published_at": "2021-10-28",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680121000071/fb-20211028.htm",
+      "display_name": "Meta Platforms, Inc.",
+      "aliases": [
+        "Facebook, Inc."
+      ],
+      "business": "",
+      "relationships": [
+        "공개 자료에서 관측한 항목: {\"effective_name_change_date\":\"2021-10-28\",\"former_name\":\"Facebook, Inc.\",\"identity_type\":\"same_registrant_legal_name_change\",\"products_in_FoA\":[\"Facebook\",\"Instagram\",\"Messenger\",\"WhatsApp\"],\"reported_segments\":[\"Family of Apps\",\"Reality Labs\"],\"trading_tickers\":[\"FB\"],\"unexecuted_ticker_proposal\":\"This document announced MVRS as a planned ticker; it does not prove execution.\"}"
+      ],
+      "limitations": [
+        "관측 시점의 자료이며 이후 소유·사업 관계의 불변, 기사의 신규 사건 또는 실제 주가 영향을 증명하지 않는다.",
+        "거래 티커·제품·사업부문·자회사는 각각 구분하며 같은 법인의 사명으로 자동 등록하지 않는다."
+      ],
+      "not_before": null,
+      "not_after": null
+    },
+    {
+      "record_id": "meta_20220531_ticker_notice_META",
+      "ticker": "META",
+      "entity_id": "SEC_CIK:0001326801",
+      "observed_at": "2022-05-31",
+      "published_at": "2022-05-31",
+      "source_url": "https://investor.atmeta.com/investor-news/press-release-details/2022/Meta-Platforms-Inc.-to-Change-Ticker-Symbol-to-META-on-June-9/default.aspx",
+      "display_name": "Meta Platforms, Inc.",
+      "aliases": [],
+      "business": "",
+      "relationships": [
+        "공개 자료에서 관측한 항목: {\"announced_effective_date\":\"2022-06-09\",\"announced_next_ticker\":\"META\",\"cusip_change\":false,\"identity_type\":\"announced_future_ticker_change\",\"trading_tickers\":[\"FB\"]}"
+      ],
+      "limitations": [
+        "관측 시점의 자료이며 이후 소유·사업 관계의 불변, 기사의 신규 사건 또는 실제 주가 영향을 증명하지 않는다.",
+        "거래 티커·제품·사업부문·자회사는 각각 구분하며 같은 법인의 사명으로 자동 등록하지 않는다."
+      ],
+      "not_before": null,
+      "not_after": null
+    },
+    {
+      "record_id": "meta_2022q2_META",
+      "ticker": "META",
+      "entity_id": "SEC_CIK:0001326801",
+      "observed_at": "2022-06-30",
+      "published_at": "2022-07-28",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/1326801/000132680122000082/meta-20220630.htm",
+      "display_name": "Meta Platforms, Inc.",
+      "aliases": [],
+      "business": "FoA는 소셜·메신저 제품, Reality Labs는 AR/VR 하드웨어·소프트웨어·콘텐츠 사업이다.",
+      "relationships": [
+        "공개 자료에서 관측한 항목: {\"relationship_type\":\"reported_products_not_legal_subsidiary_chain\",\"reported_segments\":[\"Family of Apps\",\"Reality Labs\"],\"trading_tickers\":[\"META\"]}"
+      ],
+      "limitations": [
+        "관측 시점의 자료이며 이후 소유·사업 관계의 불변, 기사의 신규 사건 또는 실제 주가 영향을 증명하지 않는다.",
+        "거래 티커·제품·사업부문·자회사는 각각 구분하며 같은 법인의 사명으로 자동 등록하지 않는다."
+      ],
+      "not_before": null,
+      "not_after": null
+    },
+    {
+      "record_id": "marvell_20210420_reorganization_MRVL",
+      "ticker": "MRVL",
+      "entity_id": "SEC_CIK:0001835632",
+      "observed_at": "2021-04-20",
+      "published_at": "2021-04-20",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/1058057/000119312521122807/d156000d8k.htm",
+      "display_name": "Marvell Technology, Inc.",
+      "aliases": [],
+      "business": "",
+      "relationships": [
+        "공개 자료에서 관측한 항목: {\"bermuda_merger_effective_at\":\"2021-04-20T16:01:00-04:00\",\"former_parent_identity_key\":\"SEC_CIK:0001058057\",\"identity_type\":\"new_listed_parent_and_subsidiary_reorganization\",\"inphi_merger_effective_at\":\"2021-04-20T16:02:00-04:00\",\"jurisdiction\":\"Delaware\",\"legal_entity_is_same_as_old_parent\":false,\"new_parent_MRVL_trading_from\":\"2021-04-21\",\"old_parent_share_conversion_ratio_to_MTI\":1,\"ownership_pct\":100,\"subsidiaries\":[\"Marvell Technology Group Ltd.\",\"Inphi Corporation\"]}"
+      ],
+      "limitations": [
+        "관측 시점의 자료이며 이후 소유·사업 관계의 불변, 기사의 신규 사건 또는 실제 주가 영향을 증명하지 않는다.",
+        "거래 티커·제품·사업부문·자회사는 각각 구분하며 같은 법인의 사명으로 자동 등록하지 않는다."
+      ],
+      "not_before": "2021-04-20",
+      "not_after": null
+    },
+    {
+      "record_id": "marvell_2021q1_MRVL",
+      "ticker": "MRVL",
+      "entity_id": "SEC_CIK:0001835632",
+      "observed_at": "2021-05-01",
+      "published_at": "2021-06-09",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/1835632/000183563221000010/mrvl-20210501.htm",
+      "display_name": "Marvell Technology, Inc.",
+      "aliases": [],
+      "business": "새 상장 모회사와 연결 자회사가 팹리스 인프라 반도체, 고성능 표준·준맞춤 제품 및 복합 SoC를 제공한다.",
+      "relationships": [
+        "공개 자료에서 관측한 항목: {\"current_cik_link_permitted\":true,\"jurisdiction\":\"Delaware\",\"trading_tickers\":[\"MRVL\"]}"
+      ],
+      "limitations": [
+        "관측 시점의 자료이며 이후 소유·사업 관계의 불변, 기사의 신규 사건 또는 실제 주가 영향을 증명하지 않는다.",
+        "거래 티커·제품·사업부문·자회사는 각각 구분하며 같은 법인의 사명으로 자동 등록하지 않는다."
+      ],
+      "not_before": "2021-04-20",
+      "not_after": null
+    },
+    {
+      "record_id": "marvell_2022_10k_MRVL",
+      "ticker": "MRVL",
+      "entity_id": "SEC_CIK:0001835632",
+      "observed_at": "2022-01-29",
+      "published_at": "2022-03-10",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/1835632/000183563222000016/mrvl-20220129.htm",
+      "display_name": "Marvell Technology, Inc.",
+      "aliases": [],
+      "business": "새 상장 모회사와 연결 자회사가 팹리스 인프라 반도체, 고성능 표준·준맞춤 제품 및 복합 SoC를 제공한다.",
+      "relationships": [
+        "공개 자료에서 관측한 항목: {\"current_cik_link_permitted\":true,\"jurisdiction\":\"Delaware\",\"trading_tickers\":[\"MRVL\"]}"
+      ],
+      "limitations": [
+        "관측 시점의 자료이며 이후 소유·사업 관계의 불변, 기사의 신규 사건 또는 실제 주가 영향을 증명하지 않는다.",
+        "거래 티커·제품·사업부문·자회사는 각각 구분하며 같은 법인의 사명으로 자동 등록하지 않는다."
+      ],
+      "not_before": "2021-04-20",
+      "not_after": null
+    },
+    {
+      "record_id": "marvell_2022q3_MRVL",
+      "ticker": "MRVL",
+      "entity_id": "SEC_CIK:0001835632",
+      "observed_at": "2022-10-29",
+      "published_at": "2022-12-02",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/1835632/000183563222000053/mrvl-20221029.htm",
+      "display_name": "Marvell Technology, Inc.",
+      "aliases": [],
+      "business": "새 상장 모회사와 연결 자회사가 팹리스 인프라 반도체, 고성능 표준·준맞춤 제품 및 복합 SoC를 제공한다.",
+      "relationships": [
+        "공개 자료에서 관측한 항목: {\"current_cik_link_permitted\":true,\"jurisdiction\":\"Delaware\",\"trading_tickers\":[\"MRVL\"]}"
+      ],
+      "limitations": [
+        "관측 시점의 자료이며 이후 소유·사업 관계의 불변, 기사의 신규 사건 또는 실제 주가 영향을 증명하지 않는다.",
+        "거래 티커·제품·사업부문·자회사는 각각 구분하며 같은 법인의 사명으로 자동 등록하지 않는다."
+      ],
+      "not_before": "2021-04-20",
+      "not_after": null
+    },
+    {
+      "record_id": "starbucks_2019_10k_SBUX",
+      "ticker": "SBUX",
+      "entity_id": "SEC_CIK:0000829224",
+      "observed_at": "2019-09-29",
+      "published_at": "2019-11-15",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/829224/000082922419000051/sbux-9292019x10xk.htm",
+      "display_name": "Starbucks Corporation",
+      "aliases": [],
+      "business": "한국 합작법인은 라이선스 Starbucks 매장을 운영한다. 지분법 투자와 상품 판매·로열티 경로를 구분한다.",
+      "relationships": [
+        "공개 자료에서 관측한 항목: {\"ownership_pct\":50,\"related_entity_name\":\"Starbucks Coffee Korea Co., Ltd.\",\"relationship_type\":\"equity_method_joint_venture\",\"trading_tickers\":[\"SBUX\"]}"
+      ],
+      "limitations": [
+        "관측 시점의 자료이며 이후 소유·사업 관계의 불변, 기사의 신규 사건 또는 실제 주가 영향을 증명하지 않는다.",
+        "거래 티커·제품·사업부문·자회사는 각각 구분하며 같은 법인의 사명으로 자동 등록하지 않는다."
+      ],
+      "not_before": null,
+      "not_after": null
+    },
+    {
+      "record_id": "starbucks_2020q3_SBUX",
+      "ticker": "SBUX",
+      "entity_id": "SEC_CIK:0000829224",
+      "observed_at": "2020-06-28",
+      "published_at": "2020-07-28",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/829224/000082922420000066/sbux-20200628.htm",
+      "display_name": "Starbucks Corporation",
+      "aliases": [],
+      "business": "한국 합작법인의 성장 및 영업시간·로열티 변화가 지분법 투자 손익에 반영된다고 보고한다.",
+      "relationships": [
+        "공개 자료에서 관측한 항목: {\"ownership_pct\":null,\"related_entity_name\":\"South Korea joint venture\",\"relationship_type\":\"equity_joint_venture\",\"trading_tickers\":[\"SBUX\"]}"
+      ],
+      "limitations": [
+        "관측 시점의 자료이며 이후 소유·사업 관계의 불변, 기사의 신규 사건 또는 실제 주가 영향을 증명하지 않는다.",
+        "거래 티커·제품·사업부문·자회사는 각각 구분하며 같은 법인의 사명으로 자동 등록하지 않는다."
+      ],
+      "not_before": null,
+      "not_after": null
+    },
+    {
+      "record_id": "starbucks_2020_10k_SBUX",
+      "ticker": "SBUX",
+      "entity_id": "SEC_CIK:0000829224",
+      "observed_at": "2020-09-27",
+      "published_at": "2020-11-12",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/829224/000082922420000078/sbux-20200927.htm",
+      "display_name": "Starbucks Corporation",
+      "aliases": [],
+      "business": "한국 합작법인은 라이선스 Starbucks 매장을 운영한다. 지분법 투자와 상품 판매·로열티 경로를 구분한다.",
+      "relationships": [
+        "공개 자료에서 관측한 항목: {\"ownership_pct\":50,\"related_entity_name\":\"Starbucks Coffee Korea Co., Ltd.\",\"relationship_type\":\"equity_method_joint_venture\",\"trading_tickers\":[\"SBUX\"]}"
+      ],
+      "limitations": [
+        "관측 시점의 자료이며 이후 소유·사업 관계의 불변, 기사의 신규 사건 또는 실제 주가 영향을 증명하지 않는다.",
+        "거래 티커·제품·사업부문·자회사는 각각 구분하며 같은 법인의 사명으로 자동 등록하지 않는다."
+      ],
+      "not_before": null,
+      "not_after": null
+    },
+    {
+      "record_id": "starbucks_20210726_sale_agreement_SBUX",
+      "ticker": "SBUX",
+      "entity_id": "SEC_CIK:0000829224",
+      "observed_at": "2021-07-26",
+      "published_at": "2021-07-27",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/829224/000082922421000075/sbux-20210627.htm",
+      "display_name": "Starbucks Corporation",
+      "aliases": [],
+      "business": "",
+      "relationships": [
+        "공개 자료에서 관측한 항목: {\"agreement_date\":\"2021-07-26\",\"ownership_pct_before_close\":50,\"planned_Apfin_GIC_pct\":32.5,\"planned_E_Mart_additional_pct\":17.5,\"planned_model_after_close\":\"fully licensed\",\"related_entity_name\":\"Starbucks Coffee Korea Co., Ltd.\",\"relationship_type\":\"pending_equity_divestiture\",\"status\":\"subject_to_regulatory_approval_not_closed\",\"trading_tickers\":[\"SBUX\"]}"
+      ],
+      "limitations": [
+        "관측 시점의 자료이며 이후 소유·사업 관계의 불변, 기사의 신규 사건 또는 실제 주가 영향을 증명하지 않는다.",
+        "거래 티커·제품·사업부문·자회사는 각각 구분하며 같은 법인의 사명으로 자동 등록하지 않는다."
+      ],
+      "not_before": null,
+      "not_after": null
+    },
+    {
+      "record_id": "starbucks_20211028_sale_confirmation_SBUX",
+      "ticker": "SBUX",
+      "entity_id": "SEC_CIK:0000829224",
+      "observed_at": "2021-10-28",
+      "published_at": "2021-10-28",
+      "source_url": "https://investor.starbucks.com/news/financial-releases/news-details/2021/Starbucks-Reports-Record-Q4-and-Full-Year-Fiscal-2021-Results/default.aspx",
+      "display_name": "Starbucks Corporation",
+      "aliases": [],
+      "business": "",
+      "relationships": [
+        "공개 자료에서 관측한 항목: {\"Apfin_GIC_acquired_pct\":32.5,\"E_Mart_acquired_additional_pct\":17.5,\"related_entity_name\":\"Starbucks Coffee Korea Co., Ltd.\",\"relationship_type\":\"completed_equity_divestiture\",\"remaining_ownership_pct\":0,\"sale_effective_day\":null,\"sale_effective_month\":\"2021-09\",\"sale_price_usd\":1175000000,\"trading_tickers\":[\"SBUX\"]}"
+      ],
+      "limitations": [
+        "관측 시점의 자료이며 이후 소유·사업 관계의 불변, 기사의 신규 사건 또는 실제 주가 영향을 증명하지 않는다.",
+        "거래 티커·제품·사업부문·자회사는 각각 구분하며 같은 법인의 사명으로 자동 등록하지 않는다."
+      ],
+      "not_before": null,
+      "not_after": null
+    },
+    {
+      "record_id": "starbucks_2021_10k_SBUX",
+      "ticker": "SBUX",
+      "entity_id": "SEC_CIK:0000829224",
+      "observed_at": "2021-10-03",
+      "published_at": "2021-11-19",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/829224/000082922421000086/sbux-20211003.htm",
+      "display_name": "Starbucks Corporation",
+      "aliases": [],
+      "business": "",
+      "relationships": [
+        "공개 자료에서 관측한 항목: {\"related_entity_name\":\"Starbucks Coffee Korea Co., Ltd.\",\"relationship_type\":\"completed_equity_divestiture\",\"remaining_ownership_pct\":0,\"sale_effective_month\":\"2021-09\",\"trading_tickers\":[\"SBUX\"]}"
+      ],
+      "limitations": [
+        "관측 시점의 자료이며 이후 소유·사업 관계의 불변, 기사의 신규 사건 또는 실제 주가 영향을 증명하지 않는다.",
+        "거래 티커·제품·사업부문·자회사는 각각 구분하며 같은 법인의 사명으로 자동 등록하지 않는다."
+      ],
+      "not_before": null,
+      "not_after": null
+    },
+    {
+      "record_id": "starbucks_2022q3_SBUX",
+      "ticker": "SBUX",
+      "entity_id": "SEC_CIK:0000829224",
+      "observed_at": "2022-07-03",
+      "published_at": "2022-08-02",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/829224/000082922422000039/sbux-20220703.htm",
+      "display_name": "Starbucks Corporation",
+      "aliases": [],
+      "business": "한국 시장의 합작법인에서 완전 라이선스 시장으로의 전환이 2022년 라이선스 매출 변동에 반영된다.",
+      "relationships": [
+        "공개 자료에서 관측한 항목: {\"related_entity_name\":\"Korea Starbucks licensed operations\",\"relationship_type\":\"licensed_market_not_equity_subsidiary\",\"trading_tickers\":[\"SBUX\"]}"
+      ],
+      "limitations": [
+        "관측 시점의 자료이며 이후 소유·사업 관계의 불변, 기사의 신규 사건 또는 실제 주가 영향을 증명하지 않는다.",
+        "거래 티커·제품·사업부문·자회사는 각각 구분하며 같은 법인의 사명으로 자동 등록하지 않는다."
+      ],
+      "not_before": null,
+      "not_after": null
+    },
+    {
+      "record_id": "starbucks_2022_10k_SBUX",
+      "ticker": "SBUX",
+      "entity_id": "SEC_CIK:0000829224",
+      "observed_at": "2022-10-02",
+      "published_at": "2022-11-18",
+      "source_url": "https://www.sec.gov/Archives/edgar/data/829224/000082922422000058/sbux-20221002.htm",
+      "display_name": "Starbucks Corporation",
+      "aliases": [],
+      "business": "회사 보고부문은 North America, International, Channel Development이다.",
+      "relationships": [
+        "공개 자료에서 관측한 항목: {\"related_entity_name\":\"Starbucks Coffee Korea Co., Ltd.\",\"relationship_type\":\"former_joint_venture\",\"remaining_ownership_pct\":0,\"trading_tickers\":[\"SBUX\"]}"
+      ],
+      "limitations": [
+        "관측 시점의 자료이며 이후 소유·사업 관계의 불변, 기사의 신규 사건 또는 실제 주가 영향을 증명하지 않는다.",
+        "거래 티커·제품·사업부문·자회사는 각각 구분하며 같은 법인의 사명으로 자동 등록하지 않는다."
+      ],
+      "not_before": null,
+      "not_after": null
+    }
+  ]
+}

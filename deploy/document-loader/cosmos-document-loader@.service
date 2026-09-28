@@ -1,0 +1,18 @@
+[Unit]
+Description=COSMOS document metadata loader (%i)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+Group=ubuntu
+EnvironmentFile=/etc/cosmos/document-loader/common.env
+EnvironmentFile=/etc/cosmos/document-loader/%i.env
+ExecStart=/usr/bin/bash /opt/cosmos/document-loader/current/deploy/document-loader/run-loader.sh
+UMask=0027
+TimeoutStartSec=30min
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

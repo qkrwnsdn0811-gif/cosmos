@@ -1,0 +1,1219 @@
+{
+  "as_of": "2026-09-15",
+  "source": "AI/ner/data/companies.csv at 292231c",
+  "selection": "First 100 entries in each project market, preserving existing order; not current market-cap ranks or official index membership. Explicit selection can use any of the 202 registered symbols.",
+  "companies": [
+    {
+      "market": "KOSPI",
+      "ticker": "005930",
+      "name": "삼성전자",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "000660",
+      "name": "SK하이닉스",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "402340",
+      "name": "SK스퀘어",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "009150",
+      "name": "삼성전기",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "373220",
+      "name": "LG에너지솔루션",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "005380",
+      "name": "현대차",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "207940",
+      "name": "삼성바이오로직스",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "105560",
+      "name": "KB금융",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "032830",
+      "name": "삼성생명",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "028260",
+      "name": "삼성물산",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "012450",
+      "name": "한화에어로스페이스",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "055550",
+      "name": "신한지주",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "034020",
+      "name": "두산에너빌리티",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "000270",
+      "name": "기아",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "329180",
+      "name": "HD현대중공업",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "006400",
+      "name": "삼성SDI",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "068270",
+      "name": "셀트리온",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "034730",
+      "name": "SK",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "012330",
+      "name": "현대모비스",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "086790",
+      "name": "하나금융지주",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "066570",
+      "name": "LG전자",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "035420",
+      "name": "NAVER",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "000810",
+      "name": "삼성화재",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "010120",
+      "name": "LS ELECTRIC",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "005490",
+      "name": "POSCO홀딩스",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "042660",
+      "name": "한화오션",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "267260",
+      "name": "HD현대일렉트릭",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "010130",
+      "name": "고려아연",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "298040",
+      "name": "효성중공업",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "316140",
+      "name": "우리금융지주",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "009540",
+      "name": "HD한국조선해양",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "096770",
+      "name": "SK이노베이션",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "042700",
+      "name": "한미반도체",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "015760",
+      "name": "한국전력",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "011200",
+      "name": "HMM",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "017670",
+      "name": "SK텔레콤",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "051910",
+      "name": "LG화학",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "267250",
+      "name": "HD현대",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "010140",
+      "name": "삼성중공업",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "006800",
+      "name": "미래에셋증권",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "010950",
+      "name": "S-Oil",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "003550",
+      "name": "LG",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "018260",
+      "name": "삼성에스디에스",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "000150",
+      "name": "두산",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "033780",
+      "name": "KT&G",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "024110",
+      "name": "기업은행",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "003670",
+      "name": "포스코퓨처엠",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "035720",
+      "name": "카카오",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "086280",
+      "name": "현대글로비스",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "278470",
+      "name": "에이피알",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "079550",
+      "name": "LIG디펜스앤에어로스페이스",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "064350",
+      "name": "현대로템",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "030200",
+      "name": "KT",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "000720",
+      "name": "현대건설",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "011070",
+      "name": "LG이노텍",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "272210",
+      "name": "한화시스템",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "005830",
+      "name": "DB손해보험",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "047810",
+      "name": "한국항공우주",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "078930",
+      "name": "GS",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "003490",
+      "name": "대한항공",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "307950",
+      "name": "현대오토에버",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "071050",
+      "name": "한국금융지주",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "003230",
+      "name": "삼양식품",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "323410",
+      "name": "카카오뱅크",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "259960",
+      "name": "크래프톤",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "047050",
+      "name": "포스코인터내셔널",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "005940",
+      "name": "NH투자증권",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "180640",
+      "name": "한진칼",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "443060",
+      "name": "HD현대마린솔루션",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "006260",
+      "name": "LS",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "0126Z0",
+      "name": "삼성에피스홀딩스",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "028050",
+      "name": "삼성E&A",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "090430",
+      "name": "아모레퍼시픽",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "161390",
+      "name": "한국타이어앤테크놀로지",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "007660",
+      "name": "이수페타시스",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "016360",
+      "name": "삼성증권",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "352820",
+      "name": "하이브",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "000880",
+      "name": "한화",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "064400",
+      "name": "LG씨엔에스",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "021240",
+      "name": "코웨이",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "039490",
+      "name": "키움증권",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "047040",
+      "name": "대우건설",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "009830",
+      "name": "한화솔루션",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "326030",
+      "name": "SK바이오팜",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "267270",
+      "name": "HD건설기계",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "377300",
+      "name": "카카오페이",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "000500",
+      "name": "가온전선",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "032640",
+      "name": "LG유플러스",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "241560",
+      "name": "두산밥캣",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "000100",
+      "name": "유한양행",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "128940",
+      "name": "한미약품",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "062040",
+      "name": "산일전기",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "175330",
+      "name": "JB금융지주",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "029780",
+      "name": "삼성카드",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "001440",
+      "name": "대한전선",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "088350",
+      "name": "한화생명",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "271560",
+      "name": "오리온",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "066970",
+      "name": "엘앤에프",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "353200",
+      "name": "대덕전자",
+      "default_selected": true
+    },
+    {
+      "market": "KOSPI",
+      "ticker": "088980",
+      "name": "맥쿼리인프라",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "ADBE",
+      "name": "Adobe Inc.",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "AMD",
+      "name": "Advanced Micro Devices",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "ABNB",
+      "name": "Airbnb",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "ALNY",
+      "name": "Alnylam Pharmaceuticals",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "GOOGL",
+      "name": "Alphabet Inc. (Class A)",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "GOOG",
+      "name": "Alphabet Inc. (Class C)",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "AMZN",
+      "name": "Amazon",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "AEP",
+      "name": "American Electric Power",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "AMGN",
+      "name": "Amgen",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "ADI",
+      "name": "Analog Devices",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "AAPL",
+      "name": "Apple Inc.",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "AMAT",
+      "name": "Applied Materials",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "APP",
+      "name": "AppLovin",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "ARM",
+      "name": "Arm Holdings",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "ASML",
+      "name": "ASML Holding",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "ALAB",
+      "name": "Astera Labs",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "ADSK",
+      "name": "Autodesk",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "ADP",
+      "name": "Automatic Data Processing",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "AXON",
+      "name": "Axon Enterprise",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "BKR",
+      "name": "Baker Hughes",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "BKNG",
+      "name": "Booking Holdings",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "AVGO",
+      "name": "Broadcom",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "CDNS",
+      "name": "Cadence Design Systems",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "CTAS",
+      "name": "Cintas",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "CSCO",
+      "name": "Cisco",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "CCEP",
+      "name": "Coca-Cola Europacific Partners",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "CMCSA",
+      "name": "Comcast",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "CEG",
+      "name": "Constellation Energy",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "CPRT",
+      "name": "Copart",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "CRWV",
+      "name": "CoreWeave",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "COST",
+      "name": "Costco",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "CRWD",
+      "name": "CrowdStrike",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "CSX",
+      "name": "CSX Corporation",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "DDOG",
+      "name": "Datadog",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "DXCM",
+      "name": "DexCom",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "FANG",
+      "name": "Diamondback Energy",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "DASH",
+      "name": "DoorDash",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "EXC",
+      "name": "Exelon",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "FAST",
+      "name": "Fastenal",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "FER",
+      "name": "Ferrovial",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "FTNT",
+      "name": "Fortinet",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "GEHC",
+      "name": "GE HealthCare",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "GILD",
+      "name": "Gilead Sciences",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "HONA",
+      "name": "Honeywell Aerospace",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "HON",
+      "name": "Honeywell Technologies",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "IDXX",
+      "name": "Idexx Laboratories",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "INTC",
+      "name": "Intel",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "INTU",
+      "name": "Intuit",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "ISRG",
+      "name": "Intuitive Surgical",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "KDP",
+      "name": "Keurig Dr Pepper",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "KLAC",
+      "name": "KLA Corporation",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "KHC",
+      "name": "Kraft Heinz",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "LRCX",
+      "name": "Lam Research",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "LIN",
+      "name": "Linde plc",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "LITE",
+      "name": "Lumentum",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "MAR",
+      "name": "Marriott International",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "MRVL",
+      "name": "Marvell Technology",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "MELI",
+      "name": "Mercado Libre",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "META",
+      "name": "Meta Platforms",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "MCHP",
+      "name": "Microchip Technology",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "MU",
+      "name": "Micron Technology",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "MSFT",
+      "name": "Microsoft",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "MSTR",
+      "name": "MicroStrategy",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "MDLZ",
+      "name": "Mondelez International",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "MPWR",
+      "name": "Monolithic Power Systems",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "MNST",
+      "name": "Monster Beverage",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "NBIS",
+      "name": "Nebius Group",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "NFLX",
+      "name": "Netflix, Inc.",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "NVDA",
+      "name": "Nvidia",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "NXPI",
+      "name": "NXP Semiconductors",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "ORLY",
+      "name": "O'Reilly Automotive",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "ODFL",
+      "name": "Old Dominion Freight Line",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "PCAR",
+      "name": "Paccar",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "PLTR",
+      "name": "Palantir Technologies",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "PANW",
+      "name": "Palo Alto Networks",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "PAYX",
+      "name": "Paychex",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "PYPL",
+      "name": "PayPal",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "PDD",
+      "name": "PDD Holdings",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "PEP",
+      "name": "PepsiCo",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "QCOM",
+      "name": "Qualcomm",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "REGN",
+      "name": "Regeneron Pharmaceuticals",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "RKLB",
+      "name": "Rocket Lab",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "ROP",
+      "name": "Roper Technologies",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "ROST",
+      "name": "Ross Stores",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "SNDK",
+      "name": "Sandisk",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "STX",
+      "name": "Seagate Technology",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "SHOP",
+      "name": "Shopify",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "SPCX",
+      "name": "SpaceX",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "SBUX",
+      "name": "Starbucks",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "SNPS",
+      "name": "Synopsys",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "TMUS",
+      "name": "T-Mobile US",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "TTWO",
+      "name": "Take-Two Interactive",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "TER",
+      "name": "Teradyne",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "TSLA",
+      "name": "Tesla, Inc.",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "TXN",
+      "name": "Texas Instruments",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "TRI",
+      "name": "Thomson Reuters",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "VRTX",
+      "name": "Vertex Pharmaceuticals",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "WMT",
+      "name": "Walmart",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "WBD",
+      "name": "Warner Bros. Discovery",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "WDC",
+      "name": "Western Digital",
+      "default_selected": true
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "WDAY",
+      "name": "Workday, Inc.",
+      "default_selected": false
+    },
+    {
+      "market": "NASDAQ",
+      "ticker": "XEL",
+      "name": "Xcel Energy",
+      "default_selected": false
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{"eval_id": "E041", "gold": [{"ticker": "TSLA", "alias": "테슬라"}, {"ticker": "373220", "alias": "LG엔솔"}], "note": "LS증권은 출연자 소속(리스트 외, LS 지주 사업 관련 아님)이라 미표기"}
+{"eval_id": "E042", "gold": [], "note": "JTBC/KBS2 방송, 인스타그램은 플랫폼 용도"}
+{"eval_id": "E043", "gold": [], "note": ""}
+{"eval_id": "E044", "gold": [], "note": "베노티앤알·휴먼인모션로보틱스는 리스트 외"}
+{"eval_id": "E045", "gold": [], "note": ""}
+{"eval_id": "E046", "gold": [], "note": ""}
+{"eval_id": "E047", "gold": [], "note": "유튜브는 플랫폼 용도"}
+{"eval_id": "E048", "gold": [], "note": ""}
+{"eval_id": "E049", "gold": [{"ticker": "INTC", "alias": "인텔"}], "note": ""}
+{"eval_id": "E050", "gold": [], "note": "GM·쉐보레·루시드 리스트 외. 하단 관련기사 목록의 현대차·테슬라는 본문이 아니라 제외"}
+{"eval_id": "E051", "gold": [], "note": ""}
+{"eval_id": "E052", "gold": [], "note": "노보 노디스크 리스트 외"}
+{"eval_id": "E053", "gold": [], "note": ""}
+{"eval_id": "E054", "gold": [], "note": ""}
+{"eval_id": "E055", "gold": [], "note": "스텔란티스코리아 및 산하 브랜드 리스트 외"}
+{"eval_id": "E056", "gold": [], "note": "연구 지원기관으로 SAIT(구 삼성종합기술원) 언급 - 삼성전자 산하 연구소지만 삼성전자 사업 관련 기사가 아닌 단순 지원 표기라 미표기 (애매)"}
+{"eval_id": "E057", "gold": [], "note": ""}
+{"eval_id": "E058", "gold": [], "note": "Facebook은 사진 출처/플랫폼 용도"}
+{"eval_id": "E059", "gold": [], "note": "메디쎄이·동화약품 리스트 외"}
+{"eval_id": "E060", "gold": [{"ticker": "000660", "alias": "SK하이닉스"}, {"ticker": "005930", "alias": "삼성전자"}, {"ticker": "NVDA", "alias": "엔비디아"}, {"ticker": "AMD", "alias": "AMD"}, {"ticker": "MU", "alias": "마이크론"}, {"ticker": "INTC", "alias": "인텔"}], "note": "SK하이닉스는 '하이닉스'로도 등장. TSMC·Amkor Korea·하나마이크론은 리스트 외"}
+{"eval_id": "E061", "gold": [], "note": ""}
+{"eval_id": "E062", "gold": [], "note": "인스타그램은 플랫폼 용도"}
+{"eval_id": "E063", "gold": [], "note": "플랜트너·코이카 리스트 외"}
+{"eval_id": "E064", "gold": [], "note": ""}
+{"eval_id": "E065", "gold": [], "note": "트위터는 플랫폼 용도"}
+{"eval_id": "E066", "gold": [], "note": ""}
+{"eval_id": "E067", "gold": [], "note": "VisuMax(자이스) 리스트 외"}
+{"eval_id": "E068", "gold": [], "note": ""}
+{"eval_id": "E069", "gold": [], "note": "이파피루스·아티펙스 리스트 외"}
+{"eval_id": "E070", "gold": [], "note": ""}
+{"eval_id": "E071", "gold": [], "note": ""}
+{"eval_id": "E072", "gold": [{"ticker": "016360", "alias": "삼성증권"}], "note": "GC지놈 리스트 외; 삼성증권은 상장 주관사로 관계자 발언 포함"}
+{"eval_id": "E073", "gold": [], "note": "UNIST·유니스트기술지주·BNK경남은행 리스트 외"}
+{"eval_id": "E074", "gold": [], "note": ""}
+{"eval_id": "E075", "gold": [{"ticker": "NVDA", "alias": "엔비디아"}], "note": "서비스나우 리스트 외. 아마존웹서비스(AWS)는 학습 인프라로 한 번 언급된 것이어서 AMZN 미표기 (애매)"}
+{"eval_id": "E076", "gold": [], "note": "라도(스와치그룹) 리스트 외"}
+{"eval_id": "E077", "gold": [], "note": ""}
+{"eval_id": "E078", "gold": [], "note": ""}
+{"eval_id": "E079", "gold": [], "note": ""}
+{"eval_id": "E080", "gold": [], "note": ""}

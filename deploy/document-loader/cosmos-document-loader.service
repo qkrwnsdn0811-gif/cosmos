@@ -1,0 +1,18 @@
+[Unit]
+Description=COSMOS completed HDFS news and disclosure ingestion
+After=network-online.target cosmos-hadoop-namenode.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+Group=ubuntu
+EnvironmentFile=/etc/cosmos/document-loader/common.env
+WorkingDirectory=/opt/cosmos/document-loader/current/Crawling/documents
+ExecStart=/opt/cosmos/document-loader/venv/bin/python -u -m services.document_loader.runner --config /etc/cosmos/document-loader/discovery.json --state-file /var/lib/cosmos-document-loader/runner-state.json --status-file /var/lib/cosmos-document-loader/last-run.json --max-batches 50 --commit
+StateDirectory=cosmos-document-loader
+StateDirectoryMode=0750
+UMask=0027
+TimeoutStartSec=2h
+NoNewPrivileges=true
+PrivateTmp=true

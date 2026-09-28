@@ -1,0 +1,11 @@
+[Unit]
+Description=NASDAQ previous completed trading day at 10:00 Asia/Seoul
+
+[Timer]
+OnCalendar=*-*-* 10:00:00 Asia/Seoul
+AccuracySec=1min
+Persistent=true
+Unit=cosmos-stock-prices@NASDAQ.service
+
+[Install]
+WantedBy=timers.target

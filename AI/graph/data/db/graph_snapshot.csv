@@ -1,0 +1,2 @@
+as_of_at,formula_version,model_version,status,hdfs_uri,published_at
+2026-09-14T00:00:00Z,rel-v0.2-typed,dict-v1.3,PUBLISHED,hdfs://localhost:9000/data-lake/sandbox/news/junwoo/company-mentions/model_version=dict-v1.3,2026-09-14T00:00:00Z

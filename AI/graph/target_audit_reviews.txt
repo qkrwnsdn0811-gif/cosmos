@@ -1,0 +1,100 @@
+1|event|positive|디자인센터 신설과 브랜드 역량 강화|디자인 센터를 늘리며
+2|routine|unclear|사회 문제 대응 연구 소개로 단기 재무 방향 불명|사회적 난제 해결
+3|price_report|positive|기존 가격 상승을 설명하는 자동 시황|3.69% 오른
+4|routine|unclear|가전 할인 결제 수단으로 등장하며 카드사 수익 영향 미제시|삼성카드로 구매
+5|price_report|negative|이미 관측된 하락률을 나열|3% 하락세
+6|event|unclear|전력 부정 사용 단속 발표이나 재무 영향 크기 불명|집중 단속
+7|event|unclear|경영진 교체 계획의 방향은 단정 불가|유임 가능성
+8|routine|unclear|분양 일정 소개로 수주 증가 여부 불명|대우건설이 시공
+9|outlook|positive|테슬라 고객 확보와 공급 계약이 긍정 근거|테슬라를 최종 고객사로 확보
+10|event|negative|전년 대비 판매 감소|8.1% 감소
+11|routine|positive|퇴직연금 관리 서비스 확대|자산관리센터를 신설
+12|incidental|unclear|주된 수혜 기업은 진에어이며 한진칼은 인물 직함|조현민 한진칼 전무
+13|incidental|unclear|행사 참석 기업 목록|실무자 및 전문가
+14|event|positive|브랜드 가치 상승|전년 대비 20% 성장
+15|incidental|unclear|창업자의 과거 소속 설명|지금의 카카오
+16|outlook|positive|투자 성과 기대를 다룬 증권사 추천|투자 성과 가시화
+17|event|mixed|승계 논란과 지배구조 개선이 함께 있음|경영권을 자녀에게 물려주지 않겠다
+18|contamination|unclear|2017 본문 뒤 관련 뉴스에 2026 기사와 기아가 삽입됨|관련 뉴스
+19|routine|positive|기술 전시 소개이며 계약이나 실적은 없음|자율주행 관련 기술
+20|event|positive|영업이익과 매출 증가; 일부 자회사 비용 증가도 언급|16.1% 증가
+21|incidental|unclear|타사 임원 과거 경력의 기아 언급|현대·기아자동차 경영기획1팀장
+22|price_report|negative|과거 한 주 수익률 보고|삼성전자(-0.72%)
+23|wrong_entity|unclear|일본 글로비스대학은 현대글로비스가 아님|글로비스대학
+24|event|positive|자회사 하만 기술 협력 확대; 모회사 직접 효과는 제한적|삼성전자 100% 자회사
+25|outlook|negative|현대·기아차 표기가 재매칭되지 않음; 산업 투자 부족 비판|현대·기아차의 투자액은 4조원
+26|incidental|unclear|검색 도구 사용법의 Google 언급|Google "coupon or promo code"
+27|incidental|unclear|영화 시청 플랫폼의 하나로 등장|Apple TV
+28|historical_identity|unclear|본문 Warner Bros 소유주는 AT&T로 서술; WBD 역사적 연결 별도 검증 필요|AT&T Inc.’s Warner Bros.
+29|incidental|unclear|머스크의 Twitter 계획이며 Tesla는 대변인 언급|Tesla spokespeople
+30|incidental|unclear|다른 회사 제품 설명의 비교 예시|Google Photos
+31|event|positive|Netflix 앱 소비자 지출 증가|up 78 percent
+32|event|positive|기업 인수 발표로 사업 확대; 다중 뉴스 브리핑|DoorDash is buying
+33|incidental|unclear|도서 내용 속 기업 사례|초기업의 시대
+34|outlook|negative|디지털 과세 확대 추진 대상|digital tax aimed
+35|event|negative|인수 예정 기업의 개인정보 유출 논란|raising questions
+36|historical|unclear|과거 Ring 인수를 투자 사례로 소개|acquired by Amazon last year
+37|incidental|unclear|개인 지출 습관 설명|unnecessary purchases
+38|historical|unclear|기업 성장 역사 회고|Tesla's 15-year history
+39|incidental|unclear|인물의 과거 인턴 경력|first internship
+40|outlook|negative|독점 비판 논평이며 새 기업 사건 없음|monopolization
+41|event|positive|Walmart 실적 호조 본문은 유효하나 앞부분 관련 기사 피드 오염도 존재|earnings that topped expectations
+42|event|mixed|실적 예상 상회와 이미 관측된 시간외 하락이 상충|despite posting third-quarter revenue
+43|routine|positive|직원 보상 만족도 순위|Google took the top spot
+44|incidental|unclear|왕실 인터뷰에서 드라마 언급|The Crown
+45|incidental|unclear|타사 투자자 배경 목록|backed by prominent investors
+46|outlook|positive|음식 배달 사업 진출과 성장 가능성|huge runway for growth
+47|event|positive|공동 구매한 다큐멘터리의 수상 소식|Apple picking up
+48|contamination|unclear|Comcast는 Dressbarn 본문 앞 read more 추천 피드에서만 등장|Comcast is working on a device
+49|incidental|unclear|Twitter 인수 협상의 인물 직함으로 Tesla 언급|also CEO of Tesla
+50|incidental|unclear|배우 일화 속 Mac과 고객지원 이용|brand-new Mac laptop
+51|event|negative|경영진의 시세조종 혐의 수사; 확정 유죄로 해석하지 않음|시세조종 의혹
+52|historical|unclear|러시아 사업 중단 현황과 등급 평가로 신규 충격 여부 불명|자동차 생산을 중단한 현대차
+53|incidental|unclear|건축가의 과거 설계 작품|아모레퍼시픽 사옥
+54|event|positive|자회사를 통한 스타트업 투자 확대|200만 달러
+55|event|mixed|감산으로 공급 과잉 완화 기대; 경쟁사 주가 반응도 혼재|공급 과잉을 잠재적으로 완화
+56|incidental|unclear|기존 입점 은행 목록이며 신규 발표 대상은 카카오뱅크|우리은행
+57|routine|unclear|그룹 사업 포트폴리오 현황 설명|신약 개발(SK바이오팜)
+58|incidental|unclear|직원 수상 목록|각 1인씩 선정
+59|routine|unclear|전시관 방문과 기술 소개|HD현대 전시관
+60|price_report|positive|자동 작성된 장중 가격 상승 보고|3.34% 오른
+61|event|positive|커머스 서비스 확대|파트너스 라이브
+62|event|positive|미국 전기차 충전기 시장 진출 계획|내년 미국 전기차 충전기 시장에 진출
+63|price_report|positive|당일 주가 등락 나열|삼성전자가 0.28% 상승
+64|event|positive|전기차 전용 제품 출시|국내에 출시
+65|routine|positive|차량 제품 수상 소식|좋은 평가를 받았다
+66|event|positive|인증 중고차 신규 진출|중고차 사업에 뛰어든다
+67|event|mixed|보험료 인하는 매출 단가 감소와 고객 확보 양면; 소비자 호재를 회사 호재로 단정 불가|보험료를 2.0% 내리기로
+68|event|positive|AI 서비스 기능 업데이트|업데이트 서비스
+69|event|positive|삼성 파운드리 매출과 점유율 상승; TSMC 격차는 지속|14.1% 올랐다
+70|event|positive|수출 최종 계약 체결|최종 계약서에 서명
+71|incidental|unclear|은행 간담회 참석 목록의 축약 우리 표기; 재매칭 실패|KB국민·신한·우리·하나·NH농협
+72|routine|positive|은행 메타버스 서비스 업데이트와 이벤트|시나몬(Shinamon) 시즌3
+73|event|positive|매출과 영업이익 사상 최대|사상 최대 실적
+74|incidental|unclear|탁구 선수 소속사이며 증권사 영업 사건 아님|전지희(미래에셋증권)
+75|incidental|unclear|대출 신청 가능한 협약 은행 목록|하나은행, 농협은행 등 12개
+76|outlook|positive|증권사 목표가 상승 여력과 계열사 인수 발표|11% upside
+77|incidental|unclear|연예인 사용 제품 구매 링크|Walmart.com
+78|incidental|unclear|도서 독자 리뷰의 판매 플랫폼|Amazon.com
+79|event|negative|Kuiper 배치 계획에 대한 경쟁사 규제 이의 제기|circumvent deployment requirements
+80|incidental|unclear|정치인의 커피 주문에 대한 농담|pick out his own Starbucks
+81|incidental|unclear|광고 연구의 활용 예시로 플랫폼 언급|스트리밍 비디오 콘텐츠 사업자
+82|incidental|unclear|전시 플랫폼을 넷플릭스에 비유|넷플릭스처럼
+83|historical|unclear|경쟁 구도 배경 설명이며 Google 신규 발표 아님|investing heavily
+84|outlook|unclear|ESPN 매각에 대한 증권사 추측; 확정 거래 아님|Wedbush says Disney
+85|event|negative|매장 직원 위협 사건; 기업 전체 재무 영향은 불명|threatened to shoot
+86|wrong_entity|unclear|독자 거주지 Apple Valley를 Apple 기업으로 오인|Apple Valley
+87|outlook|unclear|생산공장 지원 요청이며 확정 투자 아님|적극 지원해달라
+88|event|negative|작가 파업 가능성과 제작 비용 위험|potential effects of a strike
+89|incidental|unclear|할인 상품 구매 안내이며 기업 실적 근거는 없음|affiliate commission
+90|incidental|unclear|사업자 비용 공제의 판매 플랫폼 사례|sell their products on Shopify
+91|incidental|unclear|개인의 콘텐츠 부업 사례이며 Costco와 비제휴|not affiliated with Costco
+92|incidental|unclear|창업자의 개인 투자 이력|Airbnb co-founder Joe Gebbia
+93|incidental|unclear|다른 앱의 배포 플랫폼 목록|Google Play
+94|incidental|unclear|정치 출마자의 과거 경력|previously worked at Google
+95|outlook|mixed|충전 표준 채택 확대와 망 부담 우려가 혼재|strain under the weight
+96|incidental|unclear|취재 중 주소 검색에 지도 사용|Google Maps
+97|wrong_entity|unclear|일과를 뜻하는 workday 및 코너 제목을 기업으로 오인|My L.A. Workday
+98|routine|unclear|내부 보안 정책 실험이며 당장 수익 영향 불명|pilot program
+99|incidental|unclear|카드 할인 대상 목록|구독(넷플릭스
+100|routine|unclear|직원 포럼 게시물 관리 보도; 재무 방향 불명|게시물들이 경영진에 의해 삭제

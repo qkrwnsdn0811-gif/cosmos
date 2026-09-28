@@ -1,0 +1,46 @@
+name: cosmos-jenkins
+
+services:
+  jenkins:
+    build:
+      context: .
+    image: cosmos-jenkins:2.568.3-jdk21
+    container_name: cosmos-jenkins
+    restart: unless-stopped
+    init: false
+    ports:
+      - "127.0.0.1:18090:18090"
+    environment:
+      JAVA_OPTS: "-Djenkins.install.runSetupWizard=false -Xms256m -Xmx1024m"
+      JENKINS_OPTS: "--httpPort=18090 --prefix=/jenkins"
+      JENKINS_URL: "https://j15c205.p.ssafy.io/jenkins/"
+      COSMOS_ENABLE_POLLING: "${COSMOS_ENABLE_POLLING:-false}"
+      TZ: "Asia/Seoul"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - type: bind
+        source: /etc/cosmos/jenkins
+        target: /run/secrets
+        read_only: true
+        bind:
+          create_host_path: false
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /var/jenkins_home/cosmos-init.ready && curl --fail --silent --output /dev/null http://127.0.0.1:18090/jenkins/login"]
+      interval: 20s
+      timeout: 5s
+      retries: 12
+      start_period: 120s
+    mem_limit: 1536m
+    cpus: 1.5
+    pids_limit: 512
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  jenkins_home:
+    name: cosmos_jenkins_home

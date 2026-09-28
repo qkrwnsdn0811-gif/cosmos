@@ -1,0 +1,17 @@
+.git
+.gradle
+.idea
+.vscode
+build
+out
+bin
+*.iml
+*.log
+.env
+.env.*
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+**/*.jks
+**/.DS_Store

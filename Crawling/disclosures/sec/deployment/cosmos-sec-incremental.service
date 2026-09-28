@@ -1,0 +1,28 @@
+[Unit]
+Description=COSMOS SEC fixed-universe incremental collection and HDFS publication
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/sec-edgar-incremental/app
+EnvironmentFile=/etc/cosmos/sec.env
+ExecStart=/bin/bash /home/ubuntu/sec-edgar-incremental/app/deployment/run-incremental.sh
+TimeoutStartSec=4h
+TimeoutStopSec=60
+KillMode=control-group
+UMask=0077
+Nice=10
+CPUQuota=100%
+MemoryHigh=768M
+MemoryMax=1G
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/ubuntu/sec-edgar-incremental/state
+
+[Install]
+WantedBy=multi-user.target

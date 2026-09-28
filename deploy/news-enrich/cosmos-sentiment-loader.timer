@@ -1,0 +1,13 @@
+[Unit]
+Description=Publish analysed news by loading its sentiment and evidence
+
+[Timer]
+# Offset from the enrichment timer so the loader reads batches that pass
+# finished, rather than racing it and finding nothing.
+OnBootSec=8min
+OnUnitInactiveSec=10min
+AccuracySec=30s
+Unit=cosmos-sentiment-loader.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,21 @@
+[Unit]
+Description=COSMOS GPU FinBERT news enrichment backfill (live path runs on the server)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/cosmos-gpu-news/current/AI/gpu_news
+ExecStart=%h/cosmos-gpu-news/venv/bin/python -u worker.py --config %h/.config/cosmos/gpu-news-worker.json --bundle %h/cosmos-gpu-news/models/finbert-v1 --transport ssh --device cuda --batch-size 64 --max-batches 50 --loop-seconds 60
+Restart=on-failure
+RestartSec=15
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONUTF8=1
+# evidence.py imports from AI/graph, which reads AI/ner.
+Environment=PYTHONPATH=%h/cosmos-gpu-news/current/AI/gpu_news:%h/cosmos-gpu-news/current/AI/graph:%h/cosmos-gpu-news/current/AI/ner
+Environment=HF_HUB_OFFLINE=1
+Environment=TRANSFORMERS_OFFLINE=1
+
+[Install]
+WantedBy=default.target
+

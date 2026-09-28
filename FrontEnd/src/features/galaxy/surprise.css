@@ -1,0 +1,159 @@
+/* 하단 중앙 "Special Link" 바 — 조절판(ControlDock)과 자리를 맞바꿔 이제 화면 아래 가운데(구 hud-dock 자리)에 선다.
+   기본값이 접힘(store/galaxy 의 surpriseOpen: false)이고, 펼쳐도 세로로 쌓지 않고 가로 한 줄만 보여준다 —
+   조절판처럼 세로로 길게 가는 대신, 항목이 많으면 그 한 줄 안에서 가로로 스크롤한다(.surprise-rows) */
+.hud-surprise {
+  left: 0;
+  right: 0;
+  bottom: 22px;
+  display: flex;
+  justify-content: center;
+}
+
+.surprise-card {
+  width: min(92vw, 900px);
+  padding: 12px 14px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  /* 세로로 커지지 않는다 — 펼쳐도 화면을 많이 가리지 않아야 한다는 요구사항 */
+  max-height: none;
+  overflow: visible;
+  animation: surprise-in 0.2s ease-out;
+}
+@keyframes surprise-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .surprise-card {
+    animation: none;
+  }
+}
+
+.surprise-head {
+  gap: 8px;
+}
+/* 기본 .kick 은 text-4(중립 회색) — 이 카드만은 경고색 계열로 강조해 "핵심 경험" 임을 알린다 */
+.surprise-kick {
+  color: var(--warn-fg);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.surprise-head .toggle {
+  padding: 5px 7px;
+  border-radius: 8px;
+}
+.surprise-head .toggle svg {
+  display: block;
+}
+
+.surprise-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.35;
+  margin-top: -4px;
+}
+.surprise-lead {
+  line-height: 1.5;
+  margin: -2px 0 0;
+}
+
+/* 세로 목록(.stack)이 아니라 가로 한 줄로 — 항목이 6개까지 있어도 카드 높이는 행 하나만큼만 늘어난다.
+   .stack 의 flex-direction: column 보다 우선해야 하므로 클래스 두 개를 겹친 선택자를 쓴다 */
+.surprise-card .surprise-rows {
+  flex-direction: row;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.surprise-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 0 0 260px;
+  padding: 9px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.surprise-row:hover,
+.surprise-row:focus-visible {
+  background: rgba(245, 166, 35, 0.1);
+  border-color: rgba(245, 166, 35, 0.35);
+}
+.surprise-row:focus-visible {
+  outline: 2px solid var(--warn-fg);
+  outline-offset: 1px;
+}
+
+.surprise-pair-row {
+  gap: 8px;
+}
+.surprise-pair {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+.surprise-co {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  cursor: pointer;
+  max-width: 108px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.surprise-co:hover,
+.surprise-co:focus-visible {
+  color: var(--primary-2);
+  text-decoration: underline;
+}
+/* 기업 중심 뷰 — 중심 기업 쪽은 흐리게 해 "상대" 가 눈에 들어오게 한다 */
+.surprise-co.is-center {
+  color: var(--text-4);
+  font-weight: 500;
+}
+.surprise-co.is-center:hover,
+.surprise-co.is-center:focus-visible {
+  color: var(--primary-2);
+}
+
+.surprise-score {
+  flex: none;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--warn-fg);
+}
+
+.surprise-reasons {
+  gap: 6px;
+  row-gap: 4px;
+}
+.surprise-reasons .chip {
+  padding: 4px 9px;
+  font-size: 11px;
+}
+
+.surprise-hint {
+  font-size: 11px;
+  text-align: center;
+  opacity: 0.8;
+}
+

@@ -1,0 +1,70 @@
+data/edges_*.csv
+data/ownership_*.csv
+data/prices_raw/
+data/prices_daily.parquet
+data/prices_manifest.json
+# 관계추출 중간 산출물 (기사 본문 포함, 서버에서 재생성 가능)
+data/relation_*.jsonl
+data/rel_hits.jsonl
+
+# 스토리3 영향도 분석 산출물 (스크립트로 재생성 가능)
+data/event_study_*.csv
+data/baseline_onehop.csv
+data/edges_co_mention_pre2024.csv
+data/impact_gnn_*.csv
+data/impact_gnn_*.log
+data/impact_coefficients*.csv
+data/impact_scores_eval.csv
+artifacts/
+
+# Local LLM weights, runtime packages and Hugging Face cache (never commit)
+local_models/
+
+# HDFS 샌드박스 게시용 parquet (스크립트로 재생성 가능)
+data/hdfs_sandbox_relations/
+
+# 뉴스 영향도 점수 산출 중간물 (DB 에서 재추출 가능, 20MB+)
+data/news_features.csv
+data/company_document_scores.csv
+data/sentiment_inputs.csv
+data/sentiment_filled.csv
+data/sentiment_scores_load.csv
+data/relation_evidence/*.csv
+
+# 영문 관계 추출 중간물 (DB 에서 재추출 가능, 14MB)
+data/en_sentences.csv
+
+# 감성 추론 샤드·라벨·워커 패키지 (HDFS 에서 재생성 가능, 2.9GB)
+# 샤드는 /data-lake/sandbox/news/junwoo/sentiment-shards/v1/ 에서 다시 받는다.
+data/shard*/
+data/labels_shard*.parquet
+data/shard*_infer.log
+sentiment_worker.zip
+worker/
+
+# 전수 재처리 중간물 (HDFS·서버에서 재생성 가능, 합계 200MB+)
+# 관계 점수 적재 패키지(data/db_full_20260922/)는 작아서 커밋한다.
+data/labels_merged.parquet
+data/relcand_*.jsonl
+data/rel_hits_*.jsonl
+data/en_rel_hits_v2.jsonl
+data/en_sentences_v2.csv
+data/features_v1.csv
+data/company_document_scores_v1.csv
+data/rel_scores_v2.json
+
+# 근거 문장 적재 중간물 (HDFS·서버에서 재생성 가능)
+data/evidence_doc_meta.json
+data/evidence_company_sentiment.json
+data/rel_hits_all_v2_sent.jsonl
+data/relcand_sentstart.json
+data/rel_evidence_record_ids.txt
+# 적재 CSV 는 기사 원문 문장·제목을 담고 있어 커밋하지 않는다 (13MB).
+# build_evidence_load_package.py 로 다시 만든다.
+data/db_evidence_20260922/*.csv
+
+# GMS(Gemini) API 키 — 절대 커밋하지 않는다
+.gms_key
+
+# INVEST 공시 근거 적재 CSV (build_invest_evidence_package.py 로 재생성)
+data/db_invest_evidence_20260923/*.csv

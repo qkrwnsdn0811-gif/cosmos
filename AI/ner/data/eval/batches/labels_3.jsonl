@@ -1,0 +1,40 @@
+{"eval_id": "E081", "gold": [], "note": "테니스 코리아오픈 기사, 기업 언급 없음"}
+{"eval_id": "E082", "gold": [], "note": "헥사곤/오라클 레드불 레이싱/포르쉐 등은 202 목록 외"}
+{"eval_id": "E083", "gold": [], "note": "롤스로이스는 목록 외. 본문 끝 '현대차 아이오닉 3' 등은 blog.naver.com 관련기사 링크 목록이라 제외"}
+{"eval_id": "E084", "gold": [], "note": ""}
+{"eval_id": "E085", "gold": [], "note": ""}
+{"eval_id": "E086", "gold": [], "note": "센소파트는 목록 외"}
+{"eval_id": "E087", "gold": [{"ticker": "005930", "alias": "삼성전자"}, {"ticker": "QCOM", "alias": "퀄컴"}, {"ticker": "AAPL", "alias": "애플"}, {"ticker": "GOOGL", "alias": "구글"}], "note": "퀄컴 스냅드래곤·애플 A19 프로는 경쟁사 칩 비교 문맥이라 포함. '구글 제미나이'는 탑재 AI 제품 언급이라 회사 언급인지 경계적 → 불확실하여 포함(GOOGL/GOOG 중 GOOGL 선택)"}
+{"eval_id": "E088", "gold": [], "note": ""}
+{"eval_id": "E089", "gold": [], "note": "MBC 등 방송사만 언급"}
+{"eval_id": "E090", "gold": [{"ticker": "SBUX", "alias": "스타벅스"}], "note": "불확실. 기사 주체는 '스타벅스 코리아'(SCK컴퍼니, 신세계·GIC 합작 라이선시)로 SBUX 자회사가 아님. 그러나 본문 전체가 '스타벅스' 브랜드 활동이라 독자 관점에서 스타벅스로 인식되어 포함"}
+{"eval_id": "E091", "gold": [], "note": ""}
+{"eval_id": "E092", "gold": [], "note": "에브리봇, SK인텔릭스(SK네트웍스 계열) 모두 목록 외. SK(034730) 자체 언급 아님"}
+{"eval_id": "E093", "gold": [{"ticker": "066570", "alias": "LG전자"}], "note": ""}
+{"eval_id": "E094", "gold": [], "note": ""}
+{"eval_id": "E095", "gold": [], "note": "다임러 트럭 코리아/메르세데스-벤츠는 목록 외"}
+{"eval_id": "E096", "gold": [], "note": ""}
+{"eval_id": "E097", "gold": [{"ticker": "096770", "alias": "SK이노베이션"}], "note": "교보문고는 목록 외"}
+{"eval_id": "E098", "gold": [], "note": "디올은 목록 외"}
+{"eval_id": "E099", "gold": [], "note": ""}
+{"eval_id": "E100", "gold": [], "note": ""}
+{"eval_id": "E101", "gold": [], "note": "굽네/듀먼은 목록 외"}
+{"eval_id": "E102", "gold": [], "note": ""}
+{"eval_id": "E103", "gold": [], "note": ""}
+{"eval_id": "E104", "gold": [], "note": "에너지11, 그래핀선은 목록 외"}
+{"eval_id": "E105", "gold": [], "note": ""}
+{"eval_id": "E106", "gold": [], "note": "티웨이항공·대명소노그룹은 목록 외"}
+{"eval_id": "E107", "gold": [{"ticker": "267250", "alias": "HD현대"}, {"ticker": "329180", "alias": "HD현대중공업"}, {"ticker": "010140", "alias": "삼성중공업"}, {"ticker": "034730", "alias": "SK"}, {"ticker": "096770", "alias": "SK이노베이션"}, {"ticker": "012450", "alias": "한화에어로스페이스"}], "note": "종합 단신. 'SK'는 울산포럼 주최 주체로 그룹/지주 경계적이나 목록 상장사명과 동일해 불확실 포함. '한화 방산 3사'의 '한화'는 그룹 지칭이라 000880 미부여, 대신 손재일 한화에어로스페이스 대표 참석으로 012450 부여. HD현대인프라코어(구 042670)는 목록 외로 판단(HD건설기계 267270과 동일 법인명 아님). KCC, 에버그린, UL솔루션즈 목록 외"}
+{"eval_id": "E108", "gold": [], "note": "경동건설은 목록 외"}
+{"eval_id": "E109", "gold": [], "note": ""}
+{"eval_id": "E110", "gold": [], "note": ""}
+{"eval_id": "E111", "gold": [], "note": ""}
+{"eval_id": "E112", "gold": [], "note": ""}
+{"eval_id": "E113", "gold": [], "note": ""}
+{"eval_id": "E114", "gold": [], "note": "한국은행 경상수지 기사, 개별 기업 언급 없음"}
+{"eval_id": "E115", "gold": [], "note": "메디콕스는 목록 외"}
+{"eval_id": "E116", "gold": [], "note": "'IBK 기업은행 알토스'/'기업은행'은 배구단 지칭이라 스포츠팀 규칙으로 제외"}
+{"eval_id": "E117", "gold": [], "note": "노보노디스크는 목록 외"}
+{"eval_id": "E118", "gold": [], "note": ""}
+{"eval_id": "E119", "gold": [], "note": "본문이 제목·키워드·사이드바 텍스트만으로 구성된 얇은 기사. 기업 언급 없음(사이드바 '루이비통'도 목록 외)"}
+{"eval_id": "E120", "gold": [], "note": "SK 와이번스·SSG 랜더스·LG(트윈스)·한화 이글스는 야구단, '한화생명볼파크'는 경기장명, '신한 SOL Bank KBO'는 스폰서 타이틀이라 모두 제외"}

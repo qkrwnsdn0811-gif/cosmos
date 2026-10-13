@@ -75,62 +75,69 @@ def _source_id(conn) -> UUID:
         "ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING source_id").fetchone()[0]
 
 
+SQL_DOCUMENT = (
+    "INSERT INTO source_document (document_id, source_id, document_type, title, summary, original_url, "
+    "published_at, status, analysis_version) VALUES (%s, %s, 'NEWS', %s, %s, %s, %s, 'ANALYZED', %s) "
+    "ON CONFLICT (document_id) DO UPDATE SET title = EXCLUDED.title, summary = EXCLUDED.summary, "
+    "original_url = EXCLUDED.original_url, published_at = EXCLUDED.published_at, "
+    "analysis_version = EXCLUDED.analysis_version, updated_at = CURRENT_TIMESTAMP")
+SQL_ARTICLE = (
+    "INSERT INTO news_article (document_id, publisher, canonical_url, canonical_url_hash, author) "
+    "VALUES (%s, %s, %s, %s, %s) ON CONFLICT (document_id) DO UPDATE SET publisher = EXCLUDED.publisher, "
+    "author = EXCLUDED.author")
+SQL_COMPANY_DOCUMENT = (
+    "INSERT INTO company_document (document_id, company_id, mention_type, relevance_score, "
+    "model_version, is_service_visible) VALUES (%s, %s, 'REPORTED', %s, %s, TRUE) "
+    "ON CONFLICT (document_id, company_id) DO UPDATE SET mention_type = EXCLUDED.mention_type, "
+    "relevance_score = EXCLUDED.relevance_score, model_version = EXCLUDED.model_version, "
+    "is_service_visible = TRUE, analyzed_at = CURRENT_TIMESTAMP")
+SQL_EVENT = (
+    "INSERT INTO news_event (event_id, document_id, bigkinds_news_id, value_chain, categories, incidents, "
+    "dateline, event_trading_date, pipeline_version) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) "
+    "ON CONFLICT (event_id) DO UPDATE SET value_chain = EXCLUDED.value_chain, "
+    "categories = EXCLUDED.categories, incidents = EXCLUDED.incidents, dateline = EXCLUDED.dateline, "
+    "event_trading_date = EXCLUDED.event_trading_date, pipeline_version = EXCLUDED.pipeline_version")
+SQL_IMPACT = (
+    "INSERT INTO event_company_impact (event_id, company_id, basis, hop, path, propagation_score, "
+    "status, hold_reason, model_version) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)")
+SQL_RETURN = (
+    "INSERT INTO event_abnormal_return (event_id, company_id, window_days, benchmark, stock_return, "
+    "benchmark_return, abnormal_return) VALUES (%s, %s, %s, %s, %s, %s, %s)")
+
+
 def load_events(conn, bundles: list[EventBundle], company_ids: dict[str, UUID]) -> int:
+    """Upsert documents and events; replace each event's impacts and returns (re-runs stay idempotent)."""
+    documents, articles, company_docs, events, impacts, returns = [], [], [], [], [], []
     with conn.transaction():
         source = _source_id(conn)
         for b in bundles:
             a = b.article
             doc, evt = document_id(a.news_id), event_id(a.news_id)
             canonical = "bigkinds://news/" + a.news_id
-            conn.execute(
-                "INSERT INTO source_document (document_id, source_id, document_type, title, summary, original_url, "
-                "published_at, status, analysis_version) VALUES (%s, %s, 'NEWS', %s, %s, %s, %s, 'ANALYZED', %s) "
-                "ON CONFLICT (document_id) DO UPDATE SET title = EXCLUDED.title, summary = EXCLUDED.summary, "
-                "original_url = EXCLUDED.original_url, published_at = EXCLUDED.published_at, "
-                "analysis_version = EXCLUDED.analysis_version, updated_at = CURRENT_TIMESTAMP",
-                (doc, source, a.title, a.content, a.link, a.dateline, PIPELINE_VERSION))
-            conn.execute(
-                "INSERT INTO news_article (document_id, publisher, canonical_url, canonical_url_hash, author) "
-                "VALUES (%s, %s, %s, %s, %s) ON CONFLICT (document_id) DO UPDATE SET publisher = EXCLUDED.publisher, "
-                "author = EXCLUDED.author",
-                (doc, a.provider, canonical, hashlib.sha256(canonical.encode("utf-8")).hexdigest(), a.byline or None))
-            for m in b.mentions:
-                if m.key not in company_ids:
-                    continue
-                conn.execute(
-                    "INSERT INTO company_document (document_id, company_id, mention_type, relevance_score, "
-                    "model_version, is_service_visible) VALUES (%s, %s, 'REPORTED', %s, %s, TRUE) "
-                    "ON CONFLICT (document_id, company_id) DO UPDATE SET mention_type = EXCLUDED.mention_type, "
-                    "relevance_score = EXCLUDED.relevance_score, model_version = EXCLUDED.model_version, "
-                    "is_service_visible = TRUE, analyzed_at = CURRENT_TIMESTAMP",
-                    (doc, company_ids[m.key], round(m.salience, 6), PIPELINE_VERSION))
-            conn.execute(
-                "INSERT INTO news_event (event_id, document_id, bigkinds_news_id, value_chain, categories, incidents, "
-                "dateline, event_trading_date, pipeline_version) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) "
-                "ON CONFLICT (event_id) DO UPDATE SET value_chain = EXCLUDED.value_chain, "
-                "categories = EXCLUDED.categories, incidents = EXCLUDED.incidents, dateline = EXCLUDED.dateline, "
-                "event_trading_date = EXCLUDED.event_trading_date, pipeline_version = EXCLUDED.pipeline_version",
-                (evt, doc, a.news_id, b.value_chain, list(a.categories), list(a.incidents), a.dateline,
-                 b.trading_date, PIPELINE_VERSION))
-            conn.execute("DELETE FROM event_company_impact WHERE event_id = %s", (evt,))
-            conn.execute("DELETE FROM event_abnormal_return WHERE event_id = %s", (evt,))
-            for i in b.impacts:
-                if i.key not in company_ids:
-                    continue
-                path = [{"src": s.src, "dst": s.dst, "rel": s.rel} for s in i.path]
-                conn.execute(
-                    "INSERT INTO event_company_impact (event_id, company_id, basis, hop, path, propagation_score, "
-                    "status, hold_reason, model_version) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                    (evt, company_ids[i.key], i.basis, i.hop, Jsonb(path), round(i.score, 6), i.status,
-                     i.hold_reason, MODEL_VERSION))
-            for r in b.returns:
-                if r.key not in company_ids:
-                    continue
-                conn.execute(
-                    "INSERT INTO event_abnormal_return (event_id, company_id, window_days, benchmark, stock_return, "
-                    "benchmark_return, abnormal_return) VALUES (%s, %s, %s, %s, %s, %s, %s)",
-                    (evt, company_ids[r.key], r.window_days, r.benchmark, round(r.stock_return, 8),
-                     round(r.benchmark_return, 8), round(r.abnormal_return, 8)))
+            documents.append((doc, source, a.title, a.content, a.link, a.dateline, PIPELINE_VERSION))
+            articles.append((doc, a.provider, canonical, hashlib.sha256(canonical.encode("utf-8")).hexdigest(),
+                             a.byline or None))
+            company_docs += [(doc, company_ids[m.key], round(m.salience, 6), PIPELINE_VERSION)
+                             for m in b.mentions if m.key in company_ids]
+            events.append((evt, doc, a.news_id, b.value_chain, list(a.categories), list(a.incidents), a.dateline,
+                           b.trading_date, PIPELINE_VERSION))
+            impacts += [(evt, company_ids[i.key], i.basis, i.hop,
+                         Jsonb([{"src": s.src, "dst": s.dst, "rel": s.rel} for s in i.path]),
+                         round(i.score, 6), i.status, i.hold_reason, MODEL_VERSION)
+                        for i in b.impacts if i.key in company_ids]
+            returns += [(evt, company_ids[r.key], r.window_days, r.benchmark, round(r.stock_return, 8),
+                         round(r.benchmark_return, 8), round(r.abnormal_return, 8))
+                        for r in b.returns if r.key in company_ids]
+        with conn.cursor() as cur:
+            cur.executemany(SQL_DOCUMENT, documents)
+            cur.executemany(SQL_ARTICLE, articles)
+            cur.executemany(SQL_COMPANY_DOCUMENT, company_docs)
+            cur.executemany(SQL_EVENT, events)
+            event_ids = [e[0] for e in events]
+            cur.execute("DELETE FROM event_company_impact WHERE event_id = ANY(%s)", (event_ids,))
+            cur.execute("DELETE FROM event_abnormal_return WHERE event_id = ANY(%s)", (event_ids,))
+            cur.executemany(SQL_IMPACT, impacts)
+            cur.executemany(SQL_RETURN, returns)
     return len(bundles)
 
 

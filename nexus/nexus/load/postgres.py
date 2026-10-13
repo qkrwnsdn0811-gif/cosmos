@@ -121,7 +121,8 @@ def load_events(conn, bundles: list[EventBundle], company_ids: dict[str, UUID]) 
             events.append((evt, doc, a.news_id, b.value_chain, list(a.categories), list(a.incidents), a.dateline,
                            b.trading_date, PIPELINE_VERSION))
             impacts += [(evt, company_ids[i.key], i.basis, i.hop,
-                         Jsonb([{"src": s.src, "dst": s.dst, "rel": s.rel} for s in i.path]),
+                         Jsonb([{"src": s.src, "dst": s.dst, "rel": s.rel, "source": s.source,
+                                 "strength": round(s.strength, 6)} for s in i.path]),
                          round(i.score, 6), i.status, i.hold_reason, MODEL_VERSION)
                         for i in b.impacts if i.key in company_ids]
             returns += [(evt, company_ids[r.key], r.window_days, r.benchmark, round(r.stock_return, 8),
@@ -173,12 +174,13 @@ def load_relations(conn, edges: list[Edge], snippets: list[EvidenceSnippet], com
             "NOT IN (SELECT * FROM unnest(%s::uuid[], %s::uuid[], %s::smallint[]))",
             (scope, scope, [k[0] for k in keep], [k[1] for k in keep], [k[2] for k in keep]))
         for e in edges:
-            if e.source != "NEWS" or e.rel not in types or e.src not in company_ids or e.dst not in company_ids:
+            # COSMOS edges are loaded too, so every step of an inferred path resolves to a relationship row.
+            if e.source not in ("NEWS", "COSMOS") or e.rel not in types or e.src not in company_ids                     or e.dst not in company_ids:
                 continue
             cur = conn.execute(
                 "INSERT INTO company_relationship (source_company_id, target_company_id, relationship_type_id, "
-                "relation_source) VALUES (%s, %s, %s, 'NEWS') ON CONFLICT ON CONSTRAINT uk_company_relationship_identity "
-                "DO NOTHING", (company_ids[e.src], company_ids[e.dst], types[e.rel]))
+                "relation_source) VALUES (%s, %s, %s, %s) ON CONFLICT ON CONSTRAINT uk_company_relationship_identity "
+                "DO NOTHING", (company_ids[e.src], company_ids[e.dst], types[e.rel], e.source))
             written += cur.rowcount
         for s in snippets:
             if s.rel not in types or s.src not in company_ids or s.dst not in company_ids:

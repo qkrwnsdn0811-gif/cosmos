@@ -27,6 +27,7 @@ def test_one_hop_supply_score():
     assert (c.basis, c.hop, c.status) == ("INFERRED", 1, "OK")
     assert c.score == pytest.approx(0.8)
     assert c.path == (PathStep("C", "A", "SUPPLY"),)
+    assert (c.path[0].source, c.path[0].strength) == ("NEWS", 1.0)   # evidence panel resolves the edge by source
 
 
 def test_two_hop_score_and_path():

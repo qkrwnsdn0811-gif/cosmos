@@ -41,7 +41,7 @@ def propagate(mentions: list[CompanyMention], graph: BaseGraph) -> list[Impact]:
         for nxt, edge in graph.neighbors(node):
             if nxt in seeds or nxt in visited:
                 continue
-            step_path = path + (PathStep(edge.src, edge.dst, edge.rel),)
+            step_path = path + (PathStep(edge.src, edge.dst, edge.rel, edge.source, edge.strength),)
             step_score = score * graph.weight(edge)
             offer(nxt, step_score, step_path)
             walk(nxt, step_score, step_path, visited | {nxt})

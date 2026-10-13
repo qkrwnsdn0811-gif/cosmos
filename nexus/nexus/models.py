@@ -56,6 +56,8 @@ class PathStep:
     src: str            # actual edge direction, not traversal direction
     dst: str
     rel: str
+    source: str = field(default="", compare=False)      # COSMOS | NEWS | COMENTION — where the edge came from
+    strength: float = field(default=0.0, compare=False)
 
 
 @dataclass(frozen=True)

@@ -22,7 +22,7 @@ def bundle(synthetic_docs):
     impacts = [
         Impact(A.key, "REPORTED", 0, (), 1.0, "OK", None),
         Impact(B.key, "REPORTED", 0, (), 0.8, "OK", None),
-        Impact(C.key, "INFERRED", 1, (PathStep(C.key, B.key, "SUPPLY"),), 0.64, "OK", None),
+        Impact(C.key, "INFERRED", 1, (PathStep(C.key, B.key, "SUPPLY", "COSMOS", 1.0),), 0.64, "OK", None),
     ]
     returns = [AbnormalReturn(A.key, 1, "KOSPI", 0.02, 0.01, 0.01),
                AbnormalReturn(A.key, 3, "KOSPI", 0.05, 0.02, 0.03)]
@@ -66,7 +66,7 @@ def test_inferred_row_has_path_and_no_document(pg, synthetic_docs):
     basis, hop, path = pg.execute("SELECT basis, hop, path FROM event_company_impact WHERE company_id = %s",
                                   (ids[C.key],)).fetchone()
     assert (basis, hop) == ("INFERRED", 1)
-    assert path == [{"src": C.key, "dst": B.key, "rel": "SUPPLY"}]
+    assert path == [{"src": C.key, "dst": B.key, "rel": "SUPPLY", "source": "COSMOS", "strength": 1.0}]
     assert count(pg, "SELECT count(*) FROM company_document WHERE company_id = %s", ids[C.key]) == 0
 
 
@@ -101,7 +101,7 @@ def test_load_relations_and_prices(pg):
     load_relations(pg, edges, snippets, ids)
     load_relations(pg, edges, snippets, ids)
     assert count(pg, "SELECT count(*) FROM company_relationship WHERE relation_source = 'NEWS'") == 1
-    assert count(pg, "SELECT count(*) FROM company_relationship") == 1
+    assert count(pg, "SELECT count(*) FROM company_relationship WHERE relation_source = 'COSMOS'") == 1
     assert count(pg, "SELECT count(*) FROM relation_evidence_snippet") == 1
     bars = pd.DataFrame({"Open": [10.0, 11.0], "High": [12.0, 12.0], "Low": [9.0, 10.0], "Close": [11.0, 11.5],
                          "Volume": [100, 200]}, index=pd.to_datetime(["2026-10-12", "2026-10-13"]))

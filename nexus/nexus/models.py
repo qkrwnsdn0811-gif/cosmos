@@ -39,3 +39,18 @@ class CompanyMention:
     key: str
     salience: float               # title 1.0, content 0.8, orgs only 0.6
     sources: tuple[str, ...]      # sorted subset of ("content", "orgs", "title")
+
+
+@dataclass(frozen=True)
+class EvidenceSnippet:
+    news_id: str
+    src: str            # company key; supplier for SUPPLY
+    dst: str
+    rel: str            # SUPPLY | PARTNER | COMPETE
+    snippet: str        # hilight fragment, <= 300 chars
+    pattern: str        # COSMOS rule pattern name
+    confidence: float
+    title: str
+    provider: str
+    published: datetime
+    link: str

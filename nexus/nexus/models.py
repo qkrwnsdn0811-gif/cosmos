@@ -1,7 +1,7 @@
 """Shared value types. Company keys are "MARKET:TICKER" strings, e.g. "KOSPI:005930"."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime
 
 Entity = tuple[str, str]   # (name, type) from tms_ne_stream, e.g. ("삼성전자", "OG")
@@ -92,3 +92,14 @@ class EvidenceSnippet:
     provider: str
     published: datetime
     link: str
+
+
+@dataclass
+class EventBundle:
+    """One BigKinds article treated as an event, with everything the loader writes for it."""
+    article: Article
+    value_chain: str
+    mentions: list[CompanyMention]
+    impacts: list[Impact]
+    returns: list[AbnormalReturn] = field(default_factory=list)
+    trading_date: date | None = None

@@ -1,0 +1,187 @@
+"""Write NEXUS results into the service database (public schema, V10 tables).
+
+BigKinds articles also go into source_document / news_article / company_document so the existing
+COSMOS news page and company panel show them without backend changes.
+"""
+from __future__ import annotations
+
+import hashlib
+import math
+import re
+import uuid
+from datetime import datetime, time, timedelta, timezone
+from pathlib import Path
+from uuid import UUID
+
+import pandas as pd
+from psycopg.types.json import Jsonb
+
+from ..config import REPO_ROOT
+from ..models import Company, Edge, EventBundle, EvidenceSnippet
+
+MIGRATIONS_DIR = REPO_ROOT / "BackEnd" / "src" / "main" / "resources" / "db" / "migration"
+NAMESPACE = uuid.NAMESPACE_URL
+PIPELINE_VERSION = "nexus-slice-v1"
+MODEL_VERSION = "rule-propagation-v1"
+KST = timezone(timedelta(hours=9))
+RELATIONSHIP_TYPES = [("SUPPLY", "공급", "DIRECTED"), ("INVEST", "투자", "DIRECTED"),
+                      ("PARTNER", "협력", "UNDIRECTED"), ("COMPETE", "경쟁", "UNDIRECTED")]
+
+
+def document_id(news_id: str) -> UUID:
+    return uuid.uuid5(NAMESPACE, "bigkinds:document:" + news_id)
+
+
+def event_id(news_id: str) -> UUID:
+    return uuid.uuid5(NAMESPACE, "bigkinds:event:" + news_id)
+
+
+def snippet_id(s: EvidenceSnippet) -> UUID:
+    return uuid.uuid5(NAMESPACE, f"bigkinds:snippet:{s.news_id}:{s.src}:{s.dst}:{s.rel}")
+
+
+def apply_migrations_for_tests(conn, migration_dir: Path) -> None:
+    """Throwaway test databases only. Real databases are migrated by Flyway (keeps flyway_schema_history)."""
+    files = sorted(Path(migration_dir).glob("V*__*.sql"), key=lambda p: int(re.match(r"V(\d+)__", p.name).group(1)))
+    for path in files:
+        conn.execute(path.read_text(encoding="utf-8"))
+
+
+def ensure_relationship_types(conn) -> None:
+    for code, name, directionality in RELATIONSHIP_TYPES:
+        conn.execute("INSERT INTO relationship_type (code, name, directionality) VALUES (%s, %s, %s) "
+                     "ON CONFLICT (code) DO NOTHING", (code, name, directionality))
+
+
+def _relationship_type_ids(conn) -> dict[str, int]:
+    return dict(conn.execute("SELECT code, relationship_type_id FROM relationship_type").fetchall())
+
+
+def ensure_companies(conn, companies: list[Company]) -> dict[str, UUID]:
+    ids = {}
+    for c in companies:
+        row = conn.execute(
+            "INSERT INTO company (name, stock_code, market, status) VALUES (%s, %s, %s, 'ACTIVE') "
+            "ON CONFLICT (market, stock_code) DO UPDATE SET market = EXCLUDED.market RETURNING company_id",
+            (c.name, c.ticker, c.market)).fetchone()
+        ids[c.key] = row[0]
+    conn.commit()
+    return ids
+
+
+def _source_id(conn) -> UUID:
+    return conn.execute(
+        "INSERT INTO data_source (name, source_type, base_url) VALUES ('bigkinds', 'NEWS_API', 'https://tools.kinds.or.kr') "
+        "ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING source_id").fetchone()[0]
+
+
+def load_events(conn, bundles: list[EventBundle], company_ids: dict[str, UUID]) -> int:
+    with conn.transaction():
+        source = _source_id(conn)
+        for b in bundles:
+            a = b.article
+            doc, evt = document_id(a.news_id), event_id(a.news_id)
+            canonical = "bigkinds://news/" + a.news_id
+            conn.execute(
+                "INSERT INTO source_document (document_id, source_id, document_type, title, summary, original_url, "
+                "published_at, status, analysis_version) VALUES (%s, %s, 'NEWS', %s, %s, %s, %s, 'ANALYZED', %s) "
+                "ON CONFLICT (document_id) DO UPDATE SET title = EXCLUDED.title, summary = EXCLUDED.summary, "
+                "original_url = EXCLUDED.original_url, published_at = EXCLUDED.published_at, "
+                "analysis_version = EXCLUDED.analysis_version, updated_at = CURRENT_TIMESTAMP",
+                (doc, source, a.title, a.content, a.link, a.dateline, PIPELINE_VERSION))
+            conn.execute(
+                "INSERT INTO news_article (document_id, publisher, canonical_url, canonical_url_hash, author) "
+                "VALUES (%s, %s, %s, %s, %s) ON CONFLICT (document_id) DO UPDATE SET publisher = EXCLUDED.publisher, "
+                "author = EXCLUDED.author",
+                (doc, a.provider, canonical, hashlib.sha256(canonical.encode("utf-8")).hexdigest(), a.byline or None))
+            for m in b.mentions:
+                if m.key not in company_ids:
+                    continue
+                conn.execute(
+                    "INSERT INTO company_document (document_id, company_id, mention_type, relevance_score, "
+                    "model_version, is_service_visible) VALUES (%s, %s, 'REPORTED', %s, %s, TRUE) "
+                    "ON CONFLICT (document_id, company_id) DO UPDATE SET mention_type = EXCLUDED.mention_type, "
+                    "relevance_score = EXCLUDED.relevance_score, model_version = EXCLUDED.model_version, "
+                    "is_service_visible = TRUE, analyzed_at = CURRENT_TIMESTAMP",
+                    (doc, company_ids[m.key], round(m.salience, 6), PIPELINE_VERSION))
+            conn.execute(
+                "INSERT INTO news_event (event_id, document_id, bigkinds_news_id, value_chain, categories, incidents, "
+                "dateline, event_trading_date, pipeline_version) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) "
+                "ON CONFLICT (event_id) DO UPDATE SET value_chain = EXCLUDED.value_chain, "
+                "categories = EXCLUDED.categories, incidents = EXCLUDED.incidents, dateline = EXCLUDED.dateline, "
+                "event_trading_date = EXCLUDED.event_trading_date, pipeline_version = EXCLUDED.pipeline_version",
+                (evt, doc, a.news_id, b.value_chain, list(a.categories), list(a.incidents), a.dateline,
+                 b.trading_date, PIPELINE_VERSION))
+            conn.execute("DELETE FROM event_company_impact WHERE event_id = %s", (evt,))
+            conn.execute("DELETE FROM event_abnormal_return WHERE event_id = %s", (evt,))
+            for i in b.impacts:
+                if i.key not in company_ids:
+                    continue
+                path = [{"src": s.src, "dst": s.dst, "rel": s.rel} for s in i.path]
+                conn.execute(
+                    "INSERT INTO event_company_impact (event_id, company_id, basis, hop, path, propagation_score, "
+                    "status, hold_reason, model_version) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                    (evt, company_ids[i.key], i.basis, i.hop, Jsonb(path), round(i.score, 6), i.status,
+                     i.hold_reason, MODEL_VERSION))
+            for r in b.returns:
+                if r.key not in company_ids:
+                    continue
+                conn.execute(
+                    "INSERT INTO event_abnormal_return (event_id, company_id, window_days, benchmark, stock_return, "
+                    "benchmark_return, abnormal_return) VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                    (evt, company_ids[r.key], r.window_days, r.benchmark, round(r.stock_return, 8),
+                     round(r.benchmark_return, 8), round(r.abnormal_return, 8)))
+    return len(bundles)
+
+
+def load_relations(conn, edges: list[Edge], snippets: list[EvidenceSnippet], company_ids: dict[str, UUID]) -> int:
+    """NEWS edges become company_relationship rows (existing rows are left as they are) plus their snippets."""
+    written = 0
+    with conn.transaction():
+        types = _relationship_type_ids(conn)
+        for e in edges:
+            if e.source != "NEWS" or e.rel not in types or e.src not in company_ids or e.dst not in company_ids:
+                continue
+            cur = conn.execute(
+                "INSERT INTO company_relationship (source_company_id, target_company_id, relationship_type_id, "
+                "relation_source) VALUES (%s, %s, %s, 'NEWS') ON CONFLICT ON CONSTRAINT uk_company_relationship_identity "
+                "DO NOTHING", (company_ids[e.src], company_ids[e.dst], types[e.rel]))
+            written += cur.rowcount
+        for s in snippets:
+            if s.rel not in types or s.src not in company_ids or s.dst not in company_ids:
+                continue
+            conn.execute(
+                "INSERT INTO relation_evidence_snippet (snippet_id, source_company_id, target_company_id, "
+                "relationship_type_id, bigkinds_news_id, title, provider, published_at, original_url, snippet, "
+                "pattern, confidence) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
+                "ON CONFLICT (snippet_id) DO UPDATE SET snippet = EXCLUDED.snippet, pattern = EXCLUDED.pattern, "
+                "confidence = EXCLUDED.confidence",
+                (snippet_id(s), company_ids[s.src], company_ids[s.dst], types[s.rel], s.news_id, s.title,
+                 s.provider, s.published, s.link, s.snippet[:300], s.pattern, round(s.confidence, 6)))
+            written += 1
+    return written
+
+
+def _valid_bar(o, h, l, c, v) -> bool:
+    values = (o, h, l, c, v)
+    return all(x is not None and not (isinstance(x, float) and math.isnan(x)) and x >= 0 for x in values) and h >= l
+
+
+def load_prices(conn, company_ids: dict[str, UUID], bars_by_key: dict[str, pd.DataFrame]) -> int:
+    written = 0
+    with conn.transaction():
+        for key, frame in bars_by_key.items():
+            if key not in company_ids or frame is None or frame.empty:
+                continue
+            for ts, row in frame.iterrows():
+                o, h, l, c, v = (float(row["Open"]), float(row["High"]), float(row["Low"]), float(row["Close"]),
+                                 float(row["Volume"]))
+                if not _valid_bar(o, h, l, c, v):
+                    continue
+                trading_at = datetime.combine(pd.Timestamp(ts).date(), time(0, 0), tzinfo=KST)
+                cur = conn.execute(
+                    "INSERT INTO stock_price_history (company_id, trading_at, interval_type, open_price, high_price, "
+                    "low_price, close_price, trading_volume) VALUES (%s, %s, '1D', %s, %s, %s, %s, %s) "
+                    "ON CONFLICT DO NOTHING", (company_ids[key], trading_at, o, h, l, c, int(v)))
+                written += cur.rowcount
+    return written

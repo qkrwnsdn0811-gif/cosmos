@@ -50,7 +50,7 @@ LG이노텍,KOSPI,부품,
 하나마이크론,KOSDAQ,후공정,
 SFA반도체,KOSDAQ,후공정,
 네패스,KOSDAQ,후공정,
-엘비세미콘,KOSDAQ,후공정,
+LB세미콘,KOSDAQ,후공정,엘비세미콘
 두산테스나,KOSDAQ,후공정,테스나
 가온칩스,KOSDAQ,설계,
 에이디테크놀로지,KOSDAQ,설계,
@@ -59,6 +59,7 @@ SFA반도체,KOSDAQ,후공정,
 퀄리타스반도체,KOSDAQ,설계,
 제주반도체,KOSDAQ,설계,
 에이직랜드,KOSDAQ,설계,
+LX세미콘,KOSPI,설계,엘엑스세미콘
 Nvidia,NASDAQ,고객,엔비디아
 Micron Technology,NASDAQ,제조,마이크론|마이크론테크놀로지
 Advanced Micro Devices,NASDAQ,설계,AMD

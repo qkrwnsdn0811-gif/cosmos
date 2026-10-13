@@ -42,6 +42,16 @@ class CompanyMention:
 
 
 @dataclass(frozen=True)
+class Edge:
+    src: str
+    dst: str
+    rel: str            # SUPPLY | INVEST | PARTNER | COMPETE | CO_MENTIONED
+    strength: float     # 0..1 before the type weight
+    directed: bool
+    source: str         # COSMOS | NEWS | COMENTION
+
+
+@dataclass(frozen=True)
 class EvidenceSnippet:
     news_id: str
     src: str            # company key; supplier for SUPPLY

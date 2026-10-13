@@ -185,8 +185,9 @@ def cmd_analyze(args) -> int:
     first = min(a.published_date for a in articles)
     last = max(a.published_date for a in articles) + timedelta(days=1)
     print(f"articles: {len(articles):,}", flush=True)
-    graph, edges, snippets = build_graph(articles, recognizer, companies, _client(), start=first, end=min(last, today + timedelta(days=1)),
-                                         today=today, cosmos_csv=COSMOS_RELATIONS)
+    # Evidence searches end today (exclusive) so they are cacheable; reruns then cost no API calls.
+    graph, edges, snippets = build_graph(articles, recognizer, companies, _client(), start=first,
+                                         end=min(last, today), today=today, cosmos_csv=COSMOS_RELATIONS)
     print(f"edges: {Counter(e.source for e in edges)}, snippets: {len(snippets)}", flush=True)
     prices = PriceCache(p["prices"])
     bundles = run_analyze(articles, recognizer, companies, graph, prices, value_chain=CHAINS[args.chain]["value_chain"])

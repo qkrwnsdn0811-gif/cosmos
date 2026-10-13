@@ -22,3 +22,20 @@ class Article:
     orgs: tuple[str, ...]                      # tms_ne_organization (full body)
     segments: tuple[tuple[Entity, ...], ...]   # tms_ne_stream (per sentence-like segment)
     nouns: tuple[str, ...]                     # tms_raw_stream (full body, in order)
+
+
+@dataclass(frozen=True)
+class Company:
+    key: str            # "MARKET:TICKER"
+    market: str         # KOSPI | KOSDAQ | NASDAQ
+    ticker: str
+    name: str
+    value_chain: str    # SEMICONDUCTOR | BATTERY | AUTO
+    role: str           # 설계 | 제조 | 장비 | 소재 | 부품 | 후공정 | 고객
+
+
+@dataclass(frozen=True)
+class CompanyMention:
+    key: str
+    salience: float               # title 1.0, content 0.8, orgs only 0.6
+    sources: tuple[str, ...]      # sorted subset of ("content", "orgs", "title")

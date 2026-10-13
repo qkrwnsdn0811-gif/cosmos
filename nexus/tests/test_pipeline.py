@@ -56,3 +56,11 @@ def test_run_analyze_end_to_end_synthetic(synthetic_docs, tmp_path):
 def test_articles_without_master_company_are_not_events(synthetic_docs, tmp_path):
     unrelated = [d for d in synthetic_docs if d["news_id"] == "SYN.20261013160000004"]
     assert analyze(unrelated, tmp_path) == []
+
+
+def test_month_windows_always_start_at_month_start():
+    from nexus.pipeline import _months
+    # A partial-month request must still rewrite the whole month partition, never just a slice of it.
+    assert list(_months(date(2026, 10, 10), date(2026, 10, 15))) == [(date(2026, 10, 1), date(2026, 10, 15), "2026-10")]
+    assert list(_months(date(2026, 9, 20), date(2026, 10, 3))) == [
+        (date(2026, 9, 1), date(2026, 10, 1), "2026-09"), (date(2026, 10, 1), date(2026, 10, 3), "2026-10")]

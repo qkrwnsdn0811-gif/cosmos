@@ -154,10 +154,12 @@ def cmd_build_master(args) -> int:
 
 
 def _months(start: date, end: date):
+    """Month windows from the month containing `start`. Each partition is rewritten whole, so windows always
+    begin on the 1st; a mid-month --start would otherwise replace the partition with a partial month."""
     cur = start.replace(day=1)
     while cur < end:
         nxt = (cur + timedelta(days=32)).replace(day=1)
-        yield max(cur, start), min(nxt, end), cur.strftime("%Y-%m")
+        yield cur, min(nxt, end), cur.strftime("%Y-%m")
         cur = nxt
 
 

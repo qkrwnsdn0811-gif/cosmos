@@ -47,16 +47,44 @@ def test_future_window_skipped():
     assert [r.window_days for r in result] == [1]
 
 
-def test_price_cache_fetches_missing_only(tmp_path):
-    calls = []
-
+def recording_fetch(calls, days=DAYS):
     def fetch(symbol, start, end):
         calls.append((symbol, start, end))
-        days = [d for d in DAYS if start <= d <= end]
-        return pd.DataFrame({"Open": 1.0, "High": 1.0, "Low": 1.0, "Close": [float(d.day) for d in days],
-                             "Volume": 10}, index=pd.to_datetime(days))
+        hit = [d for d in days if start <= d <= end]
+        return pd.DataFrame({"Open": 1.0, "High": 1.0, "Low": 1.0, "Close": [float(d.day) for d in hit],
+                             "Volume": 10}, index=pd.to_datetime(hit))
+    return fetch
 
-    cache = PriceCache(tmp_path, fetch=fetch)
+
+def test_price_cache_does_not_cover_future(tmp_path):
+    calls = []
+    cache = PriceCache(tmp_path, fetch=recording_fetch(calls), today=lambda: date(2026, 10, 14))
+    cache.closes("KS11", date(2026, 10, 12), date(2026, 10, 27))
+    later = PriceCache(tmp_path, fetch=recording_fetch(calls), today=lambda: date(2026, 10, 20))
+    closes = later.closes("KS11", date(2026, 10, 12), date(2026, 11, 4))
+    assert calls[1] == ("KS11", date(2026, 10, 14), date(2026, 10, 19))   # resumes after the old cap, ends yesterday
+    assert date(2026, 10, 16) in closes.index
+
+
+def test_price_cache_never_stores_today(tmp_path):
+    calls = []
+    cache = PriceCache(tmp_path, fetch=recording_fetch(calls), today=lambda: date(2026, 10, 15))
+    closes = cache.closes("KS11", date(2026, 10, 12), date(2026, 10, 19))
+    assert max(closes.index) == date(2026, 10, 14)
+
+
+def test_price_cache_empty_fetch_not_covered(tmp_path):
+    calls = []
+    cache = PriceCache(tmp_path, fetch=recording_fetch(calls, days=[]), today=lambda: date(2026, 10, 20))
+    assert cache.closes("KS11", date(2026, 10, 12), date(2026, 10, 16)).empty
+    cache.closes("KS11", date(2026, 10, 12), date(2026, 10, 16))
+    assert len(calls) == 2
+
+
+def test_price_cache_fetches_missing_only(tmp_path):
+    calls = []
+    fetch = recording_fetch(calls)
+    cache = PriceCache(tmp_path, fetch=fetch, today=lambda: date(2026, 10, 20))
     cache.closes("KS11", date(2026, 10, 12), date(2026, 10, 14))
     closes = cache.closes("KS11", date(2026, 10, 12), date(2026, 10, 16))
     assert calls == [("KS11", date(2026, 10, 12), date(2026, 10, 14)), ("KS11", date(2026, 10, 15), date(2026, 10, 16))]

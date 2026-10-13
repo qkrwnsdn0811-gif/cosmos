@@ -28,7 +28,7 @@ def analyze(docs, tmp_path):
     companies = list(COMPANIES.values())
     recognizer = Recognizer(companies, alias_rows(companies, [], []))
     graph = BaseGraph([Edge(BADA.key, HANEUL.key, "SUPPLY", 1.0, True, "NEWS")])
-    prices = PriceCache(tmp_path, fetch=fake_fetch)
+    prices = PriceCache(tmp_path, fetch=fake_fetch, today=lambda: date(2026, 10, 25))
     return run_analyze([to_article(d) for d in docs], recognizer, COMPANIES, graph, prices,
                        value_chain="SEMICONDUCTOR")
 

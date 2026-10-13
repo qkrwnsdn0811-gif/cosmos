@@ -70,6 +70,16 @@ class Impact:
 
 
 @dataclass(frozen=True)
+class AbnormalReturn:
+    key: str
+    window_days: int        # trading days from t0 inclusive (1 = event day only)
+    benchmark: str          # KOSPI | KOSDAQ
+    stock_return: float
+    benchmark_return: float
+    abnormal_return: float
+
+
+@dataclass(frozen=True)
 class EvidenceSnippet:
     news_id: str
     src: str            # company key; supplier for SUPPLY

@@ -70,3 +70,20 @@ def test_store_roundtrip_and_dedup(tmp_path, synthetic_docs):
     assert by_id[renamed.news_id].title == "바뀐 제목"
     assert by_id["SYN.20261013100000001"].segments == renamed.segments
     assert read[1] == articles[1]
+
+
+def test_late_dateline_falls_back_to_enveloped():
+    article = to_article(doc(published_at="2026-01-10T00:00:00.000+09:00", dateline="2026-03-01T10:00:00.000+09:00",
+                             enveloped_at="2026-01-10T09:30:00.000+09:00"))
+    assert article.dateline.isoformat() == "2026-01-10T09:30:00+09:00"
+
+
+def test_inconsistent_times_fall_back_to_published():
+    article = to_article(doc(published_at="2026-01-10T00:00:00.000+09:00", dateline="2026-03-01T10:00:00.000+09:00",
+                             enveloped_at="2025-12-01T10:00:00.000+09:00"))
+    assert article.dateline.isoformat() == "2026-01-10T00:00:00+09:00"
+
+
+def test_evening_dateline_before_print_date_is_kept():
+    article = to_article(doc(published_at="2026-10-14T00:00:00.000+09:00", dateline="2026-10-13T21:00:00.000+09:00"))
+    assert article.dateline.isoformat() == "2026-10-13T21:00:00+09:00"

@@ -28,12 +28,26 @@ def _segments(value: str | None) -> tuple[tuple[Entity, ...], ...]:
     return tuple(segments)
 
 
-def _timestamp(doc: dict) -> datetime:
-    raw = doc.get("dateline") or doc.get("enveloped_at") or doc["published_at"]
+MAX_DRIFT = timedelta(days=1)   # evening release for the next day's print edition is normal
+
+
+def _parse(raw: str) -> datetime:
     parsed = datetime.fromisoformat(raw)
     if parsed.tzinfo is None:
         parsed = parsed.replace(tzinfo=KST)
     return parsed.astimezone(KST)
+
+
+def _timestamp(doc: dict) -> datetime:
+    """Release time: dateline, else enveloped_at — each only if within a day of the published date.
+    About 9% of datelines drift; some land weeks or months later, which would misplace t0."""
+    published = _parse(doc["published_at"])
+    for name in ("dateline", "enveloped_at"):
+        if doc.get(name):
+            candidate = _parse(doc[name])
+            if abs(candidate.date() - published.date()) <= MAX_DRIFT:
+                return candidate
+    return published
 
 
 def to_article(doc: dict) -> Article:

@@ -108,3 +108,15 @@ def test_load_relations_and_prices(pg):
     load_prices(pg, ids, {B.key: bars})
     load_prices(pg, ids, {B.key: bars})
     assert count(pg, "SELECT count(*) FROM stock_price_history WHERE company_id = %s", ids[B.key]) == 2
+
+
+def test_prices_use_utc_midnight_and_update(pg):
+    ids = ensure_companies(pg, [A, B, C])
+    bars = pd.DataFrame({"Open": [10.0], "High": [12.0], "Low": [9.0], "Close": [11.0], "Volume": [100]},
+                        index=pd.to_datetime(["2026-10-12"]))
+    load_prices(pg, ids, {B.key: bars})
+    load_prices(pg, ids, {B.key: bars.assign(Close=11.5)})
+    trading_at, close = pg.execute("SELECT trading_at, close_price FROM stock_price_history WHERE company_id = %s",
+                                   (ids[B.key],)).fetchone()
+    assert trading_at == datetime(2026, 10, 12, tzinfo=timezone.utc)   # COSMOS convention: trading date at UTC midnight
+    assert float(close) == 11.5

@@ -185,10 +185,13 @@ def load_prices(conn, company_ids: dict[str, UUID], bars_by_key: dict[str, pd.Da
                                  float(row["Volume"]))
                 if not _valid_bar(o, h, l, c, v):
                     continue
-                trading_at = datetime.combine(pd.Timestamp(ts).date(), time(0, 0), tzinfo=KST)
+                # COSMOS convention (Crawling/prices loader): exchange trading date at UTC midnight.
+                trading_at = datetime.combine(pd.Timestamp(ts).date(), time(0, 0), tzinfo=timezone.utc)
                 cur = conn.execute(
                     "INSERT INTO stock_price_history (company_id, trading_at, interval_type, open_price, high_price, "
                     "low_price, close_price, trading_volume) VALUES (%s, %s, '1D', %s, %s, %s, %s, %s) "
-                    "ON CONFLICT DO NOTHING", (company_ids[key], trading_at, o, h, l, c, int(v)))
+                    "ON CONFLICT (company_id, trading_at, interval_type) DO UPDATE SET open_price = EXCLUDED.open_price, "
+                    "high_price = EXCLUDED.high_price, low_price = EXCLUDED.low_price, close_price = EXCLUDED.close_price, "
+                    "trading_volume = EXCLUDED.trading_volume", (company_ids[key], trading_at, o, h, l, c, int(v)))
                 written += cur.rowcount
     return written

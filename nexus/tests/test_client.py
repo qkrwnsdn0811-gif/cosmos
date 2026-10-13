@@ -103,3 +103,8 @@ def test_load_settings_reads_dotenv(tmp_path, monkeypatch):
     settings = load_settings(tmp_path)
     assert settings.bigkinds_key == "abc"
     assert settings.data_dir == tmp_path / "nexus" / "data"
+
+
+def test_settings_repr_hides_key(tmp_path, monkeypatch):
+    monkeypatch.setenv("BIGKINDS_ACCESS_KEY", "very-secret-value")
+    assert "very-secret-value" not in repr(load_settings(tmp_path))

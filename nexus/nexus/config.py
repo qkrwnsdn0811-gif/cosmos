@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -12,7 +12,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 class Settings:
     repo_root: Path
     data_dir: Path
-    bigkinds_key: str
+    bigkinds_key: str = field(repr=False)   # never in logs or tracebacks
 
 
 def _read_dotenv(path: Path) -> dict[str, str]:

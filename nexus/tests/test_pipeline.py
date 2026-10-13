@@ -64,3 +64,34 @@ def test_month_windows_always_start_at_month_start():
     assert list(_months(date(2026, 10, 10), date(2026, 10, 15))) == [(date(2026, 10, 1), date(2026, 10, 15), "2026-10")]
     assert list(_months(date(2026, 9, 20), date(2026, 10, 3))) == [
         (date(2026, 9, 1), date(2026, 10, 1), "2026-09"), (date(2026, 10, 1), date(2026, 10, 3), "2026-10")]
+
+
+def test_build_graph_searches_by_most_frequent_org_alias(tmp_path):
+    from datetime import datetime, timedelta, timezone
+
+    from nexus.models import Article
+    from nexus.pipeline import build_graph
+
+    hynix = Company("KOSPI:000660", "KOSPI", "000660", "SK하이닉스", "SEMICONDUCTOR", "제조")
+    micron = Company("NASDAQ:MU", "NASDAQ", "MU", "Micron Technology", "SEMICONDUCTOR", "제조")
+    seed = [{"name": "Micron Technology", "aliases": "마이크론|마이크론 테크놀로지"}]
+    recognizer = Recognizer([hynix, micron], alias_rows([hynix, micron], seed, []))
+    kst = timezone(timedelta(hours=9))
+    articles = [Article(f"n{i}", "t", "", date(2026, 10, 13), datetime(2026, 10, 13, 10, tzinfo=kst), "p", "", (), (),
+                        "", ("SK하이닉스", "마이크론"), ((("SK하이닉스", "OG"), ("마이크론", "OG")),), ())
+                for i in range(3)]
+
+    class Client:
+        queries = []
+
+        def post(self, path, argument, *, cache):
+            self.queries.append(argument["query"])
+            return {"documents": []}
+
+    cosmos_csv = tmp_path / "rel.csv"
+    cosmos_csv.write_text("source_market,source_stock_code,target_market,target_stock_code,relationship_type_code\n",
+                          encoding="utf-8")
+    client = Client()
+    build_graph(articles, recognizer, {c.key: c for c in (hynix, micron)}, client, start=date(2026, 10, 1),
+                end=date(2026, 10, 14), today=date(2026, 10, 14), cosmos_csv=cosmos_csv)
+    assert client.queries == ["SK하이닉스 AND 마이크론"]

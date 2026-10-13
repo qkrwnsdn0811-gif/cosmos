@@ -4,7 +4,6 @@ from __future__ import annotations
 import argparse
 import csv
 import pickle
-import re
 import subprocess
 import sys
 import time
@@ -36,7 +35,6 @@ CHAINS = {
 COSMOS_COMPANIES = REPO_ROOT / "AI" / "ner" / "data" / "companies.csv"
 COSMOS_ALIASES = REPO_ROOT / "AI" / "ner" / "data" / "aliases.csv"
 COSMOS_RELATIONS = REPO_ROOT / "AI" / "graph" / "data" / "db_full_20260922" / "company_relationship.csv"
-HANGUL = re.compile(r"[가-힣]")
 PRICE_LOOKBACK = timedelta(days=14)
 
 
@@ -53,24 +51,27 @@ def _write_csv(path: Path, rows: list[dict], columns: list[str]) -> None:
         writer.writerows(rows)
 
 
-def _search_name(company: Company, recognizer: Recognizer) -> str:
-    """Korean articles name foreign firms in Hangul, so NASDAQ pairs search by the longest Hangul alias."""
-    if company.market == "NASDAQ":
-        hangul = [a for a in recognizer.aliases_of(company.key) if HANGUL.search(a)]
-        if hangul:
-            return hangul[0]
-    return company.name
+def search_terms(articles: list[Article], recognizer: Recognizer, companies: dict[str, Company]) -> dict[str, str]:
+    """Per company, the alias that BigKinds' own entity lists use most often (e.g. 마이크론, not the rare
+    transliteration 마이크론 테크놀로지); falls back to the official name."""
+    seen: dict[str, Counter] = {}
+    for article in articles:
+        for org in article.orgs:
+            key = recognizer.key_of_org(org)
+            if key:
+                seen.setdefault(key, Counter())[org] += 1
+    return {key: (seen[key].most_common(1)[0][0] if key in seen else c.name) for key, c in companies.items()}
 
 
 def build_graph(articles: list[Article], recognizer: Recognizer, companies: dict[str, Company],
                 client: BigKindsClient, *, start: date, end: date, today: date, cosmos_csv: Path,
                 top_pairs: int = 300) -> tuple[BaseGraph, list[Edge], list[EvidenceSnippet]]:
     stats = sentence_comentions(articles, recognizer.key_of_org, min_count=3)
+    terms = search_terms(articles, recognizer, companies)
     snippets: list[EvidenceSnippet] = []
     for i, stat in enumerate(stats[:top_pairs], 1):
         a, b = companies[stat.a], companies[stat.b]
-        docs = pair_hilights(client, _search_name(a, recognizer), _search_name(b, recognizer),
-                             start=start, end=end, today=today)
+        docs = pair_hilights(client, terms[a.key], terms[b.key], start=start, end=end, today=today)
         snippets.extend(extract_evidence(docs, a, b, recognizer.aliases_of))
         if i % 50 == 0:
             print(f"  pair hilights {i}/{min(top_pairs, len(stats))}, snippets {len(snippets)}", flush=True)

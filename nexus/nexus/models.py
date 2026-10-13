@@ -52,6 +52,24 @@ class Edge:
 
 
 @dataclass(frozen=True)
+class PathStep:
+    src: str            # actual edge direction, not traversal direction
+    dst: str
+    rel: str
+
+
+@dataclass(frozen=True)
+class Impact:
+    key: str
+    basis: str                      # REPORTED | INFERRED
+    hop: int                        # 0 for REPORTED
+    path: tuple[PathStep, ...]      # seed outward
+    score: float
+    status: str                     # OK | HOLD
+    hold_reason: str | None
+
+
+@dataclass(frozen=True)
 class EvidenceSnippet:
     news_id: str
     src: str            # company key; supplier for SUPPLY

@@ -222,7 +222,8 @@ def cmd_load(args) -> int:
     # The .pkl files are written by `analyze` into the git-ignored local nexus/data directory and are
     # never received from outside, so loading them with pickle does not cross a trust boundary.
     import psycopg
-    from .load.postgres import ensure_companies, ensure_relationship_types, load_events, load_prices, load_relations
+    from .load.postgres import (ensure_companies, ensure_relationship_types, load_events, load_prices,
+                                load_relations, prune_events)
     p = _paths(args.chain)
     companies, _ = _load_master(args.chain)
     with (p["analyzed"] / "events.pkl").open("rb") as f:
@@ -241,6 +242,9 @@ def cmd_load(args) -> int:
             load_events(conn, bundles[i:i + args.batch], ids)
             conn.commit()
             print(f"events {min(i + args.batch, len(bundles)):,}/{len(bundles):,}", flush=True)
+        pruned = prune_events(conn, CHAINS[args.chain]["value_chain"], {b.article.news_id for b in bundles})
+        conn.commit()
+        print(f"stale events removed: {pruned}", flush=True)
         print(f"price rows written: {load_prices(conn, ids, bars)}")
         conn.commit()
     return 0

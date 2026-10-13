@@ -120,3 +120,42 @@ def test_prices_use_utc_midnight_and_update(pg):
                                    (ids[B.key],)).fetchone()
     assert trading_at == datetime(2026, 10, 12, tzinfo=timezone.utc)   # COSMOS convention: trading date at UTC midnight
     assert float(close) == 11.5
+
+
+def test_reload_drops_removed_mention(pg, synthetic_docs):
+    ids = ensure_companies(pg, [A, B, C])
+    load_events(pg, [bundle(synthetic_docs)], ids)
+    narrowed = bundle(synthetic_docs)
+    narrowed.mentions = narrowed.mentions[:1]
+    narrowed.impacts = narrowed.impacts[:1]
+    load_events(pg, [narrowed], ids)
+    doc = document_id("SYN.20261013100000001")
+    assert count(pg, "SELECT count(*) FROM company_document WHERE document_id = %s", doc) == 1
+    assert count(pg, "SELECT count(*) FROM event_company_impact") == 1
+
+
+def test_prune_events_removes_events_not_in_new_run(pg, synthetic_docs):
+    from nexus.load.postgres import prune_events
+    ids = ensure_companies(pg, [A, B, C])
+    other = bundle(synthetic_docs)
+    other.article = to_article(synthetic_docs[2])
+    load_events(pg, [bundle(synthetic_docs), other], ids)
+    assert prune_events(pg, "SEMICONDUCTOR", {"SYN.20261013100000001"}) == 1
+    assert count(pg, "SELECT count(*) FROM news_event") == 1
+    assert count(pg, "SELECT count(*) FROM company_document WHERE document_id = %s",
+                 document_id("SYN.20261013154000003")) == 0
+    assert count(pg, "SELECT count(*) FROM event_company_impact WHERE event_id = %s",
+                 event_id("SYN.20261013154000003")) == 0
+
+
+def test_load_relations_replaces_previous_news_rows(pg):
+    ids = ensure_companies(pg, [A, B, C])
+    first = [Edge(A.key, B.key, "SUPPLY", 0.85, True, "NEWS")]
+    snip = EvidenceSnippet("N9", A.key, B.key, "SUPPLY", "s", "subj-target", 0.7, "t", "p",
+                           datetime(2026, 10, 13, 10, tzinfo=KST), "")
+    load_relations(pg, first, [snip], ids)
+    load_relations(pg, [Edge(A.key, C.key, "SUPPLY", 0.9, True, "NEWS")], [], ids)
+    pairs = pg.execute("SELECT source_company_id, target_company_id FROM company_relationship "
+                       "WHERE relation_source = 'NEWS'").fetchall()
+    assert pairs == [(ids[A.key], ids[C.key])]
+    assert count(pg, "SELECT count(*) FROM relation_evidence_snippet") == 0

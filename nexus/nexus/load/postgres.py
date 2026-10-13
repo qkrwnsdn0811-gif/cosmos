@@ -9,7 +9,7 @@ import hashlib
 import math
 import re
 import uuid
-from datetime import datetime, time, timedelta, timezone
+from datetime import datetime, time, timezone
 from pathlib import Path
 from uuid import UUID
 
@@ -23,7 +23,6 @@ MIGRATIONS_DIR = REPO_ROOT / "BackEnd" / "src" / "main" / "resources" / "db" / "
 NAMESPACE = uuid.NAMESPACE_URL
 PIPELINE_VERSION = "nexus-slice-v1"
 MODEL_VERSION = "rule-propagation-v1"
-KST = timezone(timedelta(hours=9))
 RELATIONSHIP_TYPES = [("SUPPLY", "공급", "DIRECTED"), ("INVEST", "투자", "DIRECTED"),
                       ("PARTNER", "협력", "UNDIRECTED"), ("COMPETE", "경쟁", "UNDIRECTED")]
 
@@ -131,6 +130,9 @@ def load_events(conn, bundles: list[EventBundle], company_ids: dict[str, UUID]) 
         with conn.cursor() as cur:
             cur.executemany(SQL_DOCUMENT, documents)
             cur.executemany(SQL_ARTICLE, articles)
+            # Mentions removed by a re-analysis must disappear from the existing news feed too.
+            cur.execute("DELETE FROM company_document WHERE document_id = ANY(%s) AND model_version = %s",
+                        ([d[0] for d in documents], PIPELINE_VERSION))
             cur.executemany(SQL_COMPANY_DOCUMENT, company_docs)
             cur.executemany(SQL_EVENT, events)
             event_ids = [e[0] for e in events]
@@ -141,11 +143,35 @@ def load_events(conn, bundles: list[EventBundle], company_ids: dict[str, UUID]) 
     return len(bundles)
 
 
+def prune_events(conn, value_chain: str, keep_news_ids: set[str]) -> int:
+    """Remove this value chain's events that a new analysis no longer produces (impacts/returns cascade)."""
+    with conn.transaction():
+        rows = conn.execute("SELECT event_id, document_id, bigkinds_news_id FROM news_event WHERE value_chain = %s",
+                            (value_chain,)).fetchall()
+        drop = [(evt, doc) for evt, doc, news_id in rows if news_id not in keep_news_ids]
+        if drop:
+            conn.execute("DELETE FROM company_document WHERE document_id = ANY(%s) AND model_version = %s",
+                         ([doc for _, doc in drop], PIPELINE_VERSION))
+            conn.execute("DELETE FROM news_event WHERE event_id = ANY(%s)", ([evt for evt, _ in drop],))
+    return len(drop)
+
+
 def load_relations(conn, edges: list[Edge], snippets: list[EvidenceSnippet], company_ids: dict[str, UUID]) -> int:
     """NEWS edges become company_relationship rows (existing rows are left as they are) plus their snippets."""
     written = 0
     with conn.transaction():
         types = _relationship_type_ids(conn)
+        scope = list(company_ids.values())
+        keep = [(company_ids[e.src], company_ids[e.dst], types[e.rel]) for e in edges
+                if e.source == "NEWS" and e.rel in types and e.src in company_ids and e.dst in company_ids]
+        # Replace, not accumulate: evidence that a re-analysis no longer finds must not stay visible.
+        conn.execute("DELETE FROM relation_evidence_snippet WHERE source_company_id = ANY(%s) "
+                     "AND target_company_id = ANY(%s)", (scope, scope))
+        conn.execute(
+            "DELETE FROM company_relationship WHERE relation_source = 'NEWS' AND source_company_id = ANY(%s) "
+            "AND target_company_id = ANY(%s) AND (source_company_id, target_company_id, relationship_type_id) "
+            "NOT IN (SELECT * FROM unnest(%s::uuid[], %s::uuid[], %s::smallint[]))",
+            (scope, scope, [k[0] for k in keep], [k[1] for k in keep], [k[2] for k in keep]))
         for e in edges:
             if e.source != "NEWS" or e.rel not in types or e.src not in company_ids or e.dst not in company_ids:
                 continue

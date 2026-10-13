@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nexus"
+version = "0.1.0"
+description = "NEXUS: BigKinds news → reported/inferred company impact pipeline (2026 뉴스빅데이터 해커톤)"
+requires-python = ">=3.12"
+dependencies = [
+    "requests",
+    "pandas",
+    "pyarrow",
+    "psycopg[binary]>=3.2",
+    "finance-datareader==0.9.202",
+    "pyahocorasick",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[tool.setuptools.packages.find]
+include = ["nexus*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

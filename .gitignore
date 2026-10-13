@@ -8,3 +8,9 @@ deploy/reports/
 deploy/releases/
 __pycache__/
 *.py[cod]
+
+# NEXUS (해커톤) — local data, venv, test cache
+nexus/data/
+nexus/.venv/
+.pytest_cache/
+*.egg-info/

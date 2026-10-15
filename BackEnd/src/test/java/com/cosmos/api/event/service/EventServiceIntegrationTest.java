@@ -3,8 +3,13 @@ package com.cosmos.api.event.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.cosmos.api.event.dto.AbnormalReturnResponse;
 import com.cosmos.api.event.dto.EventCompanyRefResponse;
+import com.cosmos.api.event.dto.EventMapResponse;
+import com.cosmos.api.event.dto.EventNodeResponse;
 import com.cosmos.api.event.dto.EventSummaryResponse;
+import com.cosmos.api.event.dto.EvidenceSnippetResponse;
+import com.cosmos.api.event.error.EventErrorCode;
 import com.cosmos.api.global.error.BusinessException;
 import com.cosmos.api.global.error.CommonErrorCode;
 import com.cosmos.api.global.response.CursorPageResponse;
@@ -71,6 +76,91 @@ class EventServiceIntegrationTest {
         insertImpact(E2, C1, "INFERRED", 1, "0.5", "OK", null,
                 "[{\"src\":\"KOSDAQ:990002\",\"dst\":\"KOSDAQ:990001\",\"rel\":\"SUPPLY\",\"source\":\"COSMOS\",\"strength\":1.0}]");
         insertImpact(E3, C1, "REPORTED", 0, "1.0", "OK", null, "[]");
+
+        // 근거 조각은 반대 방향(기업3 → 기업1)으로 넣는다. PARTNER는 무방향이라 양쪽에서 찾아야 한다.
+        jdbcTemplate.update("""
+                INSERT INTO relation_evidence_snippet
+                    (snippet_id, source_company_id, target_company_id, relationship_type_id, bigkinds_news_id, title,
+                     provider, published_at, original_url, snippet, pattern, confidence)
+                SELECT ?, ?, ?, relationship_type_id, 'TEST.S1', '근거 기사', '테스트일보', ?, 'https://example.com/s1',
+                       '테스트기업3과 테스트기업1이 협력한다.', 'enum+kw', 0.8
+                FROM relationship_type WHERE code = 'PARTNER'
+                """, id(41), C3, C1, Timestamp.from(Instant.parse("2026-08-30T00:00:00Z")));
+        jdbcTemplate.update("""
+                INSERT INTO event_abnormal_return
+                    (event_id, company_id, window_days, benchmark, stock_return, benchmark_return, abnormal_return)
+                VALUES (?, ?, 1, 'KOSDAQ', 0.02, 0.005, 0.015), (?, ?, 3, 'KOSDAQ', 0.05, 0.01, 0.04)
+                """, E1, C1, E1, C1);
+    }
+
+    @Test
+    void mapOrdersReportedThenInferred() {
+        EventMapResponse map = eventService.findEventMap(E1);
+
+        assertThat(map.event().eventId()).isEqualTo(E1);
+        assertThat(map.nodes()).extracting(EventNodeResponse::basis)
+                .containsExactly("REPORTED", "REPORTED", "INFERRED", "INFERRED");
+        assertThat(map.nodes()).extracting(EventNodeResponse::companyId).containsExactly(C1, C2, C3, C4);
+    }
+
+    @Test
+    void inferredNodeHasAnchorAndNamedPath() {
+        EventNodeResponse c3 = node(eventService.findEventMap(E1), C3);
+
+        assertThat(c3.anchorCompanyId()).isEqualTo(C1);
+        assertThat(c3.path()).hasSize(1);
+        assertThat(c3.path().getFirst().sourceName()).isEqualTo("테스트기업1");
+        assertThat(c3.path().getFirst().targetName()).isEqualTo("테스트기업3");
+        assertThat(c3.path().getFirst().relationshipType()).isEqualTo("PARTNER");
+        assertThat(c3.path().getFirst().edgeSource()).isEqualTo("NEWS");
+        assertThat(node(eventService.findEventMap(E1), C1).anchorCompanyId()).isNull();
+    }
+
+    @Test
+    void newsStepCarriesSnippetFoundInEitherDirection() {
+        EventNodeResponse c3 = node(eventService.findEventMap(E1), C3);
+
+        assertThat(c3.path().getFirst().evidence()).extracting(EvidenceSnippetResponse::snippet)
+                .containsExactly("테스트기업3과 테스트기업1이 협력한다.");
+    }
+
+    @Test
+    void unknownKeyInPathDoesNotFail() {
+        EventNodeResponse c4 = node(eventService.findEventMap(E1), C4);
+
+        assertThat(c4.status()).isEqualTo("HOLD");
+        assertThat(c4.holdReason()).isEqualTo("전이 강도 낮음");
+        assertThat(c4.anchorCompanyId()).isEqualTo(C2);
+        assertThat(c4.path().getFirst().targetCompanyId()).isNull();
+        assertThat(c4.path().getFirst().targetName()).isNull();
+        assertThat(c4.path().getFirst().evidence()).isEmpty();   // COSMOS step: no snippets
+    }
+
+    @Test
+    void abnormalReturnsAttached() {
+        EventNodeResponse c1 = node(eventService.findEventMap(E1), C1);
+
+        assertThat(c1.abnormalReturns()).extracting(AbnormalReturnResponse::windowDays).containsExactly(1, 3);
+        assertThat(c1.abnormalReturns().getFirst().abnormalReturn()).isEqualByComparingTo("0.015");
+        assertThat(node(eventService.findEventMap(E1), C3).abnormalReturns()).isEmpty();
+    }
+
+    @Test
+    void eventWithoutTradingDateOrInferred() {
+        assertThat(eventService.findEventMap(E2).event().tradingDate()).isNull();
+        assertThat(eventService.findEventMap(E3).nodes()).extracting(EventNodeResponse::basis)
+                .containsExactly("REPORTED");
+    }
+
+    @Test
+    void unknownEventThrowsNotFound() {
+        assertThatThrownBy(() -> eventService.findEventMap(id(99)))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode()).isEqualTo(EventErrorCode.EVENT_NOT_FOUND);
+    }
+
+    private static EventNodeResponse node(EventMapResponse map, UUID companyId) {
+        return map.nodes().stream().filter(n -> companyId.equals(n.companyId())).findFirst().orElseThrow();
     }
 
     @Test

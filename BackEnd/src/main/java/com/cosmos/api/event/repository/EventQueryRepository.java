@@ -1,14 +1,18 @@
 package com.cosmos.api.event.repository;
 
 import com.cosmos.api.event.dto.EventCompanyRefResponse;
+import com.cosmos.api.event.dto.EvidenceSnippetResponse;
 import com.cosmos.api.global.cursor.TimeIdCursor;
+import java.math.BigDecimal;
 import java.sql.Array;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -86,11 +90,75 @@ public class EventQueryRepository {
                 WHERE i.event_id IN (:eventIds) AND i.basis = 'REPORTED'
                 ORDER BY i.propagation_score DESC, c.name
                 """, new MapSqlParameterSource("eventIds", eventIds), (ResultSet rs) -> {
-            result.computeIfAbsent(rs.getObject("event_id", UUID.class), k -> new java.util.ArrayList<>())
+            result.computeIfAbsent(rs.getObject("event_id", UUID.class), k -> new ArrayList<>())
                     .add(new EventCompanyRefResponse(rs.getObject("company_id", UUID.class), rs.getString("name"),
                             rs.getString("stock_code"), rs.getString("market")));
         });
         return result;
+    }
+
+    public List<ImpactRow> findImpacts(UUID eventId) {
+        return jdbcTemplate.query("""
+                SELECT i.company_id, c.name, c.stock_code, c.market, i.basis, i.hop, i.propagation_score, i.status,
+                       i.hold_reason, i.impact_direction, i.confidence, i.path::text AS path
+                FROM event_company_impact i
+                JOIN company c ON c.company_id = i.company_id
+                WHERE i.event_id = :eventId
+                ORDER BY CASE i.basis WHEN 'REPORTED' THEN 0 ELSE 1 END, i.propagation_score DESC, c.name
+                """, new MapSqlParameterSource("eventId", eventId), (rs, rowNum) -> new ImpactRow(
+                rs.getObject("company_id", UUID.class), rs.getString("name"), rs.getString("stock_code"),
+                rs.getString("market"), rs.getString("basis"), rs.getInt("hop"), rs.getBigDecimal("propagation_score"),
+                rs.getString("status"), rs.getString("hold_reason"), rs.getString("impact_direction"),
+                rs.getBigDecimal("confidence"), rs.getString("path")));
+    }
+
+    public List<AbnormalReturnRow> findAbnormalReturns(UUID eventId) {
+        return jdbcTemplate.query("""
+                SELECT company_id, window_days, benchmark, stock_return, benchmark_return, abnormal_return
+                FROM event_abnormal_return
+                WHERE event_id = :eventId
+                ORDER BY company_id, window_days
+                """, new MapSqlParameterSource("eventId", eventId), (rs, rowNum) -> new AbnormalReturnRow(
+                rs.getObject("company_id", UUID.class), rs.getInt("window_days"), rs.getString("benchmark"),
+                rs.getBigDecimal("stock_return"), rs.getBigDecimal("benchmark_return"),
+                rs.getBigDecimal("abnormal_return")));
+    }
+
+    /** 파이프라인 경로의 기업 key("MARKET:TICKER") → 기업. 마스터에 없는 key는 결과에 없다. */
+    public Map<String, CompanyKeyRow> findCompaniesByKeys(Collection<String> keys) {
+        Map<String, CompanyKeyRow> result = new LinkedHashMap<>();
+        if (keys.isEmpty()) {
+            return result;
+        }
+        jdbcTemplate.query("""
+                SELECT company_id, name, market || ':' || stock_code AS company_key
+                FROM company
+                WHERE market || ':' || stock_code IN (:keys)
+                """, new MapSqlParameterSource("keys", keys), (ResultSet rs) -> {
+            result.put(rs.getString("company_key"),
+                    new CompanyKeyRow(rs.getObject("company_id", UUID.class), rs.getString("name")));
+        });
+        return result;
+    }
+
+    /** 두 기업 사이 관계의 근거 조각, 최신순. 무방향 관계(협력·경쟁)는 반대 방향으로 저장된 조각도 찾는다. */
+    public List<EvidenceSnippetResponse> findSnippets(UUID sourceId, UUID targetId, String relationshipType, int limit) {
+        return jdbcTemplate.query("""
+                SELECT s.bigkinds_news_id, s.title, s.provider, s.published_at, s.original_url, s.snippet, s.confidence
+                FROM relation_evidence_snippet s
+                JOIN relationship_type t ON t.relationship_type_id = s.relationship_type_id
+                WHERE t.code = :type
+                  AND ((s.source_company_id = :src AND s.target_company_id = :dst)
+                       OR (t.directionality = 'UNDIRECTED' AND s.source_company_id = :dst AND s.target_company_id = :src))
+                ORDER BY s.published_at DESC
+                LIMIT :limit
+                """, new MapSqlParameterSource()
+                        .addValue("type", relationshipType).addValue("src", sourceId).addValue("dst", targetId)
+                        .addValue("limit", limit),
+                (rs, rowNum) -> new EvidenceSnippetResponse(
+                        rs.getString("bigkinds_news_id"), rs.getString("title"), rs.getString("provider"),
+                        rs.getTimestamp("published_at").toInstant(), rs.getString("original_url"),
+                        rs.getString("snippet"), rs.getBigDecimal("confidence")));
     }
 
     private EventRow mapEvent(ResultSet rs, int rowNum) throws SQLException {
@@ -124,5 +192,34 @@ public class EventQueryRepository {
             int inferredCount,
             int holdCount
     ) {
+    }
+
+    public record ImpactRow(
+            UUID companyId,
+            String name,
+            String stockCode,
+            String market,
+            String basis,
+            int hop,
+            BigDecimal score,
+            String status,
+            String holdReason,
+            String impactDirection,
+            BigDecimal confidence,
+            String pathJson
+    ) {
+    }
+
+    public record AbnormalReturnRow(
+            UUID companyId,
+            int windowDays,
+            String benchmark,
+            BigDecimal stockReturn,
+            BigDecimal benchmarkReturn,
+            BigDecimal abnormalReturn
+    ) {
+    }
+
+    public record CompanyKeyRow(UUID companyId, String name) {
     }
 }

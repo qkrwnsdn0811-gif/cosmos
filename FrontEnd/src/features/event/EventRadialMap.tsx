@@ -47,7 +47,8 @@ export default function EventRadialMap({
 
   return (
     <div className="event-map">
-      <svg viewBox={`0 0 ${SIZE} ${SIZE}`} role="img" aria-label="이벤트 관계 지도">
+      {/* role="img" 는 자식을 표현용으로 숨겨 노드 버튼이 보조기기에 안 보인다 — group 으로 둔다 */}
+      <svg viewBox={`0 0 ${SIZE} ${SIZE}`} role="group" aria-label="이벤트 관계 지도">
         <g className="event-map-links">
           {nodes.map((n) => {
             const p = placed.get(n.companyId)!;

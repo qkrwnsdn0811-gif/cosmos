@@ -23,7 +23,9 @@ export default function EventsPage() {
 
   const feed = useEventFeed({ valueChain: "SEMICONDUCTOR", hasInferred: onlyInferred || undefined });
   const items = useMemo(() => feed.data?.pages.flatMap((p) => p.items) ?? [], [feed.data]);
-  const activeId = selectedId ?? items[0]?.eventId ?? null;
+  // 필터를 바꾸면 새 목록이 올 때까지 이전 목록(keepPreviousData)이 보인다 — 그 사이엔 첫 항목을 자동 선택하지 않는다
+  const settled = !feed.isPlaceholderData;
+  const activeId = selectedId ?? (settled ? items[0]?.eventId ?? null : null);
   const map = useEventMap(activeId);
   // 고른 기업은 그 이벤트에서만 유효하다 — 다른 이벤트로 바꾸면 자연히 선택이 풀린다
   const [picked, setPicked] = useState<{ eventId: string; companyId: string } | null>(null);
@@ -31,14 +33,14 @@ export default function EventsPage() {
   const selectCompany = (companyId: string) => activeId && setPicked({ eventId: activeId, companyId });
 
   useEffect(() => {
-    if (!selectedId && items[0]) {
+    if (!selectedId && settled && items[0]) {
       setParams((prev) => {
         const next = new URLSearchParams(prev);
         next.set("event", items[0].eventId);
         return next;
       }, { replace: true });
     }
-  }, [items, selectedId, setParams]);
+  }, [items, selectedId, settled, setParams]);
 
   const pick = (eventId: string) =>
     setParams((prev) => {
@@ -103,14 +105,20 @@ export default function EventsPage() {
                 <div className="kick">관계 지도</div>
               </div>
               <div className="map-stage">
-                {map.data ? (
+                {map.isError ? (
+                  <Empty>이벤트를 찾을 수 없습니다. 목록에서 다른 이벤트를 골라 주세요.</Empty>
+                ) : map.data ? (
                   <EventRadialMap map={map.data} selectedId={selectedCompany} onSelect={selectCompany} />
                 ) : (
                   <Skeleton h={420} style={{ borderRadius: 14 }} />
                 )}
               </div>
             </div>
-            {map.data ? <EventEvidencePanel map={map.data} companyId={selectedCompany} /> : <Skeleton h={320} style={{ borderRadius: 14 }} />}
+            {map.data ? (
+              <EventEvidencePanel map={map.data} companyId={selectedCompany} />
+            ) : map.isError ? null : (
+              <Skeleton h={320} style={{ borderRadius: 14 }} />
+            )}
           </div>
           <p className="event-disclaimer">{DISCLAIMER}</p>
         </section>

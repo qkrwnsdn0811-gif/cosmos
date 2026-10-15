@@ -48,6 +48,9 @@ def test_run_analyze_end_to_end_synthetic(synthetic_docs, tmp_path):
     assert {(r.key, r.window_days, r.benchmark) for r in first.returns} >= {
         (GAGSANG.key, 1, "KOSPI"), (GAGSANG.key, 3, "KOSPI"), (BADA.key, 1, "KOSDAQ")}
 
+    plant = bundles["SYN.20261013110000002"]           # "신규 공장 준공": no supply/partner/compete words
+    assert [i.basis for i in plant.impacts] == ["REPORTED"]
+
     after_close = bundles["SYN.20261013154000003"]
     assert after_close.trading_date == date(2026, 10, 14)
     assert [m.key for m in after_close.mentions] == [HANEUL.key]

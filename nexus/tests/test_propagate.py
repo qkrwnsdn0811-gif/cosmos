@@ -1,7 +1,7 @@
 import pytest
 
 from nexus.models import CompanyMention, Edge, PathStep
-from nexus.propagation.propagate import HOLD_COMENTION_ONLY, HOLD_LOW, propagate
+from nexus.propagation.propagate import HOLD_COMENTION_ONLY, HOLD_LOW, HOLD_RANK, propagate
 from nexus.relations.graph import BaseGraph
 
 BASE = [
@@ -44,9 +44,9 @@ def test_comention_only_is_hold():
 
 
 def test_low_score_hold_and_drop():
-    edges = BASE + [Edge("A", "G", "COMPETE", 0.5, False, "NEWS"), Edge("A", "H", "PARTNER", 0.2, False, "NEWS")]
+    edges = BASE + [Edge("A", "G", "COMPETE", 0.4, False, "NEWS"), Edge("A", "H", "PARTNER", 0.2, False, "NEWS")]
     impacts = by_key(propagate(SEED_A, BaseGraph(edges)))
-    assert impacts["G"].score == pytest.approx(0.25)
+    assert impacts["G"].score == pytest.approx(0.20)
     assert (impacts["G"].status, impacts["G"].hold_reason) == ("HOLD", HOLD_LOW)
     assert "H" not in impacts
     assert impacts["D"].status == "OK"
@@ -68,7 +68,34 @@ def test_seed_not_inferred():
     assert sum(1 for i in impacts if i.key == "C") == 1
 
 
-def test_cap_max_inferred():
-    star = [Edge("A", f"N{i:02d}", "SUPPLY", 1.0, True, "NEWS") for i in range(30)]
-    impacts = propagate(SEED_A, BaseGraph(star))
-    assert sum(1 for i in impacts if i.basis == "INFERRED") == 20
+def test_cap_ok_and_total_inferred():
+    star = [Edge("A", f"N{i:02d}", "SUPPLY", 1.0 - i / 100, True, "NEWS") for i in range(30)]
+    inferred = [i for i in propagate(SEED_A, BaseGraph(star)) if i.basis == "INFERRED"]
+    assert len(inferred) == 12
+    assert [i.key for i in inferred if i.status == "OK"] == [f"N{i:02d}" for i in range(6)]
+    assert {i.hold_reason for i in inferred if i.status == "HOLD"} == {HOLD_RANK}
+
+
+def test_ok_threshold_is_0_25():
+    edges = [Edge("A", "G", "COMPETE", 0.5, False, "NEWS")]
+    g = by_key(propagate(SEED_A, BaseGraph(edges)))["G"]
+    assert (g.score, g.status) == (pytest.approx(0.25), "OK")
+
+
+def test_hub_damping_weakens_spread_from_busy_nodes():
+    star = [Edge("A", f"N{i}", "SUPPLY", 1.0, True, "NEWS") for i in range(10)]   # degree 10 > 8
+    n0 = by_key(propagate(SEED_A, BaseGraph(star)))["N0"]
+    assert n0.score == pytest.approx(0.8 * (8 / 10) ** 0.5)
+
+
+def test_orgs_only_mention_is_reported_but_not_a_seed():
+    mentions = [CompanyMention("A", 1.0, ("title",)), CompanyMention("C", 0.6, ("orgs",))]
+    impacts = by_key(propagate(mentions, BaseGraph(BASE)))
+    assert impacts["C"].basis == "REPORTED"
+    assert "E" not in impacts            # E hangs off C only; C is too weak a mention to spread from
+
+
+def test_inactive_relation_types_do_not_spread():
+    impacts = by_key(propagate(SEED_A, BaseGraph(BASE), active_rels={"COMPETE", "CO_MENTIONED"}))
+    assert "C" not in impacts and "E" not in impacts
+    assert impacts["D"].status == "OK"

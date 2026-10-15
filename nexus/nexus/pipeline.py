@@ -23,6 +23,7 @@ from .ingest.normalize import to_article
 from .ingest.store import ArticleStore
 from .models import Article, Company, Edge, EventBundle, EvidenceSnippet
 from .propagation.propagate import propagate
+from .relations.activation import active_relations
 from .relations.comention import sentence_comentions
 from .relations.evidence import extract_evidence
 from .relations.graph import BaseGraph, comention_edges, load_cosmos_edges, news_edges
@@ -108,7 +109,7 @@ def run_analyze(articles: list[Article], recognizer: Recognizer, companies: dict
                     if m.key in companies and companies[m.key].value_chain == value_chain]
         if not mentions:
             continue
-        impacts = propagate(mentions, graph)
+        impacts = propagate(mentions, graph, active_rels=active_relations(article))
         t0 = event_trading_date(article.dateline, trading_days)
         returns = [r for i in impacts for r in returns_for(i.key, t0)] if t0 else []
         bundles.append(EventBundle(article, value_chain, mentions, impacts, returns, t0))

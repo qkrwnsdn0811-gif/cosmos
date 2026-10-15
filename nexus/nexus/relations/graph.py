@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import csv
-from collections import defaultdict
+from collections import Counter, defaultdict
 from pathlib import Path
 
 from ..models import Edge, EvidenceSnippet
@@ -46,9 +46,17 @@ class BaseGraph:
     def __init__(self, edges: list[Edge]):
         self.edges = list(edges)
         self._adjacent: dict[str, list[tuple[str, Edge]]] = defaultdict(list)
+        self._degree: Counter = Counter()
         for e in self.edges:
             self._adjacent[e.src].append((e.dst, e))
             self._adjacent[e.dst].append((e.src, e))
+            if e.rel != "CO_MENTIONED":
+                self._degree[e.src] += 1
+                self._degree[e.dst] += 1
+
+    def degree(self, key: str) -> int:
+        """Number of real relations (co-mentions excluded) touching `key`."""
+        return self._degree.get(key, 0)
 
     def neighbors(self, key: str) -> list[tuple[str, Edge]]:
         """Both directions: shocks travel supplier→customer and customer→supplier."""

@@ -142,6 +142,13 @@
 | `GET` | `/api/relationships/{relationshipId}` | 기업 관계 상세 조회 |
 | `GET` | `/api/relationships/{relationshipId}/evidence` | 기업 관계 뉴스 근거 조회 |
 
+### events | NEXUS 이벤트
+
+| 메서드 | URI | API |
+| --- | --- | --- |
+| `GET` | `/api/events` | 이벤트 목록 |
+| `GET` | `/api/events/{eventId}` | 이벤트 관계 지도 조회 |
+
 ### community | 커뮤니티
 
 | 메서드 | URI | API |
@@ -1713,6 +1720,158 @@ HDFS의 기사 본문 전체는 제공하지 않으며 사용자는 `originalUrl
 <td>관계 근거 조회 중 서버 오류</td>
 </tr>
 </table>
+
+### events | NEXUS 이벤트
+
+빅카인즈 기사 1건을 이벤트로 보고, 기사에 언급된 기업(근거, `REPORTED`)과 공급망을 타고 추정한 기업(추정, `INFERRED`)을 분리해 돌려준다. 데이터는 NEXUS 파이프라인(`nexus/`)이 V10 테이블에 적재한다. 초과수익률은 이미 관측된 주가 변화이며 미래 예측이 아니다.
+
+#### GET /api/events — 이벤트 목록
+
+#### 목적
+이벤트를 최신 출고 시각순으로 조회한다.
+#### 인증
+불필요.
+#### Request
+```javascript
+GET /api/events?valueChain=SEMICONDUCTOR&hasInferred=true&size=20&cursor={cursor}
+```
+#### Query Params
+<table header-row="true">
+<tr>
+<td>필드</td>
+<td>필수</td>
+<td>규칙</td>
+</tr>
+<tr>
+<td>valueChain</td>
+<td>아니요</td>
+<td>SEMICONDUCTOR·BATTERY·AUTO</td>
+</tr>
+<tr>
+<td>companyId</td>
+<td>아니요</td>
+<td>이 기업이 언급되거나 추정 OK로 들어간 이벤트만</td>
+</tr>
+<tr>
+<td>hasInferred</td>
+<td>아니요</td>
+<td>true면 추정 OK 기업이 1개 이상인 이벤트만. 기본 false</td>
+</tr>
+<tr>
+<td>cursor</td>
+<td>아니요</td>
+<td>dateline + eventId 기반 커서</td>
+</tr>
+<tr>
+<td>size</td>
+<td>아니요</td>
+<td>기본 20, 최대 100</td>
+</tr>
+</table>
+
+#### Response — 200 OK
+```json
+{
+  "items": [
+    {
+      "eventId": "550e8400-e29b-41d4-a716-446655440100",
+      "newsId": "550e8400-e29b-41d4-a716-446655440020",
+      "title": "넥스틴, SK하이닉스서 수주",
+      "summary": "본문 앞 200자",
+      "publisher": "예시경제",
+      "originalUrl": "https://example.com/news/1",
+      "dateline": "2026-10-06T00:40:00Z",
+      "tradingDate": "2026-10-06",
+      "valueChain": "SEMICONDUCTOR",
+      "categories": ["경제>반도체"],
+      "reportedCompanies": [
+        { "companyId": "550e8400-e29b-41d4-a716-446655440010", "name": "넥스틴", "stockCode": "348210", "market": "KOSDAQ" }
+      ],
+      "inferredCount": 5,
+      "holdCount": 2
+    }
+  ],
+  "nextCursor": null,
+  "hasNext": false
+}
+```
+- `newsId`는 `GET /api/news/{newsId}`와 같은 ID다.
+- `tradingDate`는 초과수익률 기준 거래일이다. 15:30 이후 출고면 다음 거래일이고, 아직 정해지지 않았으면 null이다.
+- `inferredCount`는 추정·OK, `holdCount`는 추정·판단 보류 기업 수다.
+
+#### Error
+| 상태 | code | 상황 |
+| --- | --- | --- |
+| 400 | VALIDATION_FAILED | valueChain이 허용 값이 아니거나 size가 범위 밖 |
+| 400 | INVALID_CURSOR | 커서 형식이 깨짐 |
+
+#### GET /api/events/{eventId} — 이벤트 관계 지도
+
+#### 목적
+이벤트 1건의 언급·추정 기업, 추정 경로와 근거 조각, 초과수익률을 한 번에 조회한다.
+#### 인증
+불필요.
+#### Response — 200 OK
+```json
+{
+  "event": { "eventId": "…", "title": "…", "tradingDate": "2026-10-06", "...": "목록 항목과 같음" },
+  "nodes": [
+    {
+      "companyId": "550e8400-e29b-41d4-a716-446655440011",
+      "name": "SK하이닉스",
+      "stockCode": "000660",
+      "market": "KOSPI",
+      "basis": "REPORTED",
+      "hop": 0,
+      "score": 1.0,
+      "status": "OK",
+      "holdReason": null,
+      "impactDirection": null,
+      "confidence": null,
+      "anchorCompanyId": null,
+      "path": [],
+      "abnormalReturns": [
+        { "windowDays": 1, "benchmark": "KOSPI", "stockReturn": 0.021, "benchmarkReturn": 0.004, "abnormalReturn": 0.017 }
+      ]
+    },
+    {
+      "companyId": "550e8400-e29b-41d4-a716-446655440012",
+      "name": "한미반도체",
+      "basis": "INFERRED",
+      "hop": 1,
+      "score": 0.44,
+      "status": "OK",
+      "anchorCompanyId": "550e8400-e29b-41d4-a716-446655440011",
+      "path": [
+        {
+          "sourceCompanyId": "550e8400-e29b-41d4-a716-446655440012",
+          "sourceName": "한미반도체",
+          "targetCompanyId": "550e8400-e29b-41d4-a716-446655440011",
+          "targetName": "SK하이닉스",
+          "relationshipType": "SUPPLY",
+          "edgeSource": "COSMOS",
+          "strength": 1.0,
+          "evidence": []
+        }
+      ],
+      "abnormalReturns": []
+    }
+  ]
+}
+```
+- `nodes`는 REPORTED 먼저(점수 내림차순), 그다음 INFERRED(점수 내림차순)다.
+- `status`가 `HOLD`면 `holdReason`(전이 강도 낮음 · 우선순위 밖 · 동시언급만으로 연결)이 함께 온다.
+- `anchorCompanyId`는 추정 기업이 퍼져 나온 언급 기업이다.
+- `path`의 source·target은 실제 관계 방향이다. 경로의 기업이 기업 마스터에 없으면 id와 이름이 null이다.
+- `edgeSource`는 COSMOS(기존 관계 데이터) · NEWS(빅카인즈 근거) · COMENTION(같은 문장 동시언급)이다. `evidence`는 NEWS 단계에만 최대 5건 채워진다.
+- `impactDirection`·`confidence`는 영향 모델이 생기기 전까지 null이다.
+
+#### Error
+| 상태 | code | 상황 |
+| --- | --- | --- |
+| 400 | VALIDATION_FAILED | eventId가 UUID 형식이 아님 |
+| 404 | EVENT_NOT_FOUND | 이벤트가 없음 |
+
 
 ### community | 커뮤니티
 

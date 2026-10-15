@@ -49,6 +49,11 @@ class SecurityConfigTest {
             return "public";
         }
 
+        @GetMapping("/api/events/probe")
+        String eventsProbe() {
+            return "events";
+        }
+
         @GetMapping("/api/users/probe")
         String protectedProbe(@AuthenticationPrincipal AuthUser user) {
             return String.valueOf(user.userId());
@@ -67,6 +72,16 @@ class SecurityConfigTest {
         mockMvc.perform(get("/api/news/probe"))
                 .andExpect(status().isOk())
                 .andExpect(content().string("public"));
+    }
+
+    // 상황: 토큰 없이 NEXUS 이벤트 조회 주소 호출
+    // 기대: 200 (이벤트 지도도 비로그인 공개 조회)
+    @Test
+    @DisplayName("이벤트 조회 API는 토큰 없이 호출할 수 있다")
+    void events_api_without_token() throws Exception {
+        mockMvc.perform(get("/api/events/probe"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("events"));
     }
 
     // 상황: 토큰 없이 로그인 필요 주소 호출

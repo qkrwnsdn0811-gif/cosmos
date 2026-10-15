@@ -34,7 +34,8 @@ public class SecurityConfig {
             "/api/news/**",
             "/api/graphs/**",
             "/api/relationships/**",
-            "/api/community/**"
+            "/api/community/**",
+            "/api/events/**"
     };
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;

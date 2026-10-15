@@ -36,6 +36,7 @@ class EventServiceIntegrationTest {
     private static final UUID E1 = id(21);
     private static final UUID E2 = id(22);
     private static final UUID E3 = id(23);
+    private static final UUID E4 = id(24);
     private static final UUID SOURCE_ID = id(30);
 
     @Autowired
@@ -76,6 +77,10 @@ class EventServiceIntegrationTest {
         insertImpact(E2, C1, "INFERRED", 1, "0.5", "OK", null,
                 "[{\"src\":\"KOSDAQ:990002\",\"dst\":\"KOSDAQ:990001\",\"rel\":\"SUPPLY\",\"source\":\"COSMOS\",\"strength\":1.0}]");
         insertImpact(E3, C1, "REPORTED", 0, "1.0", "OK", null, "[]");
+        // 취소된 기사: 목록에도 상세에도 나오면 안 된다
+        insertEvent(E4, id(14), "TEST.E4", "취소된 이벤트", "2026-09-01T04:00:00Z", LocalDate.of(2026, 9, 1));
+        jdbcTemplate.update("UPDATE news_event SET status = 'CANCELLED' WHERE event_id = ?", E4);
+        insertImpact(E4, C3, "REPORTED", 0, "1.0", "OK", null, "[]");
 
         // 근거 조각은 반대 방향(기업3 → 기업1)으로 넣는다. PARTNER는 무방향이라 양쪽에서 찾아야 한다.
         jdbcTemplate.update("""
@@ -153,6 +158,23 @@ class EventServiceIntegrationTest {
     }
 
     @Test
+    void cancelledEventIsHiddenFromListAndDetail() {
+        assertThat(eventService.findEvents("AUTO", null, false, null, 20).items())
+                .extracting(EventSummaryResponse::eventId).doesNotContain(E4);
+        assertThatThrownBy(() -> eventService.findEventMap(E4))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode()).isEqualTo(EventErrorCode.EVENT_NOT_FOUND);
+    }
+
+    @Test
+    void requiresValueChain() {
+        // 밸류체인 없이 조회하면 news_event 전체를 훑는다(실데이터 1~4.7초). 인덱스를 타는 경로만 허용한다.
+        assertThatThrownBy(() -> eventService.findEvents(null, C3, false, null, 20))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode()).isEqualTo(CommonErrorCode.VALIDATION_FAILED);
+    }
+
+    @Test
     void unknownEventThrowsNotFound() {
         assertThatThrownBy(() -> eventService.findEventMap(id(99)))
                 .isInstanceOf(BusinessException.class)
@@ -184,7 +206,7 @@ class EventServiceIntegrationTest {
 
     @Test
     void filtersByCompanyAndInferred() {
-        assertThat(eventService.findEvents(null, C3, false, null, 20).items())
+        assertThat(eventService.findEvents("AUTO", C3, false, null, 20).items())
                 .extracting(EventSummaryResponse::eventId).containsExactly(E1);
         assertThat(eventService.findEvents("AUTO", null, true, null, 20).items())
                 .extracting(EventSummaryResponse::eventId).containsExactly(E2, E1);

@@ -74,7 +74,7 @@ public class EventQueryRepository {
                 FROM news_event e
                 JOIN source_document sd ON sd.document_id = e.document_id
                 LEFT JOIN news_article na ON na.document_id = e.document_id
-                WHERE e.event_id = :eventId
+                WHERE e.event_id = :eventId AND e.status = 'ACTIVE'
                 """, new MapSqlParameterSource("eventId", eventId), this::mapEvent).stream().findFirst();
     }
 

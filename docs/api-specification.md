@@ -1728,7 +1728,7 @@ HDFS의 기사 본문 전체는 제공하지 않으며 사용자는 `originalUrl
 #### GET /api/events — 이벤트 목록
 
 #### 목적
-이벤트를 최신 출고 시각순으로 조회한다.
+이벤트를 최신 출고 시각순으로 조회한다. 취소된 기사(status CANCELLED)는 목록과 상세 모두에서 제외한다.
 #### 인증
 불필요.
 #### Request
@@ -1744,7 +1744,7 @@ GET /api/events?valueChain=SEMICONDUCTOR&hasInferred=true&size=20&cursor={cursor
 </tr>
 <tr>
 <td>valueChain</td>
-<td>아니요</td>
+<td>예</td>
 <td>SEMICONDUCTOR·BATTERY·AUTO</td>
 </tr>
 <tr>
@@ -1802,7 +1802,7 @@ GET /api/events?valueChain=SEMICONDUCTOR&hasInferred=true&size=20&cursor={cursor
 #### Error
 | 상태 | code | 상황 |
 | --- | --- | --- |
-| 400 | VALIDATION_FAILED | valueChain이 허용 값이 아니거나 size가 범위 밖 |
+| 400 | VALIDATION_FAILED | valueChain이 없거나 허용 값이 아님, size가 범위 밖 |
 | 400 | INVALID_CURSOR | 커서 형식이 깨짐 |
 
 #### GET /api/events/{eventId} — 이벤트 관계 지도
@@ -1870,7 +1870,7 @@ GET /api/events?valueChain=SEMICONDUCTOR&hasInferred=true&size=20&cursor={cursor
 | 상태 | code | 상황 |
 | --- | --- | --- |
 | 400 | VALIDATION_FAILED | eventId가 UUID 형식이 아님 |
-| 404 | EVENT_NOT_FOUND | 이벤트가 없음 |
+| 404 | EVENT_NOT_FOUND | 이벤트가 없거나 취소됨 |
 
 
 ### community | 커뮤니티

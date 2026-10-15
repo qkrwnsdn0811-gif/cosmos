@@ -60,7 +60,8 @@ public class EventService {
         if (size < 1 || size > 100) {
             throw new BusinessException(CommonErrorCode.VALIDATION_FAILED);
         }
-        if (valueChain != null && !VALUE_CHAINS.contains(valueChain)) {
+        // 밸류체인은 필수다: 없으면 (value_chain, dateline) 인덱스를 못 타고 이벤트 전체를 훑는다
+        if (valueChain == null || !VALUE_CHAINS.contains(valueChain)) {
             throw new BusinessException(CommonErrorCode.VALIDATION_FAILED);
         }
         TimeIdCursor decoded = cursorCodec.decode(cursor);

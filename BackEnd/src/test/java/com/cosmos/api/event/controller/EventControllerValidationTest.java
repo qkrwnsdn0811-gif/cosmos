@@ -32,8 +32,15 @@ class EventControllerValidationTest {
     }
 
     @Test
-    void listIsPublic() throws Exception {
+    void listRequiresValueChain() throws Exception {
         mockMvc.perform(get("/api/events").param("size", "1"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+    }
+
+    @Test
+    void listIsPublic() throws Exception {
+        mockMvc.perform(get("/api/events").param("valueChain", "SEMICONDUCTOR").param("size", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items").isArray());
     }

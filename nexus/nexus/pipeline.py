@@ -1,4 +1,4 @@
-"""NEXUS slice pipeline: build-master → collect → analyze → migrate → load."""
+"""NEXUS slice pipeline: build-master → collect → analyze → migrate → load → sentiment → train-impact → predict-impact."""
 from __future__ import annotations
 
 import argparse
@@ -252,6 +252,25 @@ def cmd_load(args) -> int:
     return 0
 
 
+def _load_bundles(chain: str) -> list[EventBundle]:
+    # Written by `analyze` into the git-ignored local nexus/data directory (see cmd_load).
+    with (_paths(chain)["analyzed"] / "events.pkl").open("rb") as f:
+        return pickle.load(f)
+
+
+def cmd_sentiment(args) -> int:
+    from .impact.sentiment import load_finbert, score_articles
+    out = _paths(args.chain)["analyzed"] / "sentiment.parquet"
+    articles = [b.article for b in _load_bundles(args.chain)]
+    print(f"articles: {len(articles):,} → {out}", flush=True)
+    started = time.monotonic()
+    frame = score_articles(articles, load_finbert(args.threads), out, batch_size=args.batch_size,
+                           progress=lambda done, total: print(
+                               f"  scored {done:,}/{total:,} ({time.monotonic() - started:,.0f}s)", flush=True))
+    print(f"sentiment rows: {len(frame):,} ({time.monotonic() - started:,.0f}s)")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m nexus")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -265,7 +284,11 @@ def main(argv: list[str] | None = None) -> int:
             cmd.add_argument("--database-url", required=True)
             cmd.add_argument("--batch", type=int, default=2000)
     sub.add_parser("migrate").add_argument("--database-url", required=True)
+    sentiment = sub.add_parser("sentiment")
+    sentiment.add_argument("--chain", choices=sorted(CHAINS), required=True)
+    sentiment.add_argument("--threads", type=int, default=8)
+    sentiment.add_argument("--batch-size", type=int, default=32)
     args = parser.parse_args(argv)
     handler = {"build-master": cmd_build_master, "collect": cmd_collect, "analyze": cmd_analyze,
-               "migrate": cmd_migrate, "load": cmd_load}[args.command]
+               "migrate": cmd_migrate, "load": cmd_load, "sentiment": cmd_sentiment}[args.command]
     return handler(args)

@@ -79,7 +79,7 @@ class EventControllerTest {
     @Test
     void mapReturnsNodes() throws Exception {
         EventNodeResponse node = new EventNodeResponse(COMPANY_ID, "기업", "990001", "KOSDAQ", "REPORTED", 0,
-                new BigDecimal("1.0"), "OK", null, null, null, null, List.of(), List.of());
+                new BigDecimal("1.0"), "OK", null, null, null, null, null, List.of(), List.of());
         when(eventService.findEventMap(EVENT_ID)).thenReturn(new EventMapResponse(summary(), List.of(node)));
 
         mockMvc.perform(get("/api/events/{eventId}", EVENT_ID))

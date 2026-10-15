@@ -1827,6 +1827,7 @@ GET /api/events?valueChain=SEMICONDUCTOR&hasInferred=true&size=20&cursor={cursor
       "status": "OK",
       "holdReason": null,
       "impactDirection": null,
+      "impactMagnitude": null,
       "confidence": null,
       "anchorCompanyId": null,
       "path": [],
@@ -1864,7 +1865,7 @@ GET /api/events?valueChain=SEMICONDUCTOR&hasInferred=true&size=20&cursor={cursor
 - `anchorCompanyId`는 추정 기업이 퍼져 나온 언급 기업이다.
 - `path`의 source·target은 실제 관계 방향이다. 경로의 기업이 기업 마스터에 없으면 id와 이름이 null이다.
 - `edgeSource`는 COSMOS(기존 관계 데이터) · NEWS(빅카인즈 근거) · COMENTION(같은 문장 동시언급)이다. `evidence`는 NEWS 단계에만 최대 5건 채워진다.
-- `impactDirection`·`confidence`는 영향 모델이 생기기 전까지 null이다.
+- `impactDirection`(POSITIVE·NEUTRAL·NEGATIVE), `impactMagnitude`(0~1, 상승 확률과 하락 확률의 차이), `confidence`(0~1, 가장 큰 클래스의 확률)는 영향 모델(`nexus predict-impact`)이 채운다. 국내 상장사이면서 `status`가 `OK`인 노드만 값이 있다. `confidence`가 있는데 `impactDirection`이 null이면 신뢰도가 표시 기준 미만인 '방향 보류'다. 해외 상장사와 `HOLD` 노드는 셋 다 null이다.
 
 #### Error
 | 상태 | code | 상황 |

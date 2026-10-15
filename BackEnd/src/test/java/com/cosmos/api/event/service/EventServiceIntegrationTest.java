@@ -234,6 +234,23 @@ class EventServiceIntegrationTest {
                 .extracting(e -> ((BusinessException) e).getErrorCode()).isEqualTo(CommonErrorCode.VALIDATION_FAILED);
     }
 
+    @Test
+    void impactModelFieldsPassThrough() {
+        jdbcTemplate.update("UPDATE event_company_impact SET impact_direction = 'POSITIVE', impact_magnitude = 0.31, "
+                + "confidence = 0.62 WHERE event_id = ? AND company_id = ?", E1, C1);
+
+        EventMapResponse map = eventService.findEventMap(E1);
+
+        EventNodeResponse c1 = node(map, C1);
+        assertThat(c1.impactDirection()).isEqualTo("POSITIVE");
+        assertThat(c1.impactMagnitude()).isEqualByComparingTo("0.31");
+        assertThat(c1.confidence()).isEqualByComparingTo("0.62");
+        EventNodeResponse c2 = node(map, C2);
+        assertThat(c2.impactDirection()).isNull();
+        assertThat(c2.impactMagnitude()).isNull();
+        assertThat(c2.confidence()).isNull();
+    }
+
     private void insertCompany(UUID companyId, String name, String stockCode) {
         jdbcTemplate.update("INSERT INTO company (company_id, name, stock_code, market, status) VALUES (?, ?, ?, 'KOSDAQ', 'ACTIVE')",
                 companyId, name, stockCode);

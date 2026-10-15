@@ -100,7 +100,8 @@ public class EventQueryRepository {
     public List<ImpactRow> findImpacts(UUID eventId) {
         return jdbcTemplate.query("""
                 SELECT i.company_id, c.name, c.stock_code, c.market, i.basis, i.hop, i.propagation_score, i.status,
-                       i.hold_reason, i.impact_direction, i.confidence, i.path::text AS path
+                       i.hold_reason, i.impact_direction, i.impact_magnitude, i.confidence,
+                       i.path::text AS path
                 FROM event_company_impact i
                 JOIN company c ON c.company_id = i.company_id
                 WHERE i.event_id = :eventId
@@ -109,7 +110,7 @@ public class EventQueryRepository {
                 rs.getObject("company_id", UUID.class), rs.getString("name"), rs.getString("stock_code"),
                 rs.getString("market"), rs.getString("basis"), rs.getInt("hop"), rs.getBigDecimal("propagation_score"),
                 rs.getString("status"), rs.getString("hold_reason"), rs.getString("impact_direction"),
-                rs.getBigDecimal("confidence"), rs.getString("path")));
+                rs.getBigDecimal("impact_magnitude"), rs.getBigDecimal("confidence"), rs.getString("path")));
     }
 
     public List<AbnormalReturnRow> findAbnormalReturns(UUID eventId) {
@@ -205,6 +206,7 @@ public class EventQueryRepository {
             String status,
             String holdReason,
             String impactDirection,
+            BigDecimal impactMagnitude,
             BigDecimal confidence,
             String pathJson
     ) {

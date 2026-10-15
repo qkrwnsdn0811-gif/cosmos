@@ -105,7 +105,8 @@ public class EventService {
             List<PathStepResponse> steps = paths.get(i.companyId()).stream().map(s -> step(s, companies)).toList();
             UUID anchor = "INFERRED".equals(i.basis()) && !steps.isEmpty() ? anchorOf(steps.getFirst(), reported) : null;
             return new EventNodeResponse(i.companyId(), i.name(), i.stockCode(), i.market(), i.basis(), i.hop(),
-                    i.score(), i.status(), i.holdReason(), i.impactDirection(), i.confidence(), anchor, steps,
+                    i.score(), i.status(), i.holdReason(), i.impactDirection(), i.impactMagnitude(), i.confidence(), anchor,
+                    steps,
                     returns.getOrDefault(i.companyId(), List.of()));
         }).toList();
         List<EventCompanyRefResponse> reportedCompanies = impacts.stream()

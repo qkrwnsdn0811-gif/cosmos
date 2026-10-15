@@ -125,3 +125,12 @@ def test_impact_commands_are_registered(command):
     with pytest.raises(SystemExit) as exc:
         main([command, "--help"])
     assert exc.value.code == 0
+
+
+def test_predict_impact_refuses_to_run_without_sentiment(tmp_path, monkeypatch):
+    import nexus.pipeline as pipeline
+    monkeypatch.setattr(pipeline, "_paths", lambda chain: {"analyzed": tmp_path, "data": tmp_path, "prices": tmp_path})
+    monkeypatch.setattr(pipeline, "_load_master", lambda chain: ({}, None))
+    with pytest.raises(SystemExit) as exc:
+        main(["predict-impact", "--chain", "semis", "--database-url", "postgresql://unused"])
+    assert "sentiment" in str(exc.value.code)

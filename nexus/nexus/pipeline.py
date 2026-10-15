@@ -294,15 +294,23 @@ def _model_path(chain: str) -> Path:
     return _paths(chain)["data"] / "models" / f"{MODEL_VERSION}-{chain}.joblib"
 
 
+def _require_sentiment(chain: str):
+    """Both impact commands need sentiment: the model's strongest inputs would otherwise be silently NaN."""
+    from .impact.sentiment import read_sentiment
+    path = _paths(chain)["analyzed"] / "sentiment.parquet"
+    sentiment = read_sentiment(path)
+    if sentiment.empty:
+        sys.exit(f"no sentiment scores in {path}: run the sentiment command first")
+    return sentiment
+
+
 def cmd_train_impact(args) -> int:
     from .impact.model import METHODS, train_and_evaluate
     from .impact.report import write_report
-    from .impact.sentiment import MODEL_REVISION, read_sentiment
+    from .impact.sentiment import MODEL_REVISION
     p = _paths(args.chain)
     companies, _ = _load_master(args.chain)
-    sentiment = read_sentiment(p["analyzed"] / "sentiment.parquet")
-    if sentiment.empty:
-        sys.exit("no sentiment scores: run the sentiment command first")
+    sentiment = _require_sentiment(args.chain)
     started = time.monotonic()
     frame, vocab = impact_dataset(_load_bundles(args.chain), companies, sentiment, PriceCache(p["prices"]), None,
                                   today=datetime.now(KST).date())
@@ -323,13 +331,15 @@ def cmd_train_impact(args) -> int:
 def cmd_predict_impact(args) -> int:
     import psycopg
     from .impact.model import ImpactModel, outputs, predict_proba
-    from .impact.sentiment import read_sentiment
     from .load.postgres import ensure_companies, write_predictions
     p = _paths(args.chain)
     companies, _ = _load_master(args.chain)
+    sentiment = _require_sentiment(args.chain)
     model = ImpactModel.load(_model_path(args.chain))
-    frame, _ = impact_dataset(_load_bundles(args.chain), companies, read_sentiment(p["analyzed"] / "sentiment.parquet"),
-                              PriceCache(p["prices"]), model.vocab, today=datetime.now(KST).date())
+    frame, _ = impact_dataset(_load_bundles(args.chain), companies, sentiment, PriceCache(p["prices"]), model.vocab,
+                              today=datetime.now(KST).date())
+    # Newer articles may legitimately lack a score; make the share visible instead of silent.
+    print(f"rows: {len(frame):,}, with sentiment: {frame['sent_pos'].notna().mean() * 100:.1f}%", flush=True)
     results = outputs(predict_proba(model.estimator, frame, model.columns), model.tau)
     with psycopg.connect(args.database_url) as conn:
         ids = ensure_companies(conn, list(companies.values()))

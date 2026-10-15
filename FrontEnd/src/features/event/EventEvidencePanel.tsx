@@ -1,6 +1,7 @@
 import type { AbnormalReturn, EventMap, EventNode, PathStep } from "@/api/types";
 import { fmtDate, fmtDateTime, fmtPct } from "@/lib/format";
 import { relationshipMeta } from "@/lib/meta";
+import { IMPACT_DISCLAIMER, impactLine } from "./nodeStyle";
 
 const NO_EVIDENCE_TEXT: Record<string, string> = {
   COSMOS: "COSMOS 관계 데이터(2026-09 기준)",
@@ -78,12 +79,27 @@ function StepView({ step }: { step: PathStep }) {
   );
 }
 
+/** 영향 모델 결과 한 줄과 고지 문구. 모델이 돌지 않은 노드(해외 상장·판단 보류)에는 아무것도 그리지 않는다 */
+function ImpactLine({ node }: { node: EventNode }) {
+  const line = impactLine(node);
+  if (!line) return null;
+  return (
+    <>
+      <p className="event-impact">
+        <b>{line}</b>
+      </p>
+      <p className="meta">{IMPACT_DISCLAIMER}</p>
+    </>
+  );
+}
+
 function NodeView({ node, map }: { node: EventNode; map: EventMap }) {
   if (node.basis === "REPORTED") {
     return (
       <>
         <div className="event-panel-name">{node.name}</div>
         <span className="badge event-badge reported">기사에서 직접 언급(근거)</span>
+        <ImpactLine node={node} />
         <h4 className="event-panel-sub">관측된 초과수익률</h4>
         <ReturnsTable returns={node.abnormalReturns} />
         <div className="mt-12">
@@ -99,6 +115,7 @@ function NodeView({ node, map }: { node: EventNode; map: EventMap }) {
       <span className={`badge event-badge ${hold ? "hold" : "inferred"}`}>
         {hold ? `판단 보류 · ${node.holdReason ?? "사유 없음"}` : "추정(공급망 전이)"}
       </span>
+      <ImpactLine node={node} />
       <p className="meta mt-8">
         전이 점수 <b className="num">{node.score === null ? "-" : node.score.toFixed(2)}</b> · {node.hop}단계
       </p>

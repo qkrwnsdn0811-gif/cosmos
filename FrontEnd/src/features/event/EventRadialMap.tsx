@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useElementWidth } from "@/components/PriceChart";
 import type { EventMap, EventNode } from "@/api/types";
 import { fmtPct, fmtTradingDate } from "@/lib/format";
+import { nodeStyle } from "./nodeStyle";
 import { labelSide, linkTargetId, radialLayout, shortName, viaCompanyId } from "./radialLayout";
 
 const SIZE = 520;
@@ -17,14 +18,10 @@ const MIN_TAP_PX = 24;
 
 type PlacedNode = EventNode & { companyId: string };
 
-/** 1단계에는 영향 방향 모델이 없다 — 색은 근거·추정·판단 보류 구분에만 쓴다 */
+/** 선 색은 근거·추정·판단 보류 구분에만 쓴다(노드 원의 색과 크기는 nodeStyle 이 영향 모델 결과로 정한다) */
 function tone(n: EventNode) {
   if (n.basis === "REPORTED") return "var(--primary)";
   return n.status === "HOLD" ? "var(--text-4)" : "var(--accent)";
-}
-function nodeRadius(n: EventNode) {
-  const s = n.score ?? 0.5;
-  return n.basis === "REPORTED" ? 10 + 8 * s : 8 + 10 * s;
 }
 function basisLabel(n: EventNode) {
   if (n.basis === "REPORTED") return "근거";
@@ -119,7 +116,9 @@ export default function EventRadialMap({
 
         {nodes.map((n) => {
           const p = placed.get(n.companyId)!;
-          const r = nodeRadius(n);
+          const style = nodeStyle(n);
+          const r = style.radius;
+          const label = `${n.name} ${basisLabel(n)}${style.impactLabel ? ` · ${style.impactLabel}` : ""}`;
           const ar = dayOneReturn(n);
           const selected = n.companyId === selectedId;
           const side = labelSide(p.x, SIZE);
@@ -132,7 +131,7 @@ export default function EventRadialMap({
               className={`event-map-node ${selected ? "on" : ""} ${n.status === "HOLD" ? "hold" : ""}`}
               role="button"
               tabIndex={0}
-              aria-label={`${n.name} ${basisLabel(n)}`}
+              aria-label={label}
               aria-pressed={selected}
               onClick={() => onSelect(n.companyId)}
               onKeyDown={(e) => {
@@ -142,18 +141,22 @@ export default function EventRadialMap({
                 }
               }}
             >
-              <title>{`${n.name} · ${basisLabel(n)}`}</title>
+              <title>{label}</title>
               {/* 작은 노드도 누를 수 있도록 투명한 터치 영역 */}
               <circle cx={p.x} cy={p.y} r={Math.max(r, hitRadius)} className="event-map-hit" />
               <circle
                 cx={p.x}
                 cy={p.y}
                 r={r}
-                fill={tone(n)}
-                fillOpacity={n.status === "HOLD" ? 0.6 : 1}
-                stroke={selected ? "var(--text)" : "transparent"}
+                fill={style.fill}
+                fillOpacity={style.fillOpacity}
+                stroke={style.stroke ?? "transparent"}
                 strokeWidth={2.5}
               />
+              {/* 선택 표시는 바깥에 따로 그려 속 빈 원(방향 보류)의 테두리와 겹치지 않게 한다 */}
+              {selected && (
+                <circle cx={p.x} cy={p.y} r={r + 4} fill="none" stroke="var(--text)" strokeWidth={2} className="event-map-ring" />
+              )}
               <g className="event-map-label" style={{ display: showLabel ? undefined : "none" }}>
                 <text x={lx} y={ly} textAnchor={side} className="event-map-name" style={{ fontSize: labelFont }}>
                   {shortName(n.name)}
@@ -186,6 +189,19 @@ export default function EventRadialMap({
         <li>
           <i className="sw hold" /> 회색 판단 보류
         </li>
+        <li>
+          <i className="dot pos" /> 상승
+        </li>
+        <li>
+          <i className="dot neg" /> 하락
+        </li>
+        <li>
+          <i className="dot neu" /> 중립
+        </li>
+        <li>
+          <i className="dot hollow" /> 속 빈 원 방향 보류
+        </li>
+        <li className="meta">색 없는 노드: 영향 모델 미적용(해외 상장·판단 보류)</li>
         <li className="meta">숫자: 관측된 1일 초과수익률</li>
       </ul>
     </div>

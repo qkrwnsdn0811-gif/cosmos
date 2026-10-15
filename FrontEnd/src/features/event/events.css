@@ -1,4 +1,8 @@
 /* NEXUS 이벤트 화면 — 레일·지도 카드는 news.css 를 재사용하고, 이벤트에만 있는 부분을 여기 둔다 */
+:root {
+  /* 영향 모델 '중립' — 판단 보류 회색(--text-4, 불투명도 0.6)보다 밝게 둔다. 앱은 다크 전용이라 값은 하나 */
+  --impact-neutral: #c3cad6;
+}
 .events-rail .list {
   margin-top: 12px;
 }
@@ -83,6 +87,31 @@
 }
 .event-map-legend .sw.hold {
   border-top: 2px dashed var(--text-4);
+}
+.event-map-legend .dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.event-map-legend .dot.pos {
+  background: var(--pos);
+}
+.event-map-legend .dot.neg {
+  background: var(--neg);
+}
+.event-map-legend .dot.neu {
+  background: var(--impact-neutral);
+}
+.event-map-legend .dot.hollow {
+  border: 2px solid var(--primary);
+}
+.event-map-ring {
+  pointer-events: none;
+}
+.event-impact {
+  margin: 10px 0 4px;
+  font-size: 13px;
 }
 .event-body {
   display: grid;

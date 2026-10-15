@@ -470,8 +470,10 @@ export interface EventNode {
   score: number | null;
   status: ImpactStatus;
   holdReason: string | null;
-  /** 영향 모델 도입 전까지 null */
+  /** 영향 모델(nexus predict-impact)이 채운다. confidence가 있는데 impactDirection이 null이면 방향 보류 */
   impactDirection: ImpactDirection | null;
+  /** 0~1, 상승 확률과 하락 확률의 차이 */
+  impactMagnitude: number | null;
   confidence: number | null;
   anchorCompanyId: UUID | null;
   path: PathStep[];

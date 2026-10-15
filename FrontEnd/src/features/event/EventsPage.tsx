@@ -1,9 +1,10 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import type { EventSummary } from "@/api/types";
 import { Empty, ErrorNotice, Skeleton } from "@/components/ui";
 import { fmtDateTime } from "@/lib/format";
 import { useEventFeed, useEventMap } from "@/lib/queries";
+import EventRadialMap from "./EventRadialMap";
 import "@/features/news/news.css";
 import "./events.css";
 
@@ -23,6 +24,10 @@ export default function EventsPage() {
   const items = useMemo(() => feed.data?.pages.flatMap((p) => p.items) ?? [], [feed.data]);
   const activeId = selectedId ?? items[0]?.eventId ?? null;
   const map = useEventMap(activeId);
+  // 고른 기업은 그 이벤트에서만 유효하다 — 다른 이벤트로 바꾸면 자연히 선택이 풀린다
+  const [picked, setPicked] = useState<{ eventId: string; companyId: string } | null>(null);
+  const selectedCompany = picked && picked.eventId === activeId ? picked.companyId : null;
+  const selectCompany = (companyId: string) => activeId && setPicked({ eventId: activeId, companyId });
 
   useEffect(() => {
     if (!selectedId && items[0]) {
@@ -91,7 +96,18 @@ export default function EventsPage() {
               <div className="ttl">{map.data?.event.title ?? <Skeleton h={22} w={360} />}</div>
             )}
           </div>
-          <Skeleton h={420} style={{ borderRadius: 14, marginTop: 14 }} />
+          <div className="card map-card event-map-card">
+            <div className="map-head">
+              <div className="kick">관계 지도</div>
+            </div>
+            <div className="map-stage">
+              {map.data ? (
+                <EventRadialMap map={map.data} selectedId={selectedCompany} onSelect={selectCompany} />
+              ) : (
+                <Skeleton h={420} style={{ borderRadius: 14 }} />
+              )}
+            </div>
+          </div>
           <p className="event-disclaimer">{DISCLAIMER}</p>
         </section>
       </div>

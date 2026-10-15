@@ -12,7 +12,8 @@
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit",
     "lint": "eslint src",
-    "logos:fetch": "node scripts/fetch-logos.mjs"
+    "logos:fetch": "node scripts/fetch-logos.mjs",
+    "test": "node --test \"tests/**/*.test.ts\""
   },
   "dependencies": {
     "@react-three/drei": "^10.7.8",

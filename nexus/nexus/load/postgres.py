@@ -23,6 +23,7 @@ MIGRATIONS_DIR = REPO_ROOT / "BackEnd" / "src" / "main" / "resources" / "db" / "
 NAMESPACE = uuid.NAMESPACE_URL
 PIPELINE_VERSION = "nexus-slice-v1"
 MODEL_VERSION = "rule-propagation-v1"
+IMPACT_MODEL_VERSION = f"{MODEL_VERSION}|impact-hgb-v1"
 RELATIONSHIP_TYPES = [("SUPPLY", "공급", "DIRECTED"), ("INVEST", "투자", "DIRECTED"),
                       ("PARTNER", "협력", "UNDIRECTED"), ("COMPETE", "경쟁", "UNDIRECTED")]
 
@@ -223,3 +224,30 @@ def load_prices(conn, company_ids: dict[str, UUID], bars_by_key: dict[str, pd.Da
                     "trading_volume = EXCLUDED.trading_volume", (company_ids[key], trading_at, o, h, l, c, int(v)))
                 written += cur.rowcount
     return written
+
+
+SQL_RESET_PREDICTIONS = (
+    "UPDATE event_company_impact i SET impact_direction = NULL, impact_magnitude = NULL, confidence = NULL, "
+    "model_version = %s FROM news_event e WHERE e.event_id = i.event_id AND e.value_chain = %s")
+SQL_APPLY_PREDICTIONS = (
+    "UPDATE event_company_impact i SET impact_direction = p.impact_direction, impact_magnitude = p.impact_magnitude, "
+    "confidence = p.confidence, model_version = %s FROM impact_prediction p, news_event e "
+    "WHERE i.event_id = p.event_id AND i.company_id = p.company_id AND e.event_id = i.event_id "
+    "AND e.value_chain = %s AND i.status = 'OK'")
+
+
+def write_predictions(conn, value_chain: str, rows: list[tuple[str, UUID, str | None, float, float]]) -> int:
+    """Replace the impact model's output for one value chain: rows are (news_id, company_id, direction or None,
+    confidence, magnitude). Everything is reset first, so a rerun gives the same table; HOLD rows stay empty."""
+    with conn.transaction(), conn.cursor() as cur:
+        cur.execute(SQL_RESET_PREDICTIONS, (MODEL_VERSION, value_chain))
+        # Called inside an outer transaction the ON COMMIT DROP table may still exist from a previous call.
+        cur.execute("DROP TABLE IF EXISTS pg_temp.impact_prediction")
+        cur.execute("CREATE TEMP TABLE impact_prediction (event_id UUID, company_id UUID, impact_direction VARCHAR(10), "
+                    "confidence NUMERIC(7, 6), impact_magnitude NUMERIC(7, 6)) ON COMMIT DROP")
+        with cur.copy("COPY impact_prediction (event_id, company_id, impact_direction, confidence, impact_magnitude) "
+                      "FROM STDIN") as copy:
+            for news_id, company_id, direction, confidence, magnitude in rows:
+                copy.write_row((event_id(news_id), company_id, direction, confidence, magnitude))
+        cur.execute(SQL_APPLY_PREDICTIONS, (IMPACT_MODEL_VERSION, value_chain))
+        return cur.rowcount

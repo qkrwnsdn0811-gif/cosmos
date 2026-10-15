@@ -18,6 +18,8 @@ from .config import REPO_ROOT, load_settings
 from .entities.master import ALIAS_COLUMNS, alias_rows, build_master
 from .entities.recognize import Recognizer
 from .impact.abnormal import abnormal_returns, event_trading_date
+from .impact.features import MentionTimeline, build_frame, category_vocab
+from .impact.labels import build_price_contexts
 from .impact.prices import BENCHMARK, PriceCache
 from .ingest.normalize import to_article
 from .ingest.store import ArticleStore
@@ -37,6 +39,8 @@ COSMOS_COMPANIES = REPO_ROOT / "AI" / "ner" / "data" / "companies.csv"
 COSMOS_ALIASES = REPO_ROOT / "AI" / "ner" / "data" / "aliases.csv"
 COSMOS_RELATIONS = REPO_ROOT / "AI" / "graph" / "data" / "db_full_20260922" / "company_relationship.csv"
 PRICE_LOOKBACK = timedelta(days=14)
+PRICE_HISTORY = timedelta(days=150)       # 60 trading days of sigma before the earliest event
+IMPACT_REPORT = REPO_ROOT / "docs" / "nexus" / "impact-model-report.md"
 
 
 def _read_csv(path: Path) -> list[dict]:
@@ -271,6 +275,74 @@ def cmd_sentiment(args) -> int:
     return 0
 
 
+def impact_dataset(bundles: list[EventBundle], companies: dict[str, Company], sentiment, prices: PriceCache,
+                   vocab: list[str] | None, *, today: date):
+    """Feature table for training (vocab=None: categories from the training period) or prediction (the model's vocab)."""
+    from .impact.model import TRAIN_END
+    if vocab is None:
+        vocab = category_vocab([b for b in bundles if b.trading_date is not None and b.trading_date <= TRAIN_END])
+    first = min((b.article.dateline.astimezone(KST).date() for b in bundles), default=today)
+    start = first - PRICE_HISTORY
+    contexts = build_price_contexts(companies, prices, start, today)
+    calendar = sorted(prices.closes(BENCHMARK["KOSPI"], start, today).index)
+    frame = build_frame(bundles, companies, sentiment, contexts, vocab, MentionTimeline(bundles), calendar)
+    return frame, vocab
+
+
+def _model_path(chain: str) -> Path:
+    from .impact.model import MODEL_VERSION
+    return _paths(chain)["data"] / "models" / f"{MODEL_VERSION}-{chain}.joblib"
+
+
+def cmd_train_impact(args) -> int:
+    from .impact.model import METHODS, train_and_evaluate
+    from .impact.report import write_report
+    from .impact.sentiment import MODEL_REVISION, read_sentiment
+    p = _paths(args.chain)
+    companies, _ = _load_master(args.chain)
+    sentiment = read_sentiment(p["analyzed"] / "sentiment.parquet")
+    if sentiment.empty:
+        sys.exit("no sentiment scores: run the sentiment command first")
+    started = time.monotonic()
+    frame, vocab = impact_dataset(_load_bundles(args.chain), companies, sentiment, PriceCache(p["prices"]), None,
+                                  today=datetime.now(KST).date())
+    print(f"rows: {len(frame):,}, labeled: {int(frame['label'].notna().sum()):,}, categories: {len(vocab)} "
+          f"({time.monotonic() - started:,.0f}s)", flush=True)
+    model, ev = train_and_evaluate(frame, vocab, sentiment_revision=MODEL_REVISION, now=datetime.now(KST))
+    model.save(_model_path(args.chain))
+    write_report(ev, IMPACT_REPORT)
+    status = "passed" if ev.tau_passed else "fallback"
+    print(f"tau: {ev.tau:.2f} ({status}), coverage on test: {(ev.coverage or 0) * 100:.1f}%")
+    for method in METHODS:
+        s = ev.comparison[method]
+        print(f"  {method}: accuracy {s['accuracy']}, macro-F1 {s['macro_f1']}, log-loss {s['log_loss']}")
+    print(f"model: {_model_path(args.chain)}, report: {IMPACT_REPORT} ({time.monotonic() - started:,.0f}s)")
+    return 0
+
+
+def cmd_predict_impact(args) -> int:
+    import psycopg
+    from .impact.model import ImpactModel, outputs, predict_proba
+    from .impact.sentiment import read_sentiment
+    from .load.postgres import ensure_companies, write_predictions
+    p = _paths(args.chain)
+    companies, _ = _load_master(args.chain)
+    model = ImpactModel.load(_model_path(args.chain))
+    frame, _ = impact_dataset(_load_bundles(args.chain), companies, read_sentiment(p["analyzed"] / "sentiment.parquet"),
+                              PriceCache(p["prices"]), model.vocab, today=datetime.now(KST).date())
+    results = outputs(predict_proba(model.estimator, frame, model.columns), model.tau)
+    with psycopg.connect(args.database_url) as conn:
+        ids = ensure_companies(conn, list(companies.values()))
+        conn.commit()
+        rows = [(news_id, ids[key], *result)
+                for news_id, key, result in zip(frame["news_id"], frame["company_key"], results) if key in ids]
+        updated = write_predictions(conn, CHAINS[args.chain]["value_chain"], rows)
+        conn.commit()
+    directions = Counter(direction or "HELD" for direction, _, _ in results)
+    print(f"rows updated: {updated:,} of {len(rows):,}; directions: {dict(directions)}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m nexus")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -288,7 +360,12 @@ def main(argv: list[str] | None = None) -> int:
     sentiment.add_argument("--chain", choices=sorted(CHAINS), required=True)
     sentiment.add_argument("--threads", type=int, default=8)
     sentiment.add_argument("--batch-size", type=int, default=32)
+    sub.add_parser("train-impact").add_argument("--chain", choices=sorted(CHAINS), required=True)
+    predict = sub.add_parser("predict-impact")
+    predict.add_argument("--chain", choices=sorted(CHAINS), required=True)
+    predict.add_argument("--database-url", required=True)
     args = parser.parse_args(argv)
     handler = {"build-master": cmd_build_master, "collect": cmd_collect, "analyze": cmd_analyze,
-               "migrate": cmd_migrate, "load": cmd_load, "sentiment": cmd_sentiment}[args.command]
+               "migrate": cmd_migrate, "load": cmd_load, "sentiment": cmd_sentiment,
+               "train-impact": cmd_train_impact, "predict-impact": cmd_predict_impact}[args.command]
     return handler(args)

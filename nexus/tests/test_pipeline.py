@@ -1,13 +1,16 @@
-from datetime import date
+from dataclasses import replace
+from datetime import date, datetime, timedelta, timezone
 
 import pandas as pd
+import pytest
 
 from nexus.entities.master import alias_rows
 from nexus.entities.recognize import Recognizer
+from nexus.impact.features import META_COLUMNS, feature_columns
 from nexus.impact.prices import PriceCache
 from nexus.ingest.normalize import to_article
-from nexus.models import Company, Edge
-from nexus.pipeline import run_analyze
+from nexus.models import Company, CompanyMention, Edge, EventBundle, Impact
+from nexus.pipeline import impact_dataset, main, run_analyze
 from nexus.relations.graph import BaseGraph
 
 GAGSANG = Company("KOSPI:900001", "KOSPI", "900001", "가상전자", "SEMICONDUCTOR", "제조")
@@ -98,3 +101,27 @@ def test_build_graph_searches_by_most_frequent_org_alias(tmp_path):
     build_graph(articles, recognizer, {c.key: c for c in (hynix, micron)}, client, start=date(2026, 10, 1),
                 end=date(2026, 10, 14), today=date(2026, 10, 14), cosmos_csv=cosmos_csv)
     assert client.queries == ["SK하이닉스 AND 마이크론"]
+
+
+def test_impact_dataset_builds_vocab_from_training_events(synthetic_docs, tmp_path):
+    kospi = Company("KOSPI:900001", "KOSPI", "900001", "가상전자", "SEMICONDUCTOR", "제조")
+    days = pd.to_datetime([date(2025, 6, 1) + timedelta(days=i) for i in range(300)])
+    cache = PriceCache(tmp_path, fetch=lambda s, a, b: pd.DataFrame({"Close": [100.0 + i for i in range(300)]}, index=days),
+                       today=lambda: date(2026, 4, 1))
+    article = to_article(synthetic_docs[0])
+    old = EventBundle(replace(article, news_id="OLD", categories=("경제>반도체",),
+                              dateline=datetime(2025, 11, 3, 10, tzinfo=timezone(timedelta(hours=9)))),
+                      "SEMICONDUCTOR", [CompanyMention(kospi.key, 1.0, ("title",))],
+                      [Impact(kospi.key, "REPORTED", 0, (), 1.0, "OK", None)], [], date(2025, 11, 3))
+    new = replace(old, article=replace(old.article, news_id="NEW", categories=("경제>자동차",)), trading_date=date(2026, 2, 2))
+    frame, vocab = impact_dataset([old, new], {kospi.key: kospi}, pd.DataFrame(columns=["p_neg", "p_neu", "p_pos"]),
+                                  cache, None, today=date(2026, 4, 1))
+    assert vocab == ["경제>반도체"]
+    assert list(frame.columns) == META_COLUMNS + feature_columns(vocab) and len(frame) == 2
+
+
+@pytest.mark.parametrize("command", ["sentiment", "train-impact", "predict-impact"])
+def test_impact_commands_are_registered(command):
+    with pytest.raises(SystemExit) as exc:
+        main([command, "--help"])
+    assert exc.value.code == 0

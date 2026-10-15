@@ -1,12 +1,13 @@
 from datetime import date, datetime, timedelta, timezone
+from decimal import Decimal
 
 import pandas as pd
 import psycopg
 import pytest
 
 from nexus.ingest.normalize import to_article
-from nexus.load.postgres import (document_id, ensure_companies, event_id, load_events, load_prices,
-                                 load_relations)
+from nexus.load.postgres import (IMPACT_MODEL_VERSION, document_id, ensure_companies, event_id, load_events,
+                                 load_prices, load_relations, write_predictions)
 from nexus.models import (AbnormalReturn, Company, CompanyMention, Edge, EventBundle, EvidenceSnippet, Impact,
                           PathStep)
 
@@ -159,3 +160,43 @@ def test_load_relations_replaces_previous_news_rows(pg):
                        "WHERE relation_source = 'NEWS'").fetchall()
     assert pairs == [(ids[A.key], ids[C.key])]
     assert count(pg, "SELECT count(*) FROM relation_evidence_snippet") == 0
+
+
+D = Company("KOSDAQ:900004", "KOSDAQ", "900004", "숲부품", "SEMICONDUCTOR", "부품")
+
+
+def bundle_with_hold(synthetic_docs):
+    b = bundle(synthetic_docs)
+    b.impacts.append(Impact(D.key, "INFERRED", 1, (PathStep(D.key, A.key, "SUPPLY", "COSMOS", 1.0),), 0.1, "HOLD",
+                            "전이 강도 낮음"))
+    return b
+
+
+def impact_row(conn, company_id):
+    return conn.execute("SELECT impact_direction, impact_magnitude, confidence, model_version FROM event_company_impact "
+                        "WHERE company_id = %s", (company_id,)).fetchone()
+
+
+def test_write_predictions_sets_values_and_version(pg, synthetic_docs):
+    ids = ensure_companies(pg, [A, B, C, D])
+    load_events(pg, [bundle_with_hold(synthetic_docs)], ids)
+    news = "SYN.20261013100000001"
+    n = write_predictions(pg, "SEMICONDUCTOR", [(news, ids[A.key], "POSITIVE", 0.62, 0.31),
+                                                (news, ids[B.key], None, 0.41, 0.12),
+                                                (news, ids[D.key], "NEGATIVE", 0.9, 0.8)])
+    assert n == 2                                                      # HOLD 행은 갱신하지 않는다
+    assert impact_row(pg, ids[A.key]) == ("POSITIVE", Decimal("0.310000"), Decimal("0.620000"), IMPACT_MODEL_VERSION)
+    assert impact_row(pg, ids[B.key])[:3] == (None, Decimal("0.120000"), Decimal("0.410000"))
+    assert impact_row(pg, ids[D.key]) == (None, None, None, "rule-propagation-v1")
+
+
+def test_write_predictions_is_idempotent_and_resets_old_values(pg, synthetic_docs):
+    ids = ensure_companies(pg, [A, B, C, D])
+    load_events(pg, [bundle_with_hold(synthetic_docs)], ids)
+    news = "SYN.20261013100000001"
+    write_predictions(pg, "SEMICONDUCTOR", [(news, ids[A.key], "POSITIVE", 0.62, 0.31),
+                                            (news, ids[B.key], "NEGATIVE", 0.7, 0.5)])
+    write_predictions(pg, "SEMICONDUCTOR", [(news, ids[A.key], "POSITIVE", 0.62, 0.31)])
+    write_predictions(pg, "SEMICONDUCTOR", [(news, ids[A.key], "POSITIVE", 0.62, 0.31)])
+    assert impact_row(pg, ids[A.key])[0] == "POSITIVE"
+    assert impact_row(pg, ids[B.key]) == (None, None, None, "rule-propagation-v1")

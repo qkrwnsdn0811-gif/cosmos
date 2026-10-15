@@ -4,6 +4,7 @@ import type { EventSummary } from "@/api/types";
 import { Empty, ErrorNotice, Skeleton } from "@/components/ui";
 import { fmtDateTime } from "@/lib/format";
 import { useEventFeed, useEventMap } from "@/lib/queries";
+import EventEvidencePanel from "./EventEvidencePanel";
 import EventRadialMap from "./EventRadialMap";
 import "@/features/news/news.css";
 import "./events.css";
@@ -96,17 +97,20 @@ export default function EventsPage() {
               <div className="ttl">{map.data?.event.title ?? <Skeleton h={22} w={360} />}</div>
             )}
           </div>
-          <div className="card map-card event-map-card">
-            <div className="map-head">
-              <div className="kick">관계 지도</div>
+          <div className="event-body">
+            <div className="card map-card event-map-card">
+              <div className="map-head">
+                <div className="kick">관계 지도</div>
+              </div>
+              <div className="map-stage">
+                {map.data ? (
+                  <EventRadialMap map={map.data} selectedId={selectedCompany} onSelect={selectCompany} />
+                ) : (
+                  <Skeleton h={420} style={{ borderRadius: 14 }} />
+                )}
+              </div>
             </div>
-            <div className="map-stage">
-              {map.data ? (
-                <EventRadialMap map={map.data} selectedId={selectedCompany} onSelect={selectCompany} />
-              ) : (
-                <Skeleton h={420} style={{ borderRadius: 14 }} />
-              )}
-            </div>
+            {map.data ? <EventEvidencePanel map={map.data} companyId={selectedCompany} /> : <Skeleton h={320} style={{ borderRadius: 14 }} />}
           </div>
           <p className="event-disclaimer">{DISCLAIMER}</p>
         </section>

@@ -104,6 +104,10 @@ export const liveApi: CosmosApi = {
     relationship: (id, window) => request(`/relationships/${id}${qs({ window })}`),
     evidence: (id, p) => request(`/relationships/${id}/evidence${qs(p)}`),
   },
+  events: {
+    list: (p) => request(`/events${qs(p)}`),
+    detail: (id) => request(`/events/${id}`),
+  },
   community: {
     latest: (p) => request(`/community/comments${qs(p)}`),
     byCompany: (id, p) => request(`/companies/${id}/comments${qs(p)}`),

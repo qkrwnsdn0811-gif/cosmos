@@ -1,0 +1,130 @@
+import { useEffect, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
+import type { EventSummary } from "@/api/types";
+import { Empty, ErrorNotice, Skeleton } from "@/components/ui";
+import { fmtDateTime } from "@/lib/format";
+import { useEventFeed, useEventMap } from "@/lib/queries";
+import "@/features/news/news.css";
+import "./events.css";
+
+const DISCLAIMER =
+  "관계·추정 결과와 초과수익률은 투자 권유가 아닙니다. 초과수익률은 이미 관측된 주가 변화이며 미래 주가 예측이 아닙니다.";
+
+/**
+ * NEXUS 이벤트 — 빅카인즈 기사 1건을 고르면 그 기사만의 관계 지도(근거 실선 · 추정 점선)를 연다.
+ * 레이아웃은 뉴스 화면(news.css)의 레일·지도 카드를 그대로 쓰고, 이벤트 전용 부분만 events.css 에 둔다.
+ */
+export default function EventsPage() {
+  const [params, setParams] = useSearchParams();
+  const onlyInferred = params.get("all") !== "1";
+  const selectedId = params.get("event");
+
+  const feed = useEventFeed({ valueChain: "SEMICONDUCTOR", hasInferred: onlyInferred || undefined });
+  const items = useMemo(() => feed.data?.pages.flatMap((p) => p.items) ?? [], [feed.data]);
+  const activeId = selectedId ?? items[0]?.eventId ?? null;
+  const map = useEventMap(activeId);
+
+  useEffect(() => {
+    if (!selectedId && items[0]) {
+      setParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.set("event", items[0].eventId);
+        return next;
+      }, { replace: true });
+    }
+  }, [items, selectedId, setParams]);
+
+  const pick = (eventId: string) =>
+    setParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("event", eventId);
+      return next;
+    });
+  const toggleInferred = () =>
+    setParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (onlyInferred) next.set("all", "1");
+      else next.delete("all");
+      next.delete("event");
+      return next;
+    });
+
+  return (
+    <div className="page news-viewport events-viewport">
+      <div className="row between wrap" style={{ marginBottom: 14 }}>
+        <span className="status-line">
+          <i className="dot" />
+          빅카인즈 반도체 기사 · 근거(기사 언급)와 추정(공급망 전이)을 분리해 보여줍니다
+        </span>
+      </div>
+
+      <div className="news-page events-page">
+        <section className="card news-rail events-rail" aria-label="이벤트 목록">
+          <div className="row between">
+            <div className="kick">이벤트</div>
+            <button type="button" className={`chip chip-sm ${onlyInferred ? "on" : ""}`} aria-pressed={onlyInferred} onClick={toggleInferred}>
+              추정 있는 이벤트만
+            </button>
+          </div>
+          <div className="list scroll stack">
+            {feed.isLoading && [0, 1, 2, 3].map((i) => <Skeleton key={i} h={96} style={{ borderRadius: 14 }} />)}
+            {!feed.isLoading && feed.isError && !items.length && (
+              <ErrorNotice message="이벤트를 불러오지 못했습니다." onRetry={() => feed.refetch()} />
+            )}
+            {!feed.isLoading && !feed.isError && !items.length && <Empty>조건에 맞는 이벤트가 없습니다.</Empty>}
+            {items.map((e) => (
+              <EventCard key={e.eventId} event={e} active={e.eventId === activeId} onPick={pick} />
+            ))}
+            {feed.hasNextPage && (
+              <button type="button" className="more-btn" onClick={() => feed.fetchNextPage()} disabled={feed.isFetchingNextPage}>
+                {feed.isFetchingNextPage ? "불러오는 중…" : "더 보기"}
+              </button>
+            )}
+          </div>
+        </section>
+
+        <section className="news-analysis-col events-main" aria-label="이벤트 관계 지도">
+          <div className="card event-head">
+            {map.isError ? (
+              <ErrorNotice message="선택한 이벤트를 불러오지 못했습니다." onRetry={() => map.refetch()} />
+            ) : (
+              <div className="ttl">{map.data?.event.title ?? <Skeleton h={22} w={360} />}</div>
+            )}
+          </div>
+          <Skeleton h={420} style={{ borderRadius: 14, marginTop: 14 }} />
+          <p className="event-disclaimer">{DISCLAIMER}</p>
+        </section>
+      </div>
+    </div>
+  );
+}
+
+function EventCard({ event, active, onPick }: { event: EventSummary; active: boolean; onPick: (id: string) => void }) {
+  const shown = event.reportedCompanies.slice(0, 3);
+  const rest = event.reportedCompanies.length - shown.length;
+  return (
+    <article
+      className={`news-card event-card ${active ? "on" : ""}`}
+      onClick={() => onPick(event.eventId)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(k) => k.key === "Enter" && onPick(event.eventId)}
+    >
+      <div className="row between">
+        <span className="lab">
+          추정 <b className="num">{event.inferredCount}</b> · 보류 <b className="num">{event.holdCount}</b>
+        </span>
+        <span className="meta num">{[event.publisher, fmtDateTime(event.dateline)].filter(Boolean).join(" · ")}</span>
+      </div>
+      <div className="title clamp-2">{event.title}</div>
+      <div className="row wrap event-companies">
+        {shown.map((c) => (
+          <span key={c.companyId} className="chip chip-sm">
+            {c.name}
+          </span>
+        ))}
+        {rest > 0 && <span className="meta">+{rest}</span>}
+      </div>
+    </article>
+  );
+}

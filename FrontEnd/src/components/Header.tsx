@@ -12,6 +12,7 @@ import { cycleTabFocus, Icon, useClickOutside } from "./ui";
 const NAV = [
   { to: "/", label: "전체 은하", end: true },
   { to: "/news", label: "뉴스" },
+  { to: "/events", label: "이벤트" },
   { to: "/companies", label: "기업" },
   { to: "/community", label: "커뮤니티" },
 ];

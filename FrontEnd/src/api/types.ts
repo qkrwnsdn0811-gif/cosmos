@@ -399,3 +399,92 @@ export interface CommentEditResponse {
   updatedAt: ISODateTime;
   edited: boolean;
 }
+
+/* ---------------- NEXUS 이벤트 (docs/api-specification.md "events") ---------------- */
+export type ValueChain = "SEMICONDUCTOR" | "BATTERY" | "AUTO";
+/** REPORTED = 기사에 직접 언급(근거), INFERRED = 공급망을 타고 추정 */
+export type ImpactBasis = "REPORTED" | "INFERRED";
+/** HOLD = 판단 보류 (holdReason 동반) */
+export type ImpactStatus = "OK" | "HOLD";
+/** 추정 경로 한 단계의 출처 — COSMOS 기존 관계 · NEWS 빅카인즈 근거 · COMENTION 같은 문장 동시언급 */
+export type EdgeSource = "COSMOS" | "NEWS" | "COMENTION" | (string & {});
+
+export interface EventCompanyRef {
+  companyId: UUID;
+  name: string;
+  stockCode: string | null;
+  market: Market | null;
+}
+export interface EventSummary {
+  eventId: UUID;
+  /** /api/news/{newsId} 와 같은 문서 ID */
+  newsId: UUID;
+  title: string;
+  summary: string | null;
+  publisher: string | null;
+  /** 빈 문자열이면 원문 링크 없음 */
+  originalUrl: string;
+  dateline: ISODateTime;
+  /** 초과수익률 기준 거래일(YYYY-MM-DD). 아직 정해지지 않았으면 null */
+  tradingDate: string | null;
+  valueChain: ValueChain;
+  categories: string[];
+  reportedCompanies: EventCompanyRef[];
+  inferredCount: number;
+  holdCount: number;
+}
+export interface EvidenceSnippet {
+  bigkindsNewsId: string;
+  title: string;
+  publisher: string | null;
+  publishedAt: ISODateTime;
+  originalUrl: string;
+  snippet: string;
+  confidence: number | null;
+}
+export interface PathStep {
+  sourceCompanyId: UUID | null;
+  sourceName: string | null;
+  targetCompanyId: UUID | null;
+  targetName: string | null;
+  relationshipType: RelationshipType | null;
+  edgeSource: EdgeSource | null;
+  strength: number | null;
+  evidence: EvidenceSnippet[];
+}
+export interface AbnormalReturn {
+  windowDays: number;
+  benchmark: string;
+  stockReturn: number | null;
+  benchmarkReturn: number | null;
+  /** 비율(0.017 = 1.7%p). 관측값이며 예측이 아니다 */
+  abnormalReturn: number | null;
+}
+export interface EventNode {
+  companyId: UUID | null;
+  name: string;
+  stockCode: string | null;
+  market: Market | null;
+  basis: ImpactBasis;
+  hop: number;
+  score: number | null;
+  status: ImpactStatus;
+  holdReason: string | null;
+  /** 영향 모델 도입 전까지 null */
+  impactDirection: ImpactDirection | null;
+  confidence: number | null;
+  anchorCompanyId: UUID | null;
+  path: PathStep[];
+  abnormalReturns: AbnormalReturn[];
+}
+export interface EventMap {
+  event: EventSummary;
+  nodes: EventNode[];
+}
+export interface EventListParams {
+  valueChain?: ValueChain;
+  companyId?: UUID;
+  hasInferred?: boolean;
+  cursor?: string;
+  size?: number;
+}

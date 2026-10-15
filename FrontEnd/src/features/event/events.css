@@ -1,0 +1,22 @@
+/* NEXUS 이벤트 화면 — 레일·지도 카드는 news.css 를 재사용하고, 이벤트에만 있는 부분을 여기 둔다 */
+.events-rail .list {
+  margin-top: 12px;
+}
+.event-card .event-companies {
+  gap: 6px;
+  margin-top: 8px;
+}
+.event-head {
+  padding: 16px 18px;
+}
+.event-head .ttl {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+.event-disclaimer {
+  margin: 14px 2px 4px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-3);
+}

@@ -179,6 +179,23 @@ export function useNewsFeed(params: T.NewsListParams, enabled = true) {
     placeholderData: keepPreviousData,
   });
 }
+/** NEXUS 이벤트 목록 — 공개 API 라 세션 키를 쓰지 않는다 */
+export function useEventFeed(params: Omit<T.EventListParams, "cursor">) {
+  return useInfiniteQuery({
+    queryKey: ["events", "feed", params],
+    queryFn: ({ pageParam }) => api.events.list({ ...params, cursor: pageParam, size: params.size ?? 20 }),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
+    placeholderData: keepPreviousData,
+  });
+}
+export function useEventMap(eventId: string | null) {
+  return useQuery({
+    queryKey: ["events", "map", eventId],
+    queryFn: () => api.events.detail(eventId!),
+    enabled: Boolean(eventId),
+  });
+}
 export function useNewsDetail(newsId: string | null) {
   const k = useKey();
   const booted = useBooted();

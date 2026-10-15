@@ -44,6 +44,11 @@ export interface CosmosApi {
     /** size 는 기본 10 · 최대 20 (명세). 그 이상을 보내면 실 백엔드가 400 을 낸다. */
     evidence(relationshipId: string, params?: { cursor?: string; size?: number }): Promise<T.Page<T.RelationshipEvidence>>;
   };
+  events: {
+    /** size 는 기본 20 · 최대 100 */
+    list(params?: T.EventListParams): Promise<T.Page<T.EventSummary>>;
+    detail(eventId: string): Promise<T.EventMap>;
+  };
   community: {
     latest(params?: { cursor?: string; size?: number }): Promise<T.Page<T.GlobalComment>>;
     byCompany(companyId: string, params?: { cursor?: string; size?: number }): Promise<T.Page<T.CompanyComment>>;

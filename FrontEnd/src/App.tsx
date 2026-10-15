@@ -11,6 +11,7 @@ import { useSession } from "@/store/session";
 // 은하(/)가 첫 화면이다 — 나머지 탭은 들어갈 때 받는다. 전부 정적으로 묶으면 첫 로드 번들에 뉴스·기업·커뮤니티·내 페이지·실험실 코드와
 // 그 CSS 가 함께 실려 Lighthouse 가 "미사용 JS/CSS" 로 잡았다 (2026-09-18). 각 페이지는 자기 청크(+CSS)로 나뉘어 라우트 진입 시 로드된다
 const NewsPage = lazy(() => import("@/features/news/NewsPage"));
+const EventsPage = lazy(() => import("@/features/event/EventsPage"));
 // 검색 팔레트의 "관계 검색"(기업 두 곳을 이어 주는 경로) 결과 화면 — 은하 페이지와 같은 Scene 청크를 쓰므로 여기서도 지연 로드한다
 const PathGalaxyPage = lazy(() => import("@/features/galaxy/PathGalaxyPage"));
 const CompaniesPage = lazy(() => import("@/features/companies/CompaniesPage"));
@@ -112,6 +113,7 @@ export default function App() {
                 <Route path="/" element={<GalaxyPage />} />
                 <Route path="/path" element={<PathGalaxyPage />} />
                 <Route path="/news" element={<NewsPage />} />
+                <Route path="/events" element={<EventsPage />} />
                 <Route path="/companies" element={<CompaniesPage />} />
                 <Route path="/community" element={<CommunityPage />} />
                 <Route path="/me" element={<MePage />} />

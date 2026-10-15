@@ -1,5 +1,5 @@
 import type { AbnormalReturn, EventMap, EventNode, PathStep } from "@/api/types";
-import { fmtDate, fmtDateTime, fmtPct, fmtScore } from "@/lib/format";
+import { fmtDate, fmtDateTime, fmtPct } from "@/lib/format";
 import { relationshipMeta } from "@/lib/meta";
 
 const NO_EVIDENCE_TEXT: Record<string, string> = {
@@ -23,7 +23,7 @@ function OriginalLink({ url, label = "원문 보기" }: { url: string; label?: s
 }
 
 function ReturnsTable({ returns }: { returns: AbnormalReturn[] }) {
-  if (!returns.length) return <p className="meta">거래일 데이터 없음</p>;
+  if (!returns.length) return <p className="meta">초과수익률 데이터 없음</p>;
   return (
     <table className="event-returns">
       <thead>
@@ -100,7 +100,7 @@ function NodeView({ node, map }: { node: EventNode; map: EventMap }) {
         {hold ? `판단 보류 · ${node.holdReason ?? "사유 없음"}` : "추정(공급망 전이)"}
       </span>
       <p className="meta mt-8">
-        전이 점수 <b className="num">{fmtScore(node.score)}</b> · {node.hop}단계
+        전이 점수 <b className="num">{node.score === null ? "-" : node.score.toFixed(2)}</b> · {node.hop}단계
       </p>
       <h4 className="event-panel-sub">전이 경로와 근거</h4>
       <ol className="event-steps">

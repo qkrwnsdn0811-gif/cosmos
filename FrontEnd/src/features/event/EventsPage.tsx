@@ -30,7 +30,9 @@ export default function EventsPage() {
   // 고른 기업은 그 이벤트에서만 유효하다 — 다른 이벤트로 바꾸면 자연히 선택이 풀린다
   const [picked, setPicked] = useState<{ eventId: string; companyId: string } | null>(null);
   const selectedCompany = picked && picked.eventId === activeId ? picked.companyId : null;
-  const selectCompany = (companyId: string) => activeId && setPicked({ eventId: activeId, companyId });
+  // 같은 기업을 다시 고르면(또는 지도에서 Esc) 선택을 풀고 기사 개요로 돌아간다
+  const selectCompany = (companyId: string) =>
+    activeId && setPicked(selectedCompany === companyId ? null : { eventId: activeId, companyId });
 
   useEffect(() => {
     if (!selectedId && settled && items[0]) {

@@ -182,3 +182,17 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+.event-map-hit {
+  fill: transparent;
+  pointer-events: all;
+}
+/* 판단 보류 노드는 이름표를 숨겨 화면을 덜 복잡하게 하고, 고르거나 올려 둘 때만 보여준다 */
+.event-map-node.hold .event-map-label {
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+.event-map-node.hold:hover .event-map-label,
+.event-map-node.hold:focus-visible .event-map-label,
+.event-map-node.hold.on .event-map-label {
+  opacity: 1;
+}

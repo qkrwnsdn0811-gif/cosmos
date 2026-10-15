@@ -21,7 +21,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest>=8"]
 # KR-FinBERT 감성 분석(`nexus sentiment`)에만 필요하다. 버전은 COSMOS AI/gpu_news/requirements.txt와 같다.
-ml = ["torch", "transformers==5.16.1", "tokenizers==0.23.2", "huggingface-hub==1.30.0", "safetensors==0.8.0"]
+ml = ["torch==2.14.1", "transformers==5.16.1", "tokenizers==0.23.2", "huggingface-hub==1.30.0", "safetensors==0.8.0"]
 
 [tool.setuptools.packages.find]
 include = ["nexus*"]

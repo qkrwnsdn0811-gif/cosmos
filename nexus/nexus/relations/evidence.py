@@ -36,16 +36,21 @@ def _is_hangul(ch: str) -> bool:
     return "가" <= ch <= "힣"
 
 
-def _standalone(fragment: str, alias: str) -> bool:
+def standalone_index(fragment: str, alias: str) -> int:
+    """Position of the first occurrence of `alias` that stands as a name (not inside another word), else -1."""
     start = 0
     while (i := fragment.find(alias, start)) != -1:
         before = fragment[i - 1] if i else ""
         j = i + len(alias)
         after = fragment[j] if j < len(fragment) else ""
         if not _is_hangul(before) and (not _is_hangul(after) or after in PARTICLE_START):
-            return True
+            return i
         start = i + 1
-    return False
+    return -1
+
+
+def _standalone(fragment: str, alias: str) -> bool:
+    return standalone_index(fragment, alias) != -1
 
 
 def _first_alias(fragment: str, aliases: list[str]) -> str | None:

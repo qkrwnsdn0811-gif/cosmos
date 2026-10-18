@@ -26,6 +26,9 @@ class GraphServiceIntegrationTest {
     private static final UUID COMPANY_A = UUID.fromString("50000000-0000-0000-0000-000000000001");
     private static final UUID COMPANY_B = UUID.fromString("50000000-0000-0000-0000-000000000002");
     private static final UUID COMPANY_C = UUID.fromString("50000000-0000-0000-0000-000000000003");
+    private static final UUID COMPANY_D = UUID.fromString("50000000-0000-0000-0000-000000000004");
+    /** 시드 간선이 나스닥 기업 B를 거치므로, 기존 기대값은 나스닥을 명시한 universe로 확인한다 */
+    private static final String KOSPI_AND_NASDAQ = "KOSPI100,NASDAQ100";
     private static final UUID INDUSTRY_ID = UUID.fromString("50000000-0000-0000-0000-000000000010");
     private static final UUID SNAPSHOT_ID = UUID.fromString("50000000-0000-0000-0000-000000000020");
     private static final UUID RELATIONSHIP_AB = UUID.fromString("50000000-0000-0000-0000-000000000031");
@@ -89,8 +92,8 @@ class GraphServiceIntegrationTest {
     }
 
     @Test
-    void returnsLatestPublishedGraphForDefaultUniverse() {
-        LatestGraphResponse result = graphService.findLatestGraph(null, null, "30D");
+    void returnsLatestPublishedGraphForKospiAndNasdaqUniverse() {
+        LatestGraphResponse result = graphService.findLatestGraph(KOSPI_AND_NASDAQ, null, "30D");
 
         assertThat(result.snapshotId()).isEqualTo(SNAPSHOT_ID);
         assertThat(result.asOfAt()).hasToString("2026-09-07T06:00:00Z");
@@ -115,8 +118,19 @@ class GraphServiceIntegrationTest {
     }
 
     @Test
+    void defaultUniverseShowsKospiAndKosdaqButNotNasdaq() {
+        insertCompany(COMPANY_D, "기업D", "D001", "KOSDAQ");
+
+        LatestGraphResponse result = graphService.findLatestGraph(null, null, "30D");
+
+        assertThat(result.nodes()).extracting(node -> node.companyId())
+                .containsExactlyInAnyOrder(COMPANY_A, COMPANY_C, COMPANY_D);
+        assertThat(result.edges()).isEmpty();          // 시드 간선은 모두 나스닥 기업 B가 걸려 있다
+    }
+
+    @Test
     void filtersLatestGraphByIndustry() {
-        LatestGraphResponse result = graphService.findLatestGraph(null, INDUSTRY_ID, "30D");
+        LatestGraphResponse result = graphService.findLatestGraph(KOSPI_AND_NASDAQ, INDUSTRY_ID, "30D");
 
         assertThat(result.nodes()).extracting(node -> node.companyId())
                 .containsExactly(COMPANY_A, COMPANY_B);
@@ -139,7 +153,7 @@ class GraphServiceIntegrationTest {
 
     @Test
     void filtersWholeAndCompanyGraphsByRequestedWindow() {
-        LatestGraphResponse latest = graphService.findLatestGraph(null, null, "1y");
+        LatestGraphResponse latest = graphService.findLatestGraph(KOSPI_AND_NASDAQ, null, "1y");
         CompanyGraphResponse company = graphService.findCompanyGraph(COMPANY_A, 3, "1Y");
 
         assertThat(latest.window()).isEqualTo("1Y");

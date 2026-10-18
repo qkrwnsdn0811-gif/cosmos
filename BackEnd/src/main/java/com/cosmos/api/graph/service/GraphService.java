@@ -41,7 +41,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
 public class GraphService {
 
-    private static final Set<String> SUPPORTED_UNIVERSES = Set.of("KOSPI100", "NASDAQ100");
+    /** 빅카인즈 중심 서비스는 국내 상장사만 기본으로 보여준다 — 나스닥은 universe에 명시할 때만 (2026-10-18) */
+    private static final Set<String> SUPPORTED_UNIVERSES = Set.of("KOSPI100", "KOSDAQ", "NASDAQ100");
+    private static final String DEFAULT_UNIVERSES = "KOSPI100,KOSDAQ";
 
     private final GraphQueryRepository graphRepository;
     private final CompanyRepository companyRepository;
@@ -174,7 +176,7 @@ public class GraphService {
 
     private List<String> parseUniverses(String universeValue) {
         String resolved = universeValue == null || universeValue.isBlank()
-                ? "KOSPI100,NASDAQ100"
+                ? DEFAULT_UNIVERSES
                 : universeValue;
         LinkedHashSet<String> universes = new LinkedHashSet<>();
         for (String item : resolved.split(",")) {
@@ -188,7 +190,11 @@ public class GraphService {
             throw new BusinessException(CommonErrorCode.VALIDATION_FAILED);
         }
         return universes.stream()
-                .map(universe -> universe.equals("KOSPI100") ? "KOSPI" : "NASDAQ")
+                .map(universe -> switch (universe) {
+                    case "KOSPI100" -> "KOSPI";
+                    case "KOSDAQ" -> "KOSDAQ";
+                    default -> "NASDAQ";
+                })
                 .toList();
     }
 

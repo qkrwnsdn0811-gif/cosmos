@@ -1520,7 +1520,7 @@ HDFS의 기사 본문 전체는 제공하지 않으며 사용자는 `originalUrl
 <tr>
 <td>universe</td>
 <td>아니요</td>
-<td>기본 KOSPI100,NASDAQ100</td>
+<td>기본 KOSPI100,KOSDAQ (국내 상장사). 허용 값 KOSPI100·KOSDAQ·NASDAQ100, 쉼표로 여러 개</td>
 </tr>
 <tr>
 <td>industryId</td>

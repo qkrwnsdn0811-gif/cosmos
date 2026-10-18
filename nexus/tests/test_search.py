@@ -3,7 +3,7 @@ from datetime import date
 import pytest
 
 from nexus.bigkinds.client import BigKindsError
-from nexus.bigkinds.search import fetch_details, pair_hilights, search_documents
+from nexus.bigkinds.search import RELATION_TERMS, fetch_details, pair_hilights, relation_hilights, search_documents
 
 TODAY = date(2026, 10, 14)
 
@@ -92,3 +92,14 @@ def test_pair_query_and_hilight():
     assert argument["hilight"] == 200
     assert argument["return_size"] == 20
     assert len(docs) == 2
+
+
+def test_relation_query_adds_relation_words():
+    client = FakeClient({("2025-01-01", "2026-10-14"): 150})
+    docs = relation_hilights(client, "하나머티리얼즈", "하나마이크론", start=date(2025, 1, 1), end=date(2026, 10, 14),
+                             today=TODAY)
+    argument = client.calls[0][1]
+    assert argument["query"] == "하나머티리얼즈 AND 하나마이크론 AND (" + " OR ".join(RELATION_TERMS) + ")"
+    assert {"공급", "협력", "경쟁", "지분", "인수"} <= set(RELATION_TERMS)
+    assert (argument["return_size"], argument["hilight"], argument["sort"]) == (100, 200, {"date": "desc"})
+    assert len(docs) == 100

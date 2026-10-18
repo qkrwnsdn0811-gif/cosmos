@@ -10,11 +10,12 @@ import sys
 import time
 from collections import Counter
 from datetime import date, datetime, timedelta, timezone
+from itertools import combinations
 from pathlib import Path
 from urllib.parse import urlparse
 
 from .bigkinds.client import BigKindsClient
-from .bigkinds.search import pair_hilights, search_documents
+from .bigkinds.search import pair_hilights, relation_hilights, search_documents
 from .config import REPO_ROOT, load_settings
 from .entities.master import ALIAS_COLUMNS, alias_rows, build_master
 from .entities.recognize import Recognizer
@@ -70,6 +71,26 @@ def search_terms(articles: list[Article], recognizer: Recognizer, companies: dic
     return {key: (seen[key].most_common(1)[0][0] if key in seen else c.name) for key, c in companies.items()}
 
 
+def candidate_pairs(articles: list[Article], recognizer: Recognizer, companies: dict[str, Company]) -> list[tuple[str, str]]:
+    """Company pairs mentioned together in at least one article, most frequent first (keys sorted in each pair)."""
+    counts: Counter = Counter()
+    for article in articles:
+        keys = sorted({m.key for m in recognizer.recognize(article) if m.key in companies})
+        counts.update(combinations(keys, 2))
+    return [pair for pair, _ in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))]
+
+
+def _unique_snippets(snippets: list[EvidenceSnippet]) -> list[EvidenceSnippet]:
+    """The plain and the relation-word search can return the same article fragment; count it once."""
+    seen, unique = set(), []
+    for s in snippets:
+        key = (s.news_id, s.src, s.dst, s.rel, s.snippet)
+        if key not in seen:
+            seen.add(key)
+            unique.append(s)
+    return unique
+
+
 def build_graph(articles: list[Article], recognizer: Recognizer, companies: dict[str, Company],
                 client: BigKindsClient, *, start: date, end: date, today: date, cosmos_csv: Path,
                 top_pairs: int = 300) -> tuple[BaseGraph, list[Edge], list[EvidenceSnippet]]:
@@ -82,6 +103,16 @@ def build_graph(articles: list[Article], recognizer: Recognizer, companies: dict
         snippets.extend(extract_evidence(docs, a, b, recognizer.aliases_of))
         if i % 50 == 0:
             print(f"  pair hilights {i}/{min(top_pairs, len(stats))}, snippets {len(snippets)}", flush=True)
+    # Every pair that shares an article also gets a relation-word search (2026-10-18: evidence relations were
+    # only 15 with the plain search over the top 300 sentence pairs).
+    pairs = candidate_pairs(articles, recognizer, companies)
+    for i, (key_a, key_b) in enumerate(pairs, 1):
+        a, b = companies[key_a], companies[key_b]
+        docs = relation_hilights(client, terms[a.key], terms[b.key], start=start, end=end, today=today)
+        snippets.extend(extract_evidence(docs, a, b, recognizer.aliases_of))
+        if i % 100 == 0:
+            print(f"  relation hilights {i}/{len(pairs)}, snippets {len(snippets)}", flush=True)
+    snippets = _unique_snippets(snippets)
     edges = news_edges(snippets) + comention_edges(stats) + load_cosmos_edges(cosmos_csv, set(companies))
     return BaseGraph(edges), edges, snippets
 

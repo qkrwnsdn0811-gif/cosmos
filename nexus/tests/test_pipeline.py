@@ -100,7 +100,8 @@ def test_build_graph_searches_by_most_frequent_org_alias(tmp_path):
     client = Client()
     build_graph(articles, recognizer, {c.key: c for c in (hynix, micron)}, client, start=date(2026, 10, 1),
                 end=date(2026, 10, 14), today=date(2026, 10, 14), cosmos_csv=cosmos_csv)
-    assert client.queries == ["SK하이닉스 AND 마이크론"]
+    assert client.queries[0] == "SK하이닉스 AND 마이크론"
+    assert client.queries[1].startswith("SK하이닉스 AND 마이크론 AND (") and len(client.queries) == 2
 
 
 def test_impact_dataset_builds_vocab_from_training_events(synthetic_docs, tmp_path):
@@ -148,3 +149,38 @@ def test_publish_graph_needs_an_analyzed_chain(tmp_path, monkeypatch):
     with pytest.raises(SystemExit) as exc:
         main(["publish-graph", "--database-url", "postgresql://unused"])
     assert "analyze" in str(exc.value.code)
+
+
+def test_build_graph_searches_relation_words_for_pairs_outside_sentence_comentions(tmp_path):
+    from datetime import datetime, timedelta, timezone
+
+    from nexus.models import Article
+    from nexus.pipeline import build_graph
+
+    a = Company("KOSDAQ:166090", "KOSDAQ", "166090", "하나머티리얼즈", "SEMICONDUCTOR", "소재")
+    b = Company("KOSDAQ:067310", "KOSDAQ", "067310", "하나마이크론", "SEMICONDUCTOR", "후공정")
+    recognizer = Recognizer([a, b], alias_rows([a, b], [], []))
+    kst = timezone(timedelta(hours=9))
+    # both companies in one article but in different segments: no sentence co-mention, still a candidate pair
+    article = Article("n1", "t", "", date(2026, 10, 13), datetime(2026, 10, 13, 10, tzinfo=kst), "p", "", (), (), "",
+                      ("하나머티리얼즈", "하나마이크론"), ((("하나머티리얼즈", "OG"),), (("하나마이크론", "OG"),)), ())
+    hit = {"news_id": "x1", "title": "제목", "dateline": "2026-07-01T10:00:00.000+09:00", "provider": "p",
+           "provider_link_page": "", "hilight": "하나마이크론, 종속회사 하나머티리얼즈 1000억 교환사채"}
+
+    class Client:
+        queries = []
+
+        def post(self, path, argument, *, cache):
+            self.queries.append(argument["query"])
+            return {"documents": [hit, hit]}          # the same article twice must not double the evidence
+
+    cosmos_csv = tmp_path / "rel.csv"
+    cosmos_csv.write_text("source_market,source_stock_code,target_market,target_stock_code,relationship_type_code\n",
+                          encoding="utf-8")
+    client = Client()
+    _, edges, snippets = build_graph([article], recognizer, {c.key: c for c in (a, b)}, client,
+                                     start=date(2025, 1, 1), end=date(2026, 10, 14), today=date(2026, 10, 14),
+                                     cosmos_csv=cosmos_csv)
+    assert len(client.queries) == 1 and " AND (" in client.queries[0]
+    assert len(snippets) == 1 and snippets[0].rel == "INVEST"
+    assert [(e.src, e.dst, e.rel, e.source) for e in edges if e.source == "NEWS"] == [(b.key, a.key, "INVEST", "NEWS")]

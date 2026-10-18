@@ -18,6 +18,11 @@ DOC_FIELDS = [
     "tms_ne_organization", "tms_ne_person", "tms_ne_location", "tms_ne_stream",
 ]
 PAIR_FIELDS = ["title", "hilight", "dateline", "provider", "provider_link_page"]
+# Relation words for pair searches: BigKinds then cuts the hilight around them, so the fragments that come back
+# are the sentences that state a supply/partner/compete/ownership link (2026-10-18; OR + parentheses verified).
+RELATION_TERMS = ("공급", "납품", "수주", "위탁생산", "협력", "제휴", "협약", "MOU", "합작", "공동개발",
+                  "경쟁", "추격", "지분", "자회사", "종속회사", "인수")
+RELATION_HITS = 100
 
 
 def _argument(start: date, end: date, *, query: str, category: list[str] | None,
@@ -72,10 +77,20 @@ def fetch_details(client, news_ids: list[str], *, batch: int = 100) -> list[dict
     return docs
 
 
-def pair_hilights(client, a_name: str, b_name: str, *, start: date, end: date, size: int = 20,
-                  today: date) -> list[dict]:
-    argument = _argument(start, end, query=f"{a_name} AND {b_name}", category=None,
-                         return_from=0, return_size=size, fields=PAIR_FIELDS)
+def _hilight_search(client, query: str, *, start: date, end: date, size: int, today: date) -> list[dict]:
+    argument = _argument(start, end, query=query, category=None, return_from=0, return_size=size, fields=PAIR_FIELDS)
     argument["sort"] = {"date": "desc"}
     argument["hilight"] = 200
     return client.post(PATH, argument, cache=end <= today).get("documents", [])
+
+
+def pair_hilights(client, a_name: str, b_name: str, *, start: date, end: date, size: int = 20,
+                  today: date) -> list[dict]:
+    return _hilight_search(client, f"{a_name} AND {b_name}", start=start, end=end, size=size, today=today)
+
+
+def relation_hilights(client, a_name: str, b_name: str, *, start: date, end: date, size: int = RELATION_HITS,
+                      today: date) -> list[dict]:
+    """Newest pair articles that also contain a relation word, with hilights cut around those words."""
+    query = f"{a_name} AND {b_name} AND (" + " OR ".join(RELATION_TERMS) + ")"
+    return _hilight_search(client, query, start=start, end=end, size=size, today=today)

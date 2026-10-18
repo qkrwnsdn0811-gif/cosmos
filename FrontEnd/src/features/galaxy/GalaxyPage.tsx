@@ -8,6 +8,7 @@ import { companyGraphQuery, useCompanyGraph, useIndustries, useLatestGraph, useS
 import { useGalaxy, type GalaxyScope } from "@/store/galaxy";
 import { useSession } from "@/store/session";
 import { useUi } from "@/store/ui";
+import { shownCount } from "@/three/isolated";
 import { useSceneReady } from "@/three/sceneReady";
 import { Icon } from "@/components/ui";
 import CameraPresets from "./CameraPresets";
@@ -76,6 +77,8 @@ export default function GalaxyPage() {
   const selectEdge = useGalaxy((s) => s.selectEdge);
   const setSearchOpen = useGalaxy((s) => s.setSearchOpen);
   const panelOpen = useGalaxy((s) => s.panelOpen);
+  const minScore = useGalaxy((s) => s.minScore);
+  const activeTypes = useGalaxy((s) => s.activeTypes);
   const setPanelOpen = useGalaxy((s) => s.setPanelOpen);
   // 관계선(간선) 계산 기준 기간 — ControlDock 의 주가 고도 옆 버튼이 고른다. 메인 은하·기업 중심 뷰가 요청하는
   // 그래프에 그대로 실려 백엔드가 이 기간 기준으로 다시 계산한 edges 를 돌려준다
@@ -105,6 +108,11 @@ export default function GalaxyPage() {
   const mine = useMemo(() => (mineScope && universe.data ? layoutMyGalaxy(universe.data, watchIds, true, capT) : null), [mineScope, universe.data, watchIds, capT]);
   // 별이 하나도 없으면 씬에 null 을 준다 — 빈 원반을 그리는 대신 빈 상태 카드가 화면을 설명한다
   const galaxyModel = mineScope ? (mine && mine.model.nodes.length ? mine.model : null) : fullModel;
+  // 산업 선택 버튼의 숫자 — 선 없는 행성은 은하에 뜨지 않으므로(emphasis.hideIsolated) 실제로 뜬 기업만 센다
+  const shown = useMemo(
+    () => (galaxyModel ? shownCount(galaxyModel, minScore, activeTypes as ReadonlySet<string>) : undefined),
+    [galaxyModel, minScore, activeTypes],
+  );
   const lookup = useMemo<CompanyLookup>(() => {
     const nodes = universe.data?.nodes ?? [];
     const m = new Map(nodes.map((n) => [n.companyId, { name: n.name, industryName: n.industryName, market: n.market, stockCode: n.stockCode, capT: capT(n.marketCapKrw) }]));
@@ -344,6 +352,7 @@ export default function GalaxyPage() {
       industries={industries.data?.items ?? []}
       loading={industries.isLoading}
       total={universe.data?.nodes.length}
+      shown={shown}
       value={industryId}
       onChange={(id) => {
         setIndustry(id);

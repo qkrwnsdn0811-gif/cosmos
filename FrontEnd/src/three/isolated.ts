@@ -23,3 +23,19 @@ export function isolatedNodes(model: Shape, visible: Set<string>, keep: readonly
   for (const n of model.nodes) if (!linked.has(n.id) && !kept.has(n.id)) out.add(n.id);
   return out;
 }
+
+/** 관계 종류·최소 점수 필터를 통과해 지금 그려지는 간선 */
+export function visibleEdgeIds(edges: readonly { id: string; type: string; score: number }[], minScore: number, activeTypes: ReadonlySet<string>): Set<string> {
+  const out = new Set<string>();
+  for (const e of edges) if (e.score >= minScore && activeTypes.has(e.type)) out.add(e.id);
+  return out;
+}
+
+/** 은하에 실제로 뜨는 기업 수 — 산업 선택 버튼의 숫자. 선 없는 행성(isolatedNodes)을 뺀다 */
+export function shownCount(
+  model: Shape & { edges: readonly { id: string; source: string; target: string; type: string; score: number }[] },
+  minScore: number,
+  activeTypes: ReadonlySet<string>,
+): number {
+  return model.nodes.length - isolatedNodes(model, visibleEdgeIds(model.edges, minScore, activeTypes)).size;
+}

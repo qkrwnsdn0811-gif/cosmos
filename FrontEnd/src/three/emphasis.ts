@@ -2,7 +2,7 @@ import { COMENTION_DIM, isComention } from "@/lib/edgePick";
 import type { SceneModel } from "@/lib/graph";
 import type { PathResult } from "@/lib/path";
 import { roleOf, type RoleKey } from "@/lib/roles";
-import { isolatedNodes } from "./isolated";
+import { isolatedNodes, visibleEdgeIds } from "./isolated";
 
 export interface Emphasis {
   node: Map<string, number>;
@@ -78,11 +78,7 @@ function budgetSet(model: SceneModel, visible: Set<string>, on: boolean) {
 
 /** 관계 종류·최소 점수 필터를 통과한 간선 */
 function visibleEdges(model: SceneModel, input: EmphasisInput): Set<string> {
-  const visible = new Set<string>();
-  model.edges.forEach((e) => {
-    if (e.score >= input.minScore && input.activeTypes.has(String(e.type))) visible.add(e.id);
-  });
-  return visible;
+  return visibleEdgeIds(model.edges, input.minScore, input.activeTypes);
 }
 
 /**

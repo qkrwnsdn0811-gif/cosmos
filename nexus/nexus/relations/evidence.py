@@ -13,6 +13,10 @@ TAG_RE = re.compile(r"</?b>")
 GAP_RE = re.compile(r"\.{2,}")          # BigKinds joins hilight pieces with ".."
 SENTENCE_RE = re.compile(r"(?<=다\.)\s*")
 MAX_SNIPPET = 300
+# PARTNER hits from these COSMOS patterns were mostly companies listed as partners of a third party (a university,
+# a region, an expo) or names that merely stand near "협력" — about 16 of 58 were real in a manual check of every
+# relation (2026-10-18). Only clause-level statements ("A는 B와 협력해 …") are kept for PARTNER.
+LOOSE_PARTNER_PATTERNS = {"enum+kw", "near+kw"}
 
 
 def hilight_fragments(hilight: str) -> list[str]:
@@ -64,6 +68,8 @@ def extract_evidence(docs: list[dict], a: Company, b: Company,
             if not hit:
                 continue
             src_alias, dst_alias, rel, confidence, pattern = hit
+            if rel == "PARTNER" and pattern in LOOSE_PARTNER_PATTERNS:
+                continue
             snippets.append(EvidenceSnippet(
                 news_id=doc["news_id"], src=key_of[src_alias], dst=key_of[dst_alias], rel=rel,
                 snippet=fragment[:MAX_SNIPPET], pattern=pattern, confidence=confidence,

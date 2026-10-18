@@ -86,3 +86,26 @@ def test_alias_followed_by_a_particle_still_counts():
     [snippet] = extract_evidence([pair_doc("<b>테스</b>는 <b>디아이</b>와 검사장비 시장에서 경쟁하고 있다.")],
                                  TES, DI, tes_aliases)
     assert snippet.rel == "COMPETE"
+
+
+SAMSUNG = Company("KOSPI:005930", "KOSPI", "005930", "삼성전자", "SEMICONDUCTOR", "제조")
+HANA = Company("KOSDAQ:067310", "KOSDAQ", "067310", "하나마이크론", "SEMICONDUCTOR", "후공정")
+SEMCO = Company("KOSPI:009150", "KOSPI", "009150", "삼성전기", "SEMICONDUCTOR", "부품")
+SOUL = Company("KOSDAQ:357780", "KOSDAQ", "357780", "솔브레인", "SEMICONDUCTOR", "소재")
+
+
+def names(*companies):
+    by_key = {c.key: [c.name] for c in companies}
+    return lambda key: by_key[key]
+
+
+def test_companies_listed_as_partners_of_a_third_party_are_not_partners():
+    # 대학이 두 회사와 각각 협력한다는 문장 — 두 회사끼리의 협력이 아니다 (2026-10-18 정확도 점검)
+    doc = pair_doc("특히 삼성전자, 하나마이크론, SFA반도체 등 충청권 주요 기업들과 협력해 현장 수요를 반영한 교육과정을 설계했다.")
+    assert extract_evidence([doc], SAMSUNG, HANA, names(SAMSUNG, HANA)) == []
+
+
+def test_a_sentence_stating_the_partnership_directly_still_counts():
+    doc = pair_doc("이를 위해 삼성전기는 국내 재료 회사인 솔브레인과 협력해 유리기판 제조에 필요한 식각액 연구에도 착수했다.")
+    [snippet] = extract_evidence([doc], SEMCO, SOUL, names(SEMCO, SOUL))
+    assert snippet.rel == "PARTNER" and snippet.pattern not in ("enum+kw", "near+kw")

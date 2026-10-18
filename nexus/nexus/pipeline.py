@@ -315,6 +315,11 @@ def cmd_load(args) -> int:
         edges, snippets = pickle.load(f)
     with (p["analyzed"] / "prices.pkl").open("rb") as f:
         bars = pickle.load(f)
+    from .impact.sentiment import read_sentiment, sentiment_labels
+    sentiment = sentiment_labels(read_sentiment(p["analyzed"] / "sentiment.parquet"))
+    scored = sum(b.article.news_id in sentiment for b in bundles)
+    print(f"article sentiment: {scored:,} of {len(bundles):,} events scored "
+          "(unscored articles show as neutral; run `sentiment`, then `load` again)", flush=True)
     with psycopg.connect(args.database_url) as conn:
         ensure_relationship_types(conn)
         conn.commit()
@@ -322,7 +327,7 @@ def cmd_load(args) -> int:
         print(f"relations written: {load_relations(conn, edges, snippets, ids)}", flush=True)
         conn.commit()
         for i in range(0, len(bundles), args.batch):
-            load_events(conn, bundles[i:i + args.batch], ids)
+            load_events(conn, bundles[i:i + args.batch], ids, sentiment)
             conn.commit()
             print(f"events {min(i + args.batch, len(bundles)):,}/{len(bundles):,}", flush=True)
         pruned = prune_events(conn, CHAINS[args.chain]["value_chain"], {b.article.news_id for b in bundles})

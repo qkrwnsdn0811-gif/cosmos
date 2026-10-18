@@ -86,10 +86,11 @@ SQL_ARTICLE = (
     "VALUES (%s, %s, %s, %s, %s) ON CONFLICT (document_id) DO UPDATE SET publisher = EXCLUDED.publisher, "
     "author = EXCLUDED.author")
 SQL_COMPANY_DOCUMENT = (
-    "INSERT INTO company_document (document_id, company_id, mention_type, relevance_score, "
-    "model_version, is_service_visible) VALUES (%s, %s, 'REPORTED', %s, %s, TRUE) "
+    "INSERT INTO company_document (document_id, company_id, mention_type, relevance_score, sentiment, "
+    "model_version, is_service_visible) VALUES (%s, %s, 'REPORTED', %s, %s, %s, TRUE) "
     "ON CONFLICT (document_id, company_id) DO UPDATE SET mention_type = EXCLUDED.mention_type, "
-    "relevance_score = EXCLUDED.relevance_score, model_version = EXCLUDED.model_version, "
+    "relevance_score = EXCLUDED.relevance_score, sentiment = EXCLUDED.sentiment, "
+    "model_version = EXCLUDED.model_version, "
     "is_service_visible = TRUE, analyzed_at = CURRENT_TIMESTAMP")
 SQL_EVENT = (
     "INSERT INTO news_event (event_id, document_id, bigkinds_news_id, value_chain, categories, incidents, "
@@ -113,8 +114,11 @@ def _clear_sentence_evidence(executor, document_ids: list[UUID]) -> None:
                      "(SELECT evidence_id FROM document_evidence WHERE document_id = ANY(%s))", (document_ids,))
 
 
-def load_events(conn, bundles: list[EventBundle], company_ids: dict[str, UUID]) -> int:
-    """Upsert documents and events; replace each event's impacts and returns (re-runs stay idempotent)."""
+def load_events(conn, bundles: list[EventBundle], company_ids: dict[str, UUID],
+                sentiment: dict[str, str] | None = None) -> int:
+    """Upsert documents and events; replace each event's impacts and returns (re-runs stay idempotent).
+    `sentiment` (news_id → POSITIVE/NEUTRAL/NEGATIVE) fills the news feed's tone; unscored articles stay NULL."""
+    sentiment = sentiment or {}
     documents, articles, company_docs, events, impacts, returns = [], [], [], [], [], []
     with conn.transaction():
         source = _source_id(conn)
@@ -125,7 +129,8 @@ def load_events(conn, bundles: list[EventBundle], company_ids: dict[str, UUID]) 
             documents.append((doc, source, a.title, a.content, a.link, a.dateline, PIPELINE_VERSION))
             articles.append((doc, a.provider, canonical, hashlib.sha256(canonical.encode("utf-8")).hexdigest(),
                              a.byline or None))
-            company_docs += [(doc, company_ids[m.key], round(m.salience, 6), PIPELINE_VERSION)
+            company_docs += [(doc, company_ids[m.key], round(m.salience, 6), sentiment.get(a.news_id),
+                              PIPELINE_VERSION)
                              for m in b.mentions if m.key in company_ids]
             events.append((evt, doc, a.news_id, b.value_chain, list(a.categories), list(a.incidents), a.dateline,
                            b.trading_date, PIPELINE_VERSION))

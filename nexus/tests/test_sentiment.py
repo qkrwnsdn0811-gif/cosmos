@@ -3,7 +3,7 @@ from dataclasses import replace
 import pandas as pd
 import pytest
 
-from nexus.impact.sentiment import article_text, read_sentiment, score_articles, to_neg_neu_pos
+from nexus.impact.sentiment import article_text, read_sentiment, score_articles, sentiment_labels, to_neg_neu_pos
 from nexus.ingest.normalize import to_article
 
 
@@ -71,3 +71,13 @@ def test_partial_save_lets_a_rerun_resume(articles, tmp_path):
     score_articles(articles, rest, out, batch_size=2)
     assert rest.batches == [1]
     assert list(read_sentiment(out).columns) == ["p_neg", "p_neu", "p_pos"]
+
+
+def test_sentiment_labels_take_the_most_likely_class():
+    frame = pd.DataFrame({"p_neg": [0.7, 0.1, 0.2], "p_neu": [0.2, 0.3, 0.5], "p_pos": [0.1, 0.6, 0.3]},
+                         index=pd.Index(["N1", "N2", "N3"], name="news_id"))
+    assert sentiment_labels(frame) == {"N1": "NEGATIVE", "N2": "POSITIVE", "N3": "NEUTRAL"}
+
+
+def test_sentiment_labels_of_nothing():
+    assert sentiment_labels(pd.DataFrame(columns=["p_neg", "p_neu", "p_pos"])) == {}

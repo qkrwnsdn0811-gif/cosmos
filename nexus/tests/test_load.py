@@ -50,6 +50,17 @@ def test_load_events_writes_chain(pg, synthetic_docs):
     assert count(pg, "SELECT count(*) FROM event_abnormal_return") == 2
 
 
+def test_load_events_writes_article_sentiment(pg, synthetic_docs):
+    ids = ensure_companies(pg, [A, B, C])
+    doc = document_id("SYN.20261013100000001")
+    load_events(pg, [bundle(synthetic_docs)], ids, sentiment={"SYN.20261013100000001": "NEGATIVE"})
+    rows = pg.execute("SELECT sentiment FROM company_document WHERE document_id = %s", (doc,)).fetchall()
+    assert rows == [("NEGATIVE",), ("NEGATIVE",)]
+    load_events(pg, [bundle(synthetic_docs)], ids)                      # not scored yet: shown as before (NULL)
+    rows = pg.execute("SELECT sentiment FROM company_document WHERE document_id = %s", (doc,)).fetchall()
+    assert rows == [(None,), (None,)]
+
+
 def test_reload_is_idempotent(pg, synthetic_docs):
     ids = ensure_companies(pg, [A, B, C])
     load_events(pg, [bundle(synthetic_docs)], ids)

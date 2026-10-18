@@ -107,3 +107,12 @@ def read_sentiment(path: Path, revision: str = MODEL_REVISION) -> pd.DataFrame:
     frame = _read(path)
     frame = frame[frame["model_revision"] == revision]
     return frame.set_index("news_id")[PROB_COLUMNS]
+
+
+def sentiment_labels(frame: pd.DataFrame) -> dict[str, str]:
+    """news_id → the article's most likely tone, in the labels the COSMOS news feed reads (company_document.sentiment).
+    It is the tone of the whole article, so every company in one article gets the same label."""
+    if frame.empty:
+        return {}
+    names = dict(zip(PROB_COLUMNS, ("NEGATIVE", "NEUTRAL", "POSITIVE")))
+    return frame[PROB_COLUMNS].idxmax(axis=1).map(names).to_dict()

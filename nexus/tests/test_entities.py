@@ -69,3 +69,16 @@ def test_orgs_only_exact_alias():
 def test_empty_entities_still_match_title():
     mentions = recognizer().recognize(article(title="한미반도체, 장비 수주", content="한미반도체가 수주했다"))
     assert [(m.key, m.salience, m.sources) for m in mentions] == [("KOSPI:042700", 1.0, ("content", "title"))]
+
+
+def test_build_master_keeps_only_requested_markets():
+    seed = [{"name": "삼성전자", "market_hint": "KOSPI", "role": "제조"},
+            {"name": "하나마이크론", "market_hint": "KOSDAQ", "role": "후공정"},
+            {"name": "Nvidia", "market_hint": "NASDAQ", "role": "설계"}]
+    listing = pd.DataFrame([{"Name": "삼성전자", "Market": "KOSPI", "Code": "005930"},
+                            {"Name": "하나마이크론", "Market": "KOSDAQ GLOBAL", "Code": "067310"}])
+    cosmos = [{"name_official": "Nvidia", "market": "NASDAQ", "ticker": "NVDA"}]
+    companies, unresolved = build_master(seed, listing, cosmos, "SEMICONDUCTOR", markets=("KOSPI", "KOSDAQ"))
+    assert [c.key for c in companies] == ["KOSPI:005930", "KOSDAQ:067310"]
+    assert unresolved == []
+    assert len(build_master(seed, listing, cosmos, "SEMICONDUCTOR")[0]) == 3      # markets 없으면 기존 동작

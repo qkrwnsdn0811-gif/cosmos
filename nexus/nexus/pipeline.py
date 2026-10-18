@@ -32,7 +32,8 @@ from .relations.graph import BaseGraph, comention_edges, load_cosmos_edges, news
 
 KST = timezone(timedelta(hours=9))
 CHAINS = {
-    "semis": {"value_chain": "SEMICONDUCTOR", "category": ["경제>반도체"],
+    "semis": {"value_chain": "SEMICONDUCTOR", "label": "반도체", "category": ["경제>반도체"],
+              "markets": ("KOSPI", "KOSDAQ"),            # domestic listings only (2026-10-18)
               "seed": Path(__file__).parent / "entities" / "data" / "semis_seed.csv"},
 }
 COSMOS_COMPANIES = REPO_ROOT / "AI" / "ner" / "data" / "companies.csv"
@@ -148,7 +149,8 @@ def cmd_build_master(args) -> int:
     import FinanceDataReader as fdr
     cfg, p = CHAINS[args.chain], _paths(args.chain)
     seed = _read_csv(cfg["seed"])
-    companies, unresolved = build_master(seed, fdr.StockListing("KRX"), _read_csv(COSMOS_COMPANIES), cfg["value_chain"])
+    companies, unresolved = build_master(seed, fdr.StockListing("KRX"), _read_csv(COSMOS_COMPANIES), cfg["value_chain"],
+                                         markets=cfg["markets"])
     _write_csv(p["companies_csv"], [c.__dict__ for c in companies],
                ["key", "market", "ticker", "name", "value_chain", "role"])
     _write_csv(p["aliases_csv"], alias_rows(companies, seed, _read_csv(COSMOS_ALIASES)), ALIAS_COLUMNS)

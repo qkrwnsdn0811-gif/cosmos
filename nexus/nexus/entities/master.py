@@ -18,14 +18,19 @@ def _krx_market(raw: str) -> str | None:
 
 
 def build_master(seed_rows: list[dict], listing: pd.DataFrame, cosmos_companies: list[dict],
-                 value_chain: str) -> tuple[list[Company], list[str]]:
-    """Exact-name resolution: KRX names against `listing`, NASDAQ names against COSMOS companies.csv."""
+                 value_chain: str, markets: tuple[str, ...] | None = None) -> tuple[list[Company], list[str]]:
+    """Exact-name resolution: KRX names against `listing`, NASDAQ names against COSMOS companies.csv.
+    With `markets`, seeds hinted outside them are skipped (not reported as unresolved) and resolved
+    companies outside them are dropped — the service is limited to domestic listings."""
     krx = {row["Name"]: row for row in listing.to_dict("records")}
     nasdaq = {c["name_official"]: c for c in cosmos_companies if c.get("market") == "NASDAQ"}
     companies, unresolved = [], []
     for seed in seed_rows:
         name = seed["name"].strip()
-        if seed.get("market_hint") == "NASDAQ":
+        hint = seed.get("market_hint")
+        if markets is not None and hint in ("KOSPI", "KOSDAQ", "NASDAQ") and hint not in markets:
+            continue
+        if hint == "NASDAQ":
             hit = nasdaq.get(name)
             market, ticker = ("NASDAQ", hit["ticker"]) if hit else (None, None)
         else:
@@ -33,6 +38,8 @@ def build_master(seed_rows: list[dict], listing: pd.DataFrame, cosmos_companies:
             market, ticker = (_krx_market(hit["Market"]), str(hit["Code"]).zfill(6)) if hit else (None, None)
         if not market:
             unresolved.append(name)
+            continue
+        if markets is not None and market not in markets:
             continue
         companies.append(Company(f"{market}:{ticker}", market, ticker, name, value_chain, seed["role"]))
     return companies, unresolved

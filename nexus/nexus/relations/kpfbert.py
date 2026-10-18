@@ -10,7 +10,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Callable
 
-from ..device import pick_device
+from ..device import padding_for, pick_device
 from ..models import EvidenceSnippet
 from .evidence import LOOSE_PARTNER_PATTERNS
 from .fragments import Fragment
@@ -43,11 +43,11 @@ def model_snippets(fragments: list[Fragment], predictions: list[tuple[str, float
 def _predict(model, tokenizer, texts: list[str], labels: tuple[str, ...]) -> list[tuple[str, float]]:
     import torch
     device = next(model.parameters()).device
+    pad = padding_for(device.type, MAX_LENGTH)
     out = []
     with torch.no_grad():
         for i in range(0, len(texts), PREDICT_BATCH):
-            enc = tokenizer(texts[i:i + PREDICT_BATCH], truncation=True, max_length=MAX_LENGTH, padding=True,
-                            return_tensors="pt").to(device)
+            enc = tokenizer(texts[i:i + PREDICT_BATCH], return_tensors="pt", **pad).to(device)
             best, idx = torch.softmax(model(**enc).logits, dim=-1).max(dim=-1)
             out += [(labels[j], float(p)) for j, p in zip(idx.tolist(), best.tolist())]
     return out
@@ -121,8 +121,7 @@ def train_relation_model(train: list[tuple[Fragment, str]], valid: list[tuple[Fr
         total = 0.0
         for start in range(0, len(order), batch):
             chunk = [examples[i] for i in order[start:start + batch]]
-            enc = tokenizer([t for t, _ in chunk], truncation=True, max_length=MAX_LENGTH, padding=True,
-                            return_tensors="pt").to(device)
+            enc = tokenizer([t for t, _ in chunk], return_tensors="pt", **padding_for(device, MAX_LENGTH)).to(device)
             loss = loss_fn(model(**enc).logits, torch.tensor([index[l] for _, l in chunk], device=device))
             optimizer.zero_grad()
             loss.backward()

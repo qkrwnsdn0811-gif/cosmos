@@ -42,8 +42,9 @@ def load_finbert(threads: int = 8, device: str | None = None) -> Scorer:
     import torch
     from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
-    from ..device import pick_device
+    from ..device import padding_for, pick_device
     device = device or pick_device(torch)
+    pad = padding_for(device, MAX_LENGTH)
 
     torch.set_num_threads(threads)
     tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, revision=MODEL_REVISION, trust_remote_code=False)
@@ -53,7 +54,7 @@ def load_finbert(threads: int = 8, device: str | None = None) -> Scorer:
 
     def score(texts: list[str]) -> list[tuple[float, float, float]]:
         with torch.no_grad():
-            enc = tokenizer(texts, truncation=True, max_length=MAX_LENGTH, padding=True, return_tensors="pt").to(device)
+            enc = tokenizer(texts, return_tensors="pt", **pad).to(device)
             probs = torch.softmax(model(**enc).logits, dim=-1).tolist()
         return [to_neg_neu_pos(row, id2label) for row in probs]
 

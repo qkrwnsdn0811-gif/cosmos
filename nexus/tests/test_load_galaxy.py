@@ -93,6 +93,10 @@ def test_reloading_events_after_publish_does_not_fail(pg, synthetic_docs):
                                  [Impact(A.key, "REPORTED", 0, (), 1.0, "OK", None)], [], None)], ids)
     assert q(pg, """SELECT count(*) FROM relationship_evidence re JOIN document_evidence de USING (evidence_id)
                     WHERE de.document_id = %s""", document_id(LOADED)) == [(0,)]      # 적재가 지운 문장의 근거는 정리됨
+    short = q(pg, """SELECT rsc.relationship_id FROM relationship_score_current rsc
+                     WHERE rsc.evidence_count > (SELECT count(*) FROM relationship_evidence re
+                                                 WHERE re.relationship_id = rsc.relationship_id)""")
+    assert short == []      # 문장만 빠지고 기사는 남아야 은하 툴팁이 근거를 기다리며 멈추지 않는다
 
 
 def test_stale_comention_relationships_are_removed(pg, synthetic_docs):

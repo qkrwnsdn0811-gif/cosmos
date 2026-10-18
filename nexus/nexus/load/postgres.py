@@ -107,8 +107,9 @@ SQL_RETURN = (
 
 def _clear_sentence_evidence(executor, document_ids: list[UUID]) -> None:
     """Galaxy evidence (publish-graph) may point at sentences under these company-document rows; the FK from
-    relationship_evidence has no ON DELETE, so drop those links first. The next publish-graph refills them."""
-    executor.execute("DELETE FROM relationship_evidence WHERE evidence_id IN "
+    relationship_evidence has no ON DELETE, so detach the sentence first. The article link stays, so the galaxy's
+    evidence_count still matches what its evidence API serves; the next publish-graph restores the sentence."""
+    executor.execute("UPDATE relationship_evidence SET evidence_id = NULL WHERE evidence_id IN "
                      "(SELECT evidence_id FROM document_evidence WHERE document_id = ANY(%s))", (document_ids,))
 
 

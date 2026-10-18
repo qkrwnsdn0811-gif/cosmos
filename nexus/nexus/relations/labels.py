@@ -9,6 +9,7 @@ from __future__ import annotations
 import csv
 import json
 import random
+import re
 from pathlib import Path
 
 from .evidence import standalone_index
@@ -21,6 +22,11 @@ TAU_PRECISION = 0.85
 TAU_FALLBACK = 0.95
 SPLIT = (0.70, 0.15)        # train, valid; the rest is test
 EPS = 1e-9
+# The same press release reaches many outlets with small edits; such copies are one example, not many. Two sentences
+# are near-duplicates when half of the shorter one's character 3-grams also appear in the other (2026-10-19: one
+# release repeated 8 times made 8 of the first model's 20 test errors; its rewrites overlap 0.55–0.82, unrelated
+# sentences about 0.07).
+NEAR_DUPLICATE = 0.5
 
 
 def marked_text(f: Fragment, swap: bool = False) -> str:
@@ -110,3 +116,39 @@ def choose_threshold(predictions: list[tuple[str, float]], gold: list[str]) -> f
         if accepted and sum(label == g for label, g in accepted) / len(accepted) >= TAU_PRECISION - EPS:
             return tau
     return TAU_FALLBACK
+
+
+def _shingles(text: str, n: int = 3) -> set[str]:
+    t = re.sub(r"[^0-9A-Za-z가-힣]", "", text)
+    return {t[i:i + n] for i in range(max(1, len(t) - n + 1))}
+
+
+def near_duplicate_groups(texts: list[str], threshold: float = NEAR_DUPLICATE) -> list[int]:
+    """Group id per text; a text joins the first group with a member it overlaps by ≥ threshold (shorter side)."""
+    members: list[list[set[str]]] = []
+    groups = []
+    for text in texts:
+        s = _shingles(text)
+        for gid, group in enumerate(members):
+            if any(len(s & m) / min(len(s), len(m)) >= threshold - EPS for m in group):
+                group.append(s)
+                groups.append(gid)
+                break
+        else:
+            members.append([s])
+            groups.append(len(members) - 1)
+    return groups
+
+
+def dedupe_near_duplicates(ids_by_pair: dict[tuple[str, str], list[str]],
+                           texts: dict[str, str]) -> dict[tuple[str, str], list[str]]:
+    """Keep the first sentence of each near-duplicate group within every company pair."""
+    out = {}
+    for pair, ids in ids_by_pair.items():
+        seen, kept = set(), []
+        for fid, gid in zip(ids, near_duplicate_groups([texts[i] for i in ids])):
+            if gid not in seen:
+                seen.add(gid)
+                kept.append(fid)
+        out[pair] = kept
+    return out

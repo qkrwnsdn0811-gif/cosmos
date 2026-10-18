@@ -58,3 +58,23 @@ def test_choose_threshold():
     gold = ["NONE"] * 10 + ["PARTNER"] * 10 + ["NONE"] * 5
     assert choose_threshold(preds, gold) == 0.6                       # 0.55짜리 오답이 빠지는 첫 값
     assert choose_threshold([("NONE", 0.9)] * 5, ["PARTNER"] * 5) == 0.95   # 관계 판별이 하나도 없음
+
+
+def test_near_duplicate_press_release_sentences_share_a_group():
+    from nexus.relations.labels import near_duplicate_groups
+    texts = ["삼성전자는 지난 6일부터 대덕전자, 새솔다이아몬드공업, 티엘비, 피에스케이 등 협력사 사업장을 순차 방문하며",
+             "삼성전자는 이달 6일부터 대덕전자와 새솔다이아몬드공업, 티엘비, 피에스케이 등 협력사 사업장을 순차 방문해 임직원을 대상으로",
+             "먼저 삼성전자는 10월과 11월 두 달간 대덕전자, 새솔다이아몬드공업, 티엘비, 피에스케이 등 주요 협력사 67개사의 근무 현장을 찾아",
+             "케이씨텍은 화학적기계연마(CMP) 장비를 삼성전자에 공급하고 있다"]
+    groups = near_duplicate_groups(texts)
+    assert groups[0] == groups[1] == groups[2] != groups[3]
+
+
+def test_dedupe_keeps_one_sentence_per_group_within_a_pair():
+    from nexus.relations.labels import dedupe_near_duplicates
+    ids_by_pair = {("A", "B"): ["1", "2", "3"], ("A", "C"): ["4"]}
+    texts = {"1": "삼성전자는 대덕전자, 티엘비, 피에스케이 등 협력사 사업장을 순차 방문했다",
+             "2": "삼성전자는 대덕전자, 티엘비, 피에스케이 등 협력사 사업장을 차례로 방문했다",
+             "3": "대덕전자는 피에스케이와 기판 소재를 함께 개발한다",
+             "4": "삼성전자는 대덕전자, 티엘비, 피에스케이 등 협력사 사업장을 순차 방문했다"}
+    assert dedupe_near_duplicates(ids_by_pair, texts) == {("A", "B"): ["1", "3"], ("A", "C"): ["4"]}

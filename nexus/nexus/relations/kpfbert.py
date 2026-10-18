@@ -176,6 +176,8 @@ def render_relation_report(stats: dict) -> str:
         f"- 라벨 분포: " + ", ".join(f"{k} {v}" for k, v in sorted(stats.get("labels", {}).items())),
         f"- {review_line}",
     ]
+    if stats.get("dedup"):
+        lines.append(f"- 같은 보도자료처럼 거의 같은 문장 묶기: {stats['dedup'][0]:,} → {stats['dedup'][1]:,}문장")
     sizes = stats.get("sizes")
     if sizes:
         lines.append(f"- 분할(기업쌍 단위): 학습 {sizes['train']} · 검증 {sizes['valid']} · 시험 {sizes['test']}")

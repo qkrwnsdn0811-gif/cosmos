@@ -514,7 +514,7 @@ def _review_agreement(path: Path) -> float | None:
 def cmd_train_relations(args) -> int:
     from .relations.fragments import read_fragments
     from .relations.kpfbert import render_relation_report, train_relation_model
-    from .relations.labels import read_labels, split_by_pair
+    from .relations.labels import dedupe_near_duplicates, read_labels, split_by_pair
     rel = _relations_dir()
     labels_path = rel / "labels.jsonl"
     if not labels_path.is_file():
@@ -526,11 +526,16 @@ def cmd_train_relations(args) -> int:
     for fid in sorted(labels):
         f = by_id[fid]
         ids_by_pair.setdefault((f.a_key, f.b_key), []).append(fid)
+    before = sum(len(v) for v in ids_by_pair.values())
+    ids_by_pair = dedupe_near_duplicates(ids_by_pair, {fid: by_id[fid].text for fid in labels})
+    after = sum(len(v) for v in ids_by_pair.values())
+    print(f"near-duplicates grouped: {before:,} → {after:,} labelled sentences", flush=True)
     train_ids, valid_ids, test_ids = split_by_pair(ids_by_pair)
     rows = lambda ids: [(by_id[fid], labels[fid]) for fid in ids]
     started = time.monotonic()
     stats = train_relation_model(rows(train_ids), rows(valid_ids), rows(test_ids), rel / "model")
     stats["labels"] = dict(Counter(labels.values()))
+    stats["dedup"] = (before, after)
     stats["review"] = _review_agreement(rel / "review.csv")
     precision = stats["test_precision"]
     stats["applied"] = precision is not None and precision >= 0.85

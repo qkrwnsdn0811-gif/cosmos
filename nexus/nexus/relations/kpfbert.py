@@ -203,7 +203,9 @@ def render_relation_report(stats: dict) -> str:
         "",
     ]
     before, after = stats.get("relations_before"), stats.get("relations_after")
-    if after is None:
+    if stats.get("applied") is False:
+        lines.append("- 시험 정확도가 85% 미만이라 모델을 적용하지 않았다. analyze는 규칙만 쓴다.")
+    elif after is None:
         lines.append("- analyze 이후 채운다.")
     else:
         lines.append(f"- 근거 관계 {before} → {after}, 근거 관계가 있는 기업 {stats.get('companies_after')}개")

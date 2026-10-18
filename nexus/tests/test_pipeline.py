@@ -223,3 +223,43 @@ def test_build_graph_skips_a_pair_the_api_keeps_rejecting(tmp_path, monkeypatch)
                                      cosmos_csv=cosmos_csv)
     assert [s.rel for s in snippets] == ["INVEST"]                       # the healthy pair still yields evidence
     assert sum("삼성전자" in q for q in client.queries) == 2 * 3          # two rejected pairs, three tries each
+
+
+def test_build_graph_adds_model_snippets_without_double_counting(tmp_path):
+    from datetime import datetime, timedelta, timezone
+
+    from nexus.models import Article
+    from nexus.pipeline import build_graph
+
+    a = Company("KOSPI:009150", "KOSPI", "009150", "삼성전기", "SEMICONDUCTOR", "부품")
+    b = Company("KOSDAQ:357780", "KOSDAQ", "357780", "솔브레인", "SEMICONDUCTOR", "소재")
+    recognizer = Recognizer([a, b], alias_rows([a, b], [], []))
+    kst = timezone(timedelta(hours=9))
+    article = Article("n1", "t", "", date(2026, 10, 13), datetime(2026, 10, 13, 10, tzinfo=kst), "p", "", (), (), "",
+                      ("삼성전기", "솔브레인"), (), ())
+    rule_text = "이를 위해 삼성전기는 국내 재료 회사인 솔브레인과 협력해 연구에 착수했다."
+    model_text = "삼성전기와 솔브레인이 유리기판 소재를 함께 만든다."
+    hits = [{"news_id": f"x{i}", "title": "제목", "dateline": "2026-07-01T10:00:00.000+09:00", "provider": "p",
+             "provider_link_page": "", "hilight": t} for i, t in enumerate((rule_text, model_text))]
+
+    class Client:
+        def post(self, path, argument, *, cache):
+            return {"documents": hits}
+
+    def predictor(frags):
+        return [("PARTNER", 0.97) for _ in frags]                       # 규칙 문장도 같은 관계로 판별
+
+    cosmos_csv = tmp_path / "rel.csv"
+    cosmos_csv.write_text("source_market,source_stock_code,target_market,target_stock_code,relationship_type_code" + chr(10),
+                          encoding="utf-8")
+    _, edges, snippets = build_graph([article], recognizer, {c.key: c for c in (a, b)}, Client(),
+                                     start=date(2025, 1, 1), end=date(2026, 10, 14), today=date(2026, 10, 14),
+                                     cosmos_csv=cosmos_csv, predictor=(predictor, 0.9))
+    assert sorted((s.snippet, s.pattern) for s in snippets) == [(model_text, "kpfbert"), (rule_text, "clause+kw")]
+
+
+@pytest.mark.parametrize("command", ["relation-fragments", "train-relations"])
+def test_relation_commands_are_registered(command):
+    with pytest.raises(SystemExit) as exc:
+        main([command, "--help"])
+    assert exc.value.code == 0

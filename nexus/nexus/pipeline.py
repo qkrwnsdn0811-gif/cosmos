@@ -14,7 +14,7 @@ from itertools import combinations
 from pathlib import Path
 from urllib.parse import urlparse
 
-from .bigkinds.client import BigKindsClient, BigKindsError
+from .bigkinds.client import BigKindsClient, BigKindsError, CacheOnlyClient
 from .bigkinds.search import pair_hilights, relation_hilights, search_documents
 from .config import REPO_ROOT, load_settings
 from .entities.master import ALIAS_COLUMNS, alias_rows, build_master
@@ -30,6 +30,7 @@ from .propagation.propagate import propagate
 from .relations.activation import active_relations
 from .relations.comention import sentence_comentions
 from .relations.evidence import extract_evidence
+from .relations.fragments import pair_fragments
 from .relations.graph import BaseGraph, comention_edges, load_cosmos_edges, news_edges
 
 KST = timezone(timedelta(hours=9))
@@ -95,11 +96,16 @@ def _relation_docs(client, a_term: str, b_term: str, *, start: date, end: date, 
     return None
 
 
+UNDIRECTED_RELS = {"PARTNER", "COMPETE", "CO_MENTIONED"}
+
+
 def _unique_snippets(snippets: list[EvidenceSnippet]) -> list[EvidenceSnippet]:
-    """The plain and the relation-word search can return the same article fragment; count it once."""
+    """The plain and the relation-word search, or the rules and the classifier, can report the same article
+    fragment; count it once and keep the first (rules come first). Undirected pairs compare in sorted order."""
     seen, unique = set(), []
     for s in snippets:
-        key = (s.news_id, s.src, s.dst, s.rel, s.snippet)
+        src, dst = sorted((s.src, s.dst)) if s.rel in UNDIRECTED_RELS else (s.src, s.dst)
+        key = (s.news_id, src, dst, s.rel, s.snippet)
         if key not in seen:
             seen.add(key)
             unique.append(s)
@@ -108,14 +114,17 @@ def _unique_snippets(snippets: list[EvidenceSnippet]) -> list[EvidenceSnippet]:
 
 def build_graph(articles: list[Article], recognizer: Recognizer, companies: dict[str, Company],
                 client: BigKindsClient, *, start: date, end: date, today: date, cosmos_csv: Path,
-                top_pairs: int = 300) -> tuple[BaseGraph, list[Edge], list[EvidenceSnippet]]:
+                top_pairs: int = 300, predictor=None) -> tuple[BaseGraph, list[Edge], list[EvidenceSnippet]]:
     stats = sentence_comentions(articles, recognizer.key_of_org, min_count=3)
     terms = search_terms(articles, recognizer, companies)
     snippets: list[EvidenceSnippet] = []
+    fragments = []
     for i, stat in enumerate(stats[:top_pairs], 1):
         a, b = companies[stat.a], companies[stat.b]
         docs = pair_hilights(client, terms[a.key], terms[b.key], start=start, end=end, today=today)
         snippets.extend(extract_evidence(docs, a, b, recognizer.aliases_of))
+        if predictor:
+            fragments.extend(pair_fragments(docs, a, b, recognizer.aliases_of))
         if i % 50 == 0:
             print(f"  pair hilights {i}/{min(top_pairs, len(stats))}, snippets {len(snippets)}", flush=True)
     # Every pair that shares an article also gets a relation-word search (2026-10-18: evidence relations were
@@ -129,9 +138,18 @@ def build_graph(articles: list[Article], recognizer: Recognizer, companies: dict
             skipped += 1
             continue
         snippets.extend(extract_evidence(docs, a, b, recognizer.aliases_of))
+        if predictor:
+            fragments.extend(pair_fragments(docs, a, b, recognizer.aliases_of))
         if i % 100 == 0:
             print(f"  relation hilights {i}/{len(pairs)}, snippets {len(snippets)}, skipped {skipped}", flush=True)
     print(f"  relation hilights done: {len(pairs)} pairs, skipped {skipped}", flush=True)
+    if predictor:
+        from .relations.kpfbert import model_snippets
+        predict, tau = predictor
+        unique = list({f.fragment_id: f for f in fragments}.values())
+        added = model_snippets(unique, predict(unique), tau)
+        print(f"  relation model: {len(unique):,} fragments, {len(added)} accepted at tau {tau:.2f}", flush=True)
+        snippets.extend(added)
     snippets = _unique_snippets(snippets)
     edges = news_edges(snippets) + comention_edges(stats) + load_cosmos_edges(cosmos_csv, set(companies))
     return BaseGraph(edges), edges, snippets
@@ -248,8 +266,12 @@ def cmd_analyze(args) -> int:
     last = max(a.published_date for a in articles) + timedelta(days=1)
     print(f"articles: {len(articles):,}", flush=True)
     # Evidence searches end today (exclusive) so they are cacheable; reruns then cost no API calls.
+    from .relations.kpfbert import load_predictor
+    predictor = load_predictor(p["data"] / "relations" / "model")
+    print(f"relation model: {'on (tau %.2f)' % predictor[1] if predictor else 'off (rules only)'}", flush=True)
     graph, edges, snippets = build_graph(articles, recognizer, companies, _client(), start=first,
-                                         end=min(last, today), today=today, cosmos_csv=COSMOS_RELATIONS)
+                                         end=min(last, today), today=today, cosmos_csv=COSMOS_RELATIONS,
+                                         predictor=predictor)
     print(f"edges: {Counter(e.source for e in edges)}, snippets: {len(snippets)}", flush=True)
     prices = PriceCache(p["prices"])
     bundles = run_analyze(articles, recognizer, companies, graph, prices, value_chain=CHAINS[args.chain]["value_chain"])
@@ -447,6 +469,85 @@ def cmd_publish_graph(args) -> int:
     return 0
 
 
+RELATION_REPORT = REPO_ROOT / "docs" / "nexus" / "relation-model-report.md"
+REVIEW_OK, REVIEW_NO = {"o", "1", "y", "ok", "맞음"}, {"x", "0", "n", "no", "틀림"}
+
+
+def _relations_dir() -> Path:
+    return load_settings().data_dir / "relations"
+
+
+def cmd_relation_fragments(args) -> int:
+    from .relations.fragments import collect_fragments, sample_for_labeling, write_fragments
+    from .relations.labels import write_sample
+    p = _paths(args.chain)
+    companies, recognizer = _load_master(args.chain)
+    store = ArticleStore(p["articles"])
+    articles = store.read([x for x in store.partitions() if x.startswith(f"{args.chain}-")])
+    if not articles:
+        sys.exit("no articles collected")
+    today = datetime.now(KST).date()
+    first = min(a.published_date for a in articles)
+    last = max(a.published_date for a in articles) + timedelta(days=1)
+    client = CacheOnlyClient(_client())
+    fragments = collect_fragments(articles, recognizer, companies, client, start=first, end=min(last, today),
+                                  today=today)
+    out = _relations_dir()
+    write_fragments(fragments, out / "fragments.parquet")
+    sample = sample_for_labeling(fragments)
+    write_sample(sample, out / "sample.jsonl", {k: c.name for k, c in companies.items()})
+    rule_hits = sum(1 for f in fragments if f.rule_rel)
+    print(f"fragments: {len(fragments):,} (rule-judged {rule_hits:,}), sample: {len(sample):,}, "
+          f"cache misses: {client.misses} → {out}")
+    return 0
+
+
+def _review_agreement(path: Path) -> float | None:
+    if not path.is_file():
+        return None
+    with path.open(encoding="utf-8-sig", newline="") as f:
+        marks = [row.get("ok", "").strip().lower() for row in csv.DictReader(f)]
+    agree, disagree = sum(m in REVIEW_OK for m in marks), sum(m in REVIEW_NO for m in marks)
+    return agree / (agree + disagree) if agree + disagree else None
+
+
+def cmd_train_relations(args) -> int:
+    from .relations.fragments import read_fragments
+    from .relations.kpfbert import render_relation_report, train_relation_model
+    from .relations.labels import read_labels, split_by_pair
+    rel = _relations_dir()
+    labels_path = rel / "labels.jsonl"
+    if not labels_path.is_file():
+        sys.exit("no labels: label nexus/data/relations/sample.jsonl first")
+    by_id = {f.fragment_id: f for f in read_fragments(rel / "fragments.parquet")}
+    labels, dropped = read_labels(labels_path, set(by_id))
+    print(f"labels: {len(labels):,} (dropped {dropped}) {dict(Counter(labels.values()))}", flush=True)
+    ids_by_pair: dict[tuple[str, str], list[str]] = {}
+    for fid in sorted(labels):
+        f = by_id[fid]
+        ids_by_pair.setdefault((f.a_key, f.b_key), []).append(fid)
+    train_ids, valid_ids, test_ids = split_by_pair(ids_by_pair)
+    rows = lambda ids: [(by_id[fid], labels[fid]) for fid in ids]
+    started = time.monotonic()
+    stats = train_relation_model(rows(train_ids), rows(valid_ids), rows(test_ids), rel / "model")
+    stats["labels"] = dict(Counter(labels.values()))
+    stats["review"] = _review_agreement(rel / "review.csv")
+    precision = stats["test_precision"]
+    stats["applied"] = precision is not None and precision >= 0.85
+    if not stats["applied"]:
+        # spec §10: below 85% on the test split the model is not used — analyze falls back to the rules
+        rejected = rel / "model-rejected"
+        if rejected.exists():
+            import shutil
+            shutil.rmtree(rejected)
+        (rel / "model").rename(rejected)
+    RELATION_REPORT.write_text(render_relation_report(stats), encoding="utf-8")
+    print(f"tau {stats['tau']:.2f}, test precision {precision}, recall {stats['test_recall']}, "
+          f"rules {stats['rule_precision']}/{stats['rule_recall']}, applied {stats['applied']} "
+          f"({time.monotonic() - started:,.0f}s) → {RELATION_REPORT}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m nexus")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -469,9 +570,12 @@ def main(argv: list[str] | None = None) -> int:
     predict.add_argument("--chain", choices=sorted(CHAINS), required=True)
     predict.add_argument("--database-url", required=True)
     sub.add_parser("publish-graph").add_argument("--database-url", required=True)
+    for name in ("relation-fragments", "train-relations"):
+        sub.add_parser(name).add_argument("--chain", choices=sorted(CHAINS), required=True)
     args = parser.parse_args(argv)
     handler = {"build-master": cmd_build_master, "collect": cmd_collect, "analyze": cmd_analyze,
                "migrate": cmd_migrate, "load": cmd_load, "sentiment": cmd_sentiment,
                "train-impact": cmd_train_impact, "predict-impact": cmd_predict_impact,
-               "publish-graph": cmd_publish_graph}[args.command]
+               "publish-graph": cmd_publish_graph, "relation-fragments": cmd_relation_fragments,
+               "train-relations": cmd_train_relations}[args.command]
     return handler(args)

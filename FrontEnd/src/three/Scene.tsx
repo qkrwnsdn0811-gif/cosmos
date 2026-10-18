@@ -478,7 +478,7 @@ function Content({ galaxy, system, next = null, warpRef, isolateOnFocus = false,
   const emphasis = useMemo(
     () =>
       model
-        ? computeEmphasis(model, { hoveredId: focusNode, hoveredEdgeId, selectedEdgeId, minScore, activeTypes: activeTypes as Set<string>, budget: edgeBudget, path, roleFilter, isolate: isolateOnFocus })
+        ? computeEmphasis(model, { hoveredId: focusNode, hoveredEdgeId, selectedEdgeId, minScore, activeTypes: activeTypes as Set<string>, budget: edgeBudget, path, roleFilter, isolate: isolateOnFocus, hideIsolated: true })
         : null,
     [model, focusNode, hoveredEdgeId, selectedEdgeId, minScore, activeTypes, edgeBudget, path, roleFilter, isolateOnFocus],
   );

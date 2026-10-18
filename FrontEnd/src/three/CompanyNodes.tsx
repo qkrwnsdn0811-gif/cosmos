@@ -535,7 +535,9 @@ export default function CompanyNodes({ model, emphasis, hoveredId, onHover, onCl
       const isHover = node.id === hoveredId;
       const isCenter = node.id === model.centerId;
       const pinned = emphasis.pinned.has(node.id);
-      const targetScale = (isHover ? 1.18 : 1) * (isCenter ? 1.1 : 1) * (0.7 + 0.3 * emph);
+      // 보이는 선이 없는 행성은 작아지며 사라진다 (emphasis.hidden — 은하는 관계가 있는 기업만 띄운다)
+      const hidden = emphasis.hidden.has(node.id);
+      const targetScale = hidden ? 0.001 : (isHover ? 1.18 : 1) * (isCenter ? 1.1 : 1) * (0.7 + 0.3 * emph);
       const targetBright = (isHover ? 1.15 : isCenter ? 1.06 : 1.0) * (0.42 + 0.58 * emph);
       const s = (a.scale += (targetScale - a.scale) * k);
       const br = (a.bright += (targetBright - a.bright) * k);
@@ -571,7 +573,7 @@ export default function CompanyNodes({ model, emphasis, hoveredId, onHover, onCl
         (built.alphaAttr.array as Float32Array)[i] = ta;
       }
       (built.haloSize.array as Float32Array)[i] = r * 3.2 * (0.5 + 0.5 * emph);
-      (built.haloAlpha.array as Float32Array)[i] = (0.15 + 0.85 * emph) * 0.22;
+      (built.haloAlpha.array as Float32Array)[i] = hidden ? 0 : (0.15 + 0.85 * emph) * 0.22;
 
       // 칩 폭(aspect)은 여기서 이 프레임 값으로 확정한다 — 겹침 판정(아래)과 배치(두 번째 루프)가 같은 폭을 봐야 한다.
       // 역할 태그 폭은 호버 순간 0 → 전체로 바로 뛰므로 직전 프레임 값을 쓰면 그 프레임에 이웃 칩과 겹친다
@@ -587,7 +589,7 @@ export default function CompanyNodes({ model, emphasis, hoveredId, onHover, onCl
       const far = tierFar[Math.min(node.tier, tierFar.length - 1)] * narrow;
       let ct = pinned ? 1 : 1 - THREE.MathUtils.smoothstep(dist, far * 0.75, far);
       ct *= 0.15 + 0.85 * emph;
-      if (morphing && !isCenter) ct = 0;
+      if ((morphing && !isCenter) || hidden) ct = 0;
       if (ct > 0.01) {
         // 카메라 뒤는 제외. 앞이면 칩이 그려질 화면 사각형을 재어 두고, 루프가 끝난 뒤 우선순위 순으로 겹침을 걸러낸다
         // 두 번째 루프의 배치처럼 카메라 쪽으로 r·0.2 만큼 뺀 지점을 투영한다 (화면 가장자리에서는 이 오프셋이 몇 px 옆으로 새기 때문)

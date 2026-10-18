@@ -514,7 +514,7 @@ def _review_agreement(path: Path) -> float | None:
 def cmd_train_relations(args) -> int:
     from .relations.fragments import read_fragments
     from .relations.kpfbert import render_relation_report, train_relation_model
-    from .relations.labels import dedupe_near_duplicates, read_labels, split_by_pair
+    from .relations.labels import dedupe_near_duplicates, read_labels, should_apply, split_by_pair
     rel = _relations_dir()
     labels_path = rel / "labels.jsonl"
     if not labels_path.is_file():
@@ -538,9 +538,9 @@ def cmd_train_relations(args) -> int:
     stats["dedup"] = (before, after)
     stats["review"] = _review_agreement(rel / "review.csv")
     precision = stats["test_precision"]
-    stats["applied"] = precision is not None and precision >= 0.85
+    stats["applied"] = should_apply(precision)
     if not stats["applied"]:
-        # spec §10: below 85% on the test split the model is not used — analyze falls back to the rules
+        # below APPLY_PRECISION on the test split the model is not used — analyze falls back to the rules
         rejected = rel / "model-rejected"
         if rejected.exists():
             import shutil

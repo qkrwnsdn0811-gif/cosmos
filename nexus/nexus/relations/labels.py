@@ -20,6 +20,9 @@ RELATION_LABELS = LABELS[:-1]
 TAU_GRID = tuple(round(0.50 + 0.05 * i, 2) for i in range(10))
 TAU_PRECISION = 0.85
 TAU_FALLBACK = 0.95
+# The trained model replaces nothing below this test-split precision. Spec §10 set 0.85; on 2026-10-19 the user
+# accepted the second model at 0.81 ("81프로면 괜찮은데?") — it doubles the evidence relations (37 → 79).
+APPLY_PRECISION = 0.80
 SPLIT = (0.70, 0.15)        # train, valid; the rest is test
 EPS = 1e-9
 # The same press release reaches many outlets with small edits; such copies are one example, not many. Two sentences
@@ -116,6 +119,10 @@ def choose_threshold(predictions: list[tuple[str, float]], gold: list[str]) -> f
         if accepted and sum(label == g for label, g in accepted) / len(accepted) >= TAU_PRECISION - EPS:
             return tau
     return TAU_FALLBACK
+
+
+def should_apply(test_precision: float | None) -> bool:
+    return test_precision is not None and test_precision >= APPLY_PRECISION - EPS
 
 
 def _shingles(text: str, n: int = 3) -> set[str]:

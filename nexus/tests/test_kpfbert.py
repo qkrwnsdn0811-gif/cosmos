@@ -46,6 +46,13 @@ def test_report_has_sections():
         assert head in text
 
 
+def test_report_states_the_80_percent_bar_when_rejected():
+    text = render_relation_report({"labels": {}, "review": None, "tau": 0.9, "test_precision": 0.7,
+                                   "test_recall": 0.5, "rule_precision": 0.9, "rule_recall": 0.2, "per_class": {},
+                                   "confusion": [], "applied": False})
+    assert "시험 정확도가 80% 미만이라 모델을 적용하지 않았다" in text
+
+
 def test_training_runs_on_a_tiny_model(tmp_path):
     pytest.importorskip("torch")
     transformers = pytest.importorskip("transformers")

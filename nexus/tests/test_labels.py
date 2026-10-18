@@ -1,8 +1,8 @@
 import json
 
 from nexus.relations.fragments import Fragment
-from nexus.relations.labels import (LABELS, choose_threshold, flip_label, marked_text, read_labels, split_by_pair,
-                                    write_review, write_sample)
+from nexus.relations.labels import (LABELS, choose_threshold, flip_label, marked_text, read_labels, should_apply,
+                                    split_by_pair, write_review, write_sample)
 
 
 def frag(text, a="삼성전기", b="솔브레인", fid="0" * 16):
@@ -78,3 +78,10 @@ def test_dedupe_keeps_one_sentence_per_group_within_a_pair():
              "3": "대덕전자는 피에스케이와 기판 소재를 함께 개발한다",
              "4": "삼성전자는 대덕전자, 티엘비, 피에스케이 등 협력사 사업장을 순차 방문했다"}
     assert dedupe_near_duplicates(ids_by_pair, texts) == {("A", "B"): ["1", "3"], ("A", "C"): ["4"]}
+
+
+def test_model_is_applied_from_80_percent_test_precision():
+    assert should_apply(0.81)
+    assert should_apply(0.80)
+    assert not should_apply(0.79)
+    assert not should_apply(None)

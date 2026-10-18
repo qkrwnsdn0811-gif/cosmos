@@ -15,7 +15,7 @@ from ..device import padding_for, pick_device
 from ..models import EvidenceSnippet
 from .evidence import LOOSE_PARTNER_PATTERNS
 from .fragments import Fragment
-from .labels import LABELS, RELATION_LABELS, choose_threshold, flip_label, marked_text
+from .labels import APPLY_PRECISION, LABELS, RELATION_LABELS, choose_threshold, flip_label, marked_text
 
 MODEL_ID = "jinmang2/kpfbert"
 REVISION = "dc732cc2aaa998959a2721e06ed10f98f2c51a0f"
@@ -218,7 +218,7 @@ def render_relation_report(stats: dict) -> str:
     ]
     before, after = stats.get("relations_before"), stats.get("relations_after")
     if stats.get("applied") is False:
-        lines.append("- 시험 정확도가 85% 미만이라 모델을 적용하지 않았다. analyze는 규칙만 쓴다.")
+        lines.append(f"- 시험 정확도가 {APPLY_PRECISION:.0%} 미만이라 모델을 적용하지 않았다. analyze는 규칙만 쓴다.")
     elif after is None:
         lines.append("- analyze 이후 채운다.")
     else:

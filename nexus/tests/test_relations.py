@@ -3,7 +3,7 @@ from datetime import date, datetime, timedelta, timezone
 
 from nexus.models import Article, Company
 from nexus.relations.comention import sentence_comentions
-from nexus.relations.evidence import extract_evidence, hilight_fragments
+from nexus.relations.evidence import extract_evidence, hilight_fragments, standalone_index
 
 KST = timezone(timedelta(hours=9))
 KEYS = {"A사": "KOSPI:000001", "B사": "KOSDAQ:000002", "서울": "KOSPI:999999"}
@@ -80,6 +80,19 @@ def test_alias_inside_another_word_is_not_a_company():
     docs = [pair_doc("유니<b>테스</b>트는 번인 장비 분야에서 <b>디아이</b>, 엑시콘 등과 경쟁하고 있다."),
             pair_doc("<b>디아이</b>는 신규 제품 <b>테스</b>트를 국내에서 수행하기로 협약했다.")]
     assert extract_evidence(docs, TES, DI, tes_aliases) == []
+
+
+def test_alias_cut_off_at_the_end_of_a_hilight_piece_is_not_a_company():
+    # BigKinds cut "품질 테스트" after "테스", so the piece ends right after the alias (2026-10-19: 넥스틴 → 테스)
+    assert standalone_index("넥스틴은 검사 장비 크로키를 주요 고객사와 품질 테스", "테스") == -1
+    assert standalone_index("테스는 디아이와 경쟁한다.", "테스") == 0
+
+
+def test_latin_alias_inside_a_latin_word_is_not_a_company():
+    # "ISC" inside "DISCO" made 한미반도체 → ISC (2026-10-19)
+    assert standalone_index("한미반도체는 SAW를 디스코(DISCO)로부터 공급받았다.", "ISC") == -1
+    assert standalone_index("ISC는 테스트 소켓을 SK하이닉스에 공급한다.", "ISC") == 0
+    assert standalone_index("삼성전자·ISC(095340) 등", "ISC") == 5
 
 
 def test_alias_followed_by_a_particle_still_counts():

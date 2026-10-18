@@ -36,14 +36,23 @@ def _is_hangul(ch: str) -> bool:
     return "가" <= ch <= "힣"
 
 
+def _is_latin(ch: str) -> bool:
+    return ch.isascii() and ch.isalnum()
+
+
 def standalone_index(fragment: str, alias: str) -> int:
-    """Position of the first occurrence of `alias` that stands as a name (not inside another word), else -1."""
+    """Position of the first occurrence of `alias` that stands as a name (not inside another word), else -1.
+
+    A name that ends the fragment does not count: BigKinds cuts hilight pieces mid-word ("품질 테스|트"), and our
+    sentences otherwise end in "다.". A Latin name inside a Latin word does not count either ("ISC" in "DISCO")."""
     start = 0
     while (i := fragment.find(alias, start)) != -1:
         before = fragment[i - 1] if i else ""
         j = i + len(alias)
         after = fragment[j] if j < len(fragment) else ""
-        if not _is_hangul(before) and (not _is_hangul(after) or after in PARTICLE_START):
+        latin_inside = (_is_latin(alias[0]) and _is_latin(before)) or (_is_latin(alias[-1]) and _is_latin(after))
+        if (after and not latin_inside and not _is_hangul(before)
+                and (not _is_hangul(after) or after in PARTICLE_START)):
             return i
         start = i + 1
     return -1

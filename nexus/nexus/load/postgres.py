@@ -105,6 +105,13 @@ SQL_RETURN = (
     "benchmark_return, abnormal_return) VALUES (%s, %s, %s, %s, %s, %s, %s)")
 
 
+def _clear_sentence_evidence(executor, document_ids: list[UUID]) -> None:
+    """Galaxy evidence (publish-graph) may point at sentences under these company-document rows; the FK from
+    relationship_evidence has no ON DELETE, so drop those links first. The next publish-graph refills them."""
+    executor.execute("DELETE FROM relationship_evidence WHERE evidence_id IN "
+                     "(SELECT evidence_id FROM document_evidence WHERE document_id = ANY(%s))", (document_ids,))
+
+
 def load_events(conn, bundles: list[EventBundle], company_ids: dict[str, UUID]) -> int:
     """Upsert documents and events; replace each event's impacts and returns (re-runs stay idempotent)."""
     documents, articles, company_docs, events, impacts, returns = [], [], [], [], [], []
@@ -133,6 +140,7 @@ def load_events(conn, bundles: list[EventBundle], company_ids: dict[str, UUID]) 
             cur.executemany(SQL_DOCUMENT, documents)
             cur.executemany(SQL_ARTICLE, articles)
             # Mentions removed by a re-analysis must disappear from the existing news feed too.
+            _clear_sentence_evidence(cur, [d[0] for d in documents])
             cur.execute("DELETE FROM company_document WHERE document_id = ANY(%s) AND model_version = %s",
                         ([d[0] for d in documents], PIPELINE_VERSION))
             cur.executemany(SQL_COMPANY_DOCUMENT, company_docs)
@@ -152,6 +160,7 @@ def prune_events(conn, value_chain: str, keep_news_ids: set[str]) -> int:
                             (value_chain,)).fetchall()
         drop = [(evt, doc) for evt, doc, news_id in rows if news_id not in keep_news_ids]
         if drop:
+            _clear_sentence_evidence(conn, [doc for _, doc in drop])
             conn.execute("DELETE FROM company_document WHERE document_id = ANY(%s) AND model_version = %s",
                          ([doc for _, doc in drop], PIPELINE_VERSION))
             conn.execute("DELETE FROM news_event WHERE event_id = ANY(%s)", ([evt for evt, _ in drop],))

@@ -52,9 +52,15 @@ def _first_alias(fragment: str, aliases: list[str]) -> str | None:
     return next((a for a in aliases if _standalone(fragment, a)), None)
 
 
+def rule_hit(fragment: str, x: str, y: str) -> tuple[str, str, str, float, str] | None:
+    """Raw rule judgement for one fragment: COSMOS both ways, then ownership both ways (loose patterns included)."""
+    classify = import_relations().classify
+    return (classify(fragment, x, y) or classify(fragment, y, x)
+            or classify_invest(fragment, x, y) or classify_invest(fragment, y, x))
+
+
 def extract_evidence(docs: list[dict], a: Company, b: Company,
                      aliases_of: Callable[[str], list[str]]) -> list[EvidenceSnippet]:
-    classify = import_relations().classify
     a_aliases, b_aliases = aliases_of(a.key), aliases_of(b.key)
     key_of = {alias: a.key for alias in a_aliases} | {alias: b.key for alias in b_aliases}
     snippets = []
@@ -63,8 +69,7 @@ def extract_evidence(docs: list[dict], a: Company, b: Company,
             x, y = _first_alias(fragment, a_aliases), _first_alias(fragment, b_aliases)
             if not x or not y:
                 continue
-            hit = (classify(fragment, x, y) or classify(fragment, y, x)
-                   or classify_invest(fragment, x, y) or classify_invest(fragment, y, x))
+            hit = rule_hit(fragment, x, y)
             if not hit:
                 continue
             src_alias, dst_alias, rel, confidence, pattern = hit

@@ -90,3 +90,18 @@ class BigKindsClient:
                 raise BigKindsError(payload.get("result"), str(payload.get("reason", "")))
             return payload
         raise BigKindsError(None, f"gave up after {len(RETRY_WAITS)} retries: {failure}")
+
+
+class CacheOnlyClient:
+    """Answers from the disk cache only and never calls the network — for re-reading searches already paid for."""
+
+    def __init__(self, client: BigKindsClient):
+        self.client = client
+        self.misses = 0
+
+    def post(self, path: str, argument: dict, *, cache: bool) -> dict:
+        cache_file = self.client._cache_file(path, argument)
+        if not cache_file.is_file():
+            self.misses += 1
+            return {"documents": []}
+        return json.loads(cache_file.read_text(encoding="utf-8"))["return_object"]

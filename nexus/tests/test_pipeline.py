@@ -134,3 +134,17 @@ def test_predict_impact_refuses_to_run_without_sentiment(tmp_path, monkeypatch):
     with pytest.raises(SystemExit) as exc:
         main(["predict-impact", "--chain", "semis", "--database-url", "postgresql://unused"])
     assert "sentiment" in str(exc.value.code)
+
+
+def test_publish_graph_is_registered():
+    with pytest.raises(SystemExit) as exc:
+        main(["publish-graph", "--help"])
+    assert exc.value.code == 0
+
+
+def test_publish_graph_needs_an_analyzed_chain(tmp_path, monkeypatch):
+    import nexus.pipeline as pipeline
+    monkeypatch.setattr(pipeline, "_paths", lambda chain: {"analyzed": tmp_path / chain})
+    with pytest.raises(SystemExit) as exc:
+        main(["publish-graph", "--database-url", "postgresql://unused"])
+    assert "analyze" in str(exc.value.code)

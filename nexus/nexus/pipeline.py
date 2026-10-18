@@ -1,4 +1,5 @@
-"""NEXUS slice pipeline: build-master → collect → analyze → migrate → load → sentiment → train-impact → predict-impact."""
+"""NEXUS slice pipeline: build-master → collect → analyze → migrate → load → sentiment → train-impact → predict-impact,
+and publish-graph (BigKinds galaxy snapshot over every analyzed value chain)."""
 from __future__ import annotations
 
 import argparse
@@ -355,6 +356,46 @@ def cmd_predict_impact(args) -> int:
     return 0
 
 
+def galaxy_chains() -> list[str]:
+    """Value chains that `analyze` has produced relations for; publish-graph puts them in one snapshot."""
+    return [chain for chain in CHAINS if (_paths(chain)["analyzed"] / "relations.pkl").is_file()]
+
+
+def cmd_publish_graph(args) -> int:
+    # relations.pkl is written by `analyze` into the git-ignored local nexus/data directory (see cmd_load).
+    import psycopg
+    from .galaxy.build import WINDOWS, build_galaxy
+    from .load.galaxy import publish_galaxy
+    from .load.postgres import ensure_companies
+    chains = galaxy_chains()
+    if not chains:
+        sys.exit("no analyzed value chain: run analyze first")
+    started = time.monotonic()
+    inputs, companies_all, roles = [], {}, {}
+    for chain in chains:
+        p = _paths(chain)
+        companies, recognizer = _load_master(chain)
+        store = ArticleStore(p["articles"])
+        articles = store.read([x for x in store.partitions() if x.startswith(f"{chain}-")])
+        with (p["analyzed"] / "relations.pkl").open("rb") as f:
+            edges, snippets = pickle.load(f)
+        inputs.append((articles, companies, recognizer.key_of_org, edges, snippets))
+        companies_all.update(companies)
+        roles.update({key: (CHAINS[chain]["label"], c.role) for key, c in companies.items()})
+        print(f"{chain}: {len(articles):,} articles, {len(companies)} companies", flush=True)
+    as_of, galaxy = build_galaxy(inputs)
+    with psycopg.connect(args.database_url) as conn:
+        ids = ensure_companies(conn, list(companies_all.values()))
+        result = publish_galaxy(conn, as_of, galaxy, ids, roles)
+        conn.commit()
+    print(f"as_of {as_of.date()} ({', '.join(chains)})")
+    for window in WINDOWS:
+        kinds = Counter("함께 언급" if e.rel == "CO_MENTIONED" else "근거 관계" for e in galaxy if e.window == window)
+        print(f"  {window}: {dict(kinds)}")
+    print(f"evidence rows: {result['evidence_rows']:,} ({time.monotonic() - started:,.0f}s)")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m nexus")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -376,8 +417,10 @@ def main(argv: list[str] | None = None) -> int:
     predict = sub.add_parser("predict-impact")
     predict.add_argument("--chain", choices=sorted(CHAINS), required=True)
     predict.add_argument("--database-url", required=True)
+    sub.add_parser("publish-graph").add_argument("--database-url", required=True)
     args = parser.parse_args(argv)
     handler = {"build-master": cmd_build_master, "collect": cmd_collect, "analyze": cmd_analyze,
                "migrate": cmd_migrate, "load": cmd_load, "sentiment": cmd_sentiment,
-               "train-impact": cmd_train_impact, "predict-impact": cmd_predict_impact}[args.command]
+               "train-impact": cmd_train_impact, "predict-impact": cmd_predict_impact,
+               "publish-graph": cmd_publish_graph}[args.command]
     return handler(args)

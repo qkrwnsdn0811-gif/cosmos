@@ -141,10 +141,6 @@
   flex: 1;
   min-width: 0;
 }
-.ev-item-bar {
-  margin-top: 6px;
-  display: flex;
-}
 .ev-rep-badge {
   display: inline-flex;
   margin-top: 6px;
@@ -172,6 +168,10 @@
   font-size: 13px;
   line-height: 1.55;
   color: var(--text-2);
+}
+/* 함께 언급 근거 — 문장 대신 제목(굵게)과 기사 앞부분(흐리게) */
+.ev-item-preview {
+  color: var(--muted);
 }
 .ev-item-actions {
   margin-top: 8px;

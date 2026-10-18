@@ -356,7 +356,8 @@ export interface RelationshipEvidence {
    * 사용자가 인용문과 생성문을 구분하지 못하므로 표시를 나눈다.
    */
   documentType: "NEWS" | "DISCLOSURE" | (string & {});
-  evidenceSentence: string;
+  /** 함께 언급(CO_MENTIONED) 근거는 문장 원문이 없어 null 이다 — evidenceText() 가 제목으로 대신 보여 준다 */
+  evidenceSentence: string | null;
   /** 그 문장을 만든 모델·규칙. 공시 요약은 생성 모델 이름이 들어온다 */
   modelVersion: string | null;
   contributionScore: number | null;

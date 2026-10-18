@@ -10,6 +10,7 @@ import { ROLE_META, roleColor, roleCounts } from "@/lib/roles";
 import { SURPRISE_MIN, surpriseFor } from "@/lib/surprise";
 import { useGalaxy } from "@/store/galaxy";
 import "./evidence.css";
+import { evidenceText } from "./evidenceText";
 
 export interface PointerPos {
   /** 뷰포트 기준 clientX/clientY — 툴팁이 자기 부모(.galaxy) 사각형으로 바꿔 쓴다 */
@@ -179,7 +180,11 @@ export default function SceneTip({ model, pointer }: Props) {
           // 캐시에 있는 문장은 상한과 무관하게 보여 준다 — 상한은 "새 요청" 을 막는 것이지 이미 받은 답을 가리는 것이 아니다
           <>
             <div className="ev-quote">
-              <q>{topItem.evidenceSentence}</q> — {[topItem.publisher, fmtRelative(topItem.publishedAt)].filter(Boolean).join(" · ")}
+              {(() => {
+                const t = evidenceText(topItem);
+                return t.kind === "sentence" ? <q>{t.text}</q> : <>{EVIDENCE_UI.comentionBadge} · {t.title}</>;
+              })()}{" "}
+              — {[topItem.publisher, fmtRelative(topItem.publishedAt)].filter(Boolean).join(" · ")}
             </div>
             <div className="ev-more">{EVIDENCE_UI.hoverMore(detail.evidenceCount)}</div>
           </>

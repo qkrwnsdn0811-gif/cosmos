@@ -197,9 +197,10 @@ export const EVIDENCE_UI = {
   hoverCapped: (n: number) => `근거 ${n}건 · 클릭해서 보기`,
   timelineKicker: "근거",
   timelineOrder: "시간순",
-  timelineSummary: (n: number, latest: string) => `최근 근거 ${n}건 · 가장 최근 ${latest}`,
+  /** 목록은 기간과 관계없이 최신순으로 받는다 — 위 "근거 문서" 건수는 고른 기간 기준이라 둘이 다를 수 있다 */
+  timelineSummary: (n: number, latest: string) => `기간과 관계없이 최신순 ${n}건 · 가장 최근 ${latest}`,
+  evidenceCountIn: (windowLabel: string) => `근거 문서 · ${windowLabel} 기준`,
   representative: "대표 근거",
-  contribution: "기여",
   copy: "문장 복사",
   copied: "근거 문장을 복사했습니다",
   original: "원문",
@@ -208,6 +209,10 @@ export const EVIDENCE_UI = {
   disclosureBadge: "공시",
   disclosureNote: "공시 내용을 요약한 문장입니다. 기사 인용이 아닙니다.",
   newsBadge: "뉴스",
+  /** 함께 언급 근거 — 문장 원문이 없어 기사 제목과 앞부분을 보여 준다 */
+  comentionBadge: "함께 언급",
+  comentionNote: "두 회사가 같은 문장에 함께 나온 기사입니다. 빅카인즈는 그 문장 원문을 주지 않아 제목과 앞부분을 보여 줍니다.",
+  copyTitle: "제목 복사",
   more: "더 보기",
   /** 관계 상세(404 등)를 불러오지 못했을 때 — 관계선은 기준 기간(edgeWindow)마다 있고 없고가 달라질 수 있어, 패널을
       연 기간에는 이 관계 자체가 없을 수 있다. 위 기간 버튼으로 다른 기간을 시도해 보라고 안내한다 */

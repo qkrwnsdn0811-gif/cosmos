@@ -6,6 +6,7 @@ torch/transformers are imported inside the functions so the pipeline still runs 
 from __future__ import annotations
 
 import json
+import math
 from collections import Counter
 from pathlib import Path
 from typing import Callable
@@ -75,6 +76,13 @@ def load_predictor(model_dir: Path, threads: int = 8, device: str | None = None)
     return predict, float(meta["tau"])
 
 
+def class_weights(counts: dict[str, int], labels: tuple[str, ...]) -> list[float]:
+    """Square root of inverse frequency. Plain inverse frequency weighted rare relation classes ~30x over NONE and
+    the first model over-predicted relations (test precision 58%, 2026-10-19); the root keeps the push milder."""
+    total = sum(counts.values())
+    return [math.sqrt(total / (len(labels) * counts[l])) if counts.get(l) else 1.0 for l in labels]
+
+
 def _accepted_scores(predictions: list[tuple[str, float]], gold: list[str], tau: float) -> tuple[float | None, float | None]:
     accepted = [(label, g) for (label, prob), g in zip(predictions, gold) if label != "NONE" and prob >= tau - EPS]
     correct = sum(label == g for label, g in accepted)
@@ -110,7 +118,7 @@ def train_relation_model(train: list[tuple[Fragment, str]], valid: list[tuple[Fr
     examples = [(marked_text(f), label) for f, label in train] + \
                [(marked_text(f, swap=True), flip_label(label)) for f, label in train]
     counts = Counter(label for _, label in examples)
-    weights = torch.tensor([len(examples) / (len(LABELS) * counts[l]) if counts[l] else 1.0 for l in LABELS])
+    weights = torch.tensor(class_weights(counts, LABELS))
     loss_fn = torch.nn.CrossEntropyLoss(weight=weights.to(device))
     optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
     generator = torch.Generator().manual_seed(seed)

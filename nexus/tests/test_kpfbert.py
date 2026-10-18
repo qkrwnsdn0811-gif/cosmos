@@ -64,3 +64,11 @@ def test_training_runs_on_a_tiny_model(tmp_path):
     assert 0.5 <= stats["tau"] <= 0.95 and (tmp_path / "out" / "tau.json").is_file()
     predictor, tau = load_predictor(tmp_path / "out", threads=1)
     assert len(predictor([frag(1), frag(2)])) == 2
+
+
+def test_class_weights_are_softened_inverse_frequency():
+    from nexus.relations.kpfbert import class_weights
+    w = class_weights({"NONE": 900, "PARTNER": 100}, ("PARTNER", "NONE", "COMPETE"))
+    # sqrt of inverse frequency: rare classes count more, but not so much that the model over-predicts relations
+    assert round(w[0] / w[1], 6) == 3.0          # sqrt(900 / 100)
+    assert w[2] == 1.0                            # absent class

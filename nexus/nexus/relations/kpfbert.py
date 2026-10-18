@@ -10,6 +10,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Callable
 
+from ..device import pick_device
 from ..models import EvidenceSnippet
 from .evidence import LOOSE_PARTNER_PATTERNS
 from .fragments import Fragment
@@ -41,17 +42,18 @@ def model_snippets(fragments: list[Fragment], predictions: list[tuple[str, float
 
 def _predict(model, tokenizer, texts: list[str], labels: tuple[str, ...]) -> list[tuple[str, float]]:
     import torch
+    device = next(model.parameters()).device
     out = []
     with torch.no_grad():
         for i in range(0, len(texts), PREDICT_BATCH):
             enc = tokenizer(texts[i:i + PREDICT_BATCH], truncation=True, max_length=MAX_LENGTH, padding=True,
-                            return_tensors="pt")
+                            return_tensors="pt").to(device)
             best, idx = torch.softmax(model(**enc).logits, dim=-1).max(dim=-1)
             out += [(labels[j], float(p)) for j, p in zip(idx.tolist(), best.tolist())]
     return out
 
 
-def load_predictor(model_dir: Path, threads: int = 8) -> tuple[Predictor, float] | None:
+def load_predictor(model_dir: Path, threads: int = 8, device: str | None = None) -> tuple[Predictor, float] | None:
     """(predictor, τ) from a trained model folder; None when the folder or torch/transformers is missing."""
     model_dir = Path(model_dir)
     if not (model_dir / "config.json").is_file() or not (model_dir / "tau.json").is_file():
@@ -65,7 +67,7 @@ def load_predictor(model_dir: Path, threads: int = 8) -> tuple[Predictor, float]
     labels = tuple(meta.get("labels", LABELS))
     torch.set_num_threads(threads)
     tokenizer = AutoTokenizer.from_pretrained(model_dir)
-    model = AutoModelForSequenceClassification.from_pretrained(model_dir).eval()
+    model = AutoModelForSequenceClassification.from_pretrained(model_dir).to(device or pick_device(torch)).eval()
 
     def predict(fragments: list[Fragment]) -> list[tuple[str, float]]:
         return _predict(model, tokenizer, [marked_text(f) for f in fragments], labels)
@@ -89,7 +91,7 @@ def _rule_label(f: Fragment) -> str:
 def train_relation_model(train: list[tuple[Fragment, str]], valid: list[tuple[Fragment, str]],
                          test: list[tuple[Fragment, str]], out_dir: Path, *, base: str = MODEL_ID,
                          revision: str | None = REVISION, epochs: int = 4, lr: float = 2e-5, batch: int = 16,
-                         threads: int = 8, seed: int = 0) -> dict:
+                         threads: int = 8, seed: int = 0, device: str | None = None) -> dict:
     import torch
     from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
@@ -100,13 +102,16 @@ def train_relation_model(train: list[tuple[Fragment, str]], valid: list[tuple[Fr
     model = AutoModelForSequenceClassification.from_pretrained(
         base, num_labels=len(LABELS), id2label=dict(enumerate(LABELS)), label2id={l: i for i, l in enumerate(LABELS)},
         use_safetensors=True, trust_remote_code=False, **pinned)
+    device = device or pick_device(torch)
+    model.to(device)
+    print(f"  training on {device}", flush=True)
 
     # Swapped copies teach both directions: with the markers exchanged, A→B becomes B→A.
     examples = [(marked_text(f), label) for f, label in train] + \
                [(marked_text(f, swap=True), flip_label(label)) for f, label in train]
     counts = Counter(label for _, label in examples)
     weights = torch.tensor([len(examples) / (len(LABELS) * counts[l]) if counts[l] else 1.0 for l in LABELS])
-    loss_fn = torch.nn.CrossEntropyLoss(weight=weights)
+    loss_fn = torch.nn.CrossEntropyLoss(weight=weights.to(device))
     optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
     generator = torch.Generator().manual_seed(seed)
     index = {l: i for i, l in enumerate(LABELS)}
@@ -117,8 +122,8 @@ def train_relation_model(train: list[tuple[Fragment, str]], valid: list[tuple[Fr
         for start in range(0, len(order), batch):
             chunk = [examples[i] for i in order[start:start + batch]]
             enc = tokenizer([t for t, _ in chunk], truncation=True, max_length=MAX_LENGTH, padding=True,
-                            return_tensors="pt")
-            loss = loss_fn(model(**enc).logits, torch.tensor([index[l] for _, l in chunk]))
+                            return_tensors="pt").to(device)
+            loss = loss_fn(model(**enc).logits, torch.tensor([index[l] for _, l in chunk], device=device))
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -143,7 +148,7 @@ def train_relation_model(train: list[tuple[Fragment, str]], valid: list[tuple[Fr
 
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    model.save_pretrained(out_dir, safe_serialization=True)
+    model.to("cpu").save_pretrained(out_dir, safe_serialization=True)
     tokenizer.save_pretrained(out_dir)
     (out_dir / "tau.json").write_text(json.dumps({"tau": tau, "labels": list(LABELS), "base": base,
                                                   "revision": revision}, ensure_ascii=False), encoding="utf-8")

@@ -37,20 +37,23 @@ def to_neg_neu_pos(probs: Sequence[float], id2label: dict[int, str]) -> tuple[fl
     return float(probs[0]), float(probs[1]), float(probs[2])
 
 
-def load_finbert(threads: int = 8) -> Scorer:
-    """Download (first run) and load the pinned model on CPU. Needs the `[ml]` extra."""
+def load_finbert(threads: int = 8, device: str | None = None) -> Scorer:
+    """Download (first run) and load the pinned model on the GPU when torch sees one, else CPU. Needs torch."""
     import torch
     from transformers import AutoModelForSequenceClassification, AutoTokenizer
+
+    from ..device import pick_device
+    device = device or pick_device(torch)
 
     torch.set_num_threads(threads)
     tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, revision=MODEL_REVISION, trust_remote_code=False)
     model = AutoModelForSequenceClassification.from_pretrained(MODEL_ID, revision=MODEL_REVISION,
-                                                               trust_remote_code=False).eval()
+                                                               trust_remote_code=False).to(device).eval()
     id2label = dict(model.config.id2label)
 
     def score(texts: list[str]) -> list[tuple[float, float, float]]:
         with torch.no_grad():
-            enc = tokenizer(texts, truncation=True, max_length=MAX_LENGTH, padding=True, return_tensors="pt")
+            enc = tokenizer(texts, truncation=True, max_length=MAX_LENGTH, padding=True, return_tensors="pt").to(device)
             probs = torch.softmax(model(**enc).logits, dim=-1).tolist()
         return [to_neg_neu_pos(row, id2label) for row in probs]
 

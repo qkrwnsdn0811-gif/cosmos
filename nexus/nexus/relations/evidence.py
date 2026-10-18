@@ -7,6 +7,7 @@ from typing import Callable
 
 from ..cosmos_reuse import import_relations
 from ..models import Company, EvidenceSnippet
+from .invest import classify_invest
 
 TAG_RE = re.compile(r"</?b>")
 GAP_RE = re.compile(r"\.{2,}")          # BigKinds joins hilight pieces with ".."
@@ -36,7 +37,8 @@ def extract_evidence(docs: list[dict], a: Company, b: Company,
             x, y = _first_alias(fragment, a_aliases), _first_alias(fragment, b_aliases)
             if not x or not y:
                 continue
-            hit = classify(fragment, x, y) or classify(fragment, y, x)
+            hit = (classify(fragment, x, y) or classify(fragment, y, x)
+                   or classify_invest(fragment, x, y) or classify_invest(fragment, y, x))
             if not hit:
                 continue
             src_alias, dst_alias, rel, confidence, pattern = hit

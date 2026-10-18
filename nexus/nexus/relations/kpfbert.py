@@ -221,7 +221,8 @@ def render_relation_report(stats: dict) -> str:
     ]
     before, after = stats.get("relations_before"), stats.get("relations_after")
     if stats.get("applied") is False:
-        lines.append(f"- 시험 정확도가 {APPLY_PRECISION:.0%} 미만이라 모델을 적용하지 않았다. analyze는 규칙만 쓴다.")
+        lines.append(f"- 시험 정확도가 {APPLY_PRECISION:.0%} 미만이라 새 모델을 적용하지 않았다(model-rejected). "
+                     "적용 중인 모델이 있으면 그대로 쓰고, 없으면 analyze는 규칙만 쓴다.")
     elif after is None:
         lines.append("- analyze 이후 채운다.")
     else:

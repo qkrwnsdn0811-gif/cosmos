@@ -7,7 +7,7 @@ import { relationshipMeta } from "./meta";
  * 간선 색은 주황 하나로 두고, 관계 유형 색(relationshipMeta.color)은 여기서 나온 역할을 통해
  * 노드 쪽 요소(이웃 링·칩 태그·툴팁·1홉 요약)에만 쓴다.
  */
-export type RoleKey = "SUPPLIER" | "CUSTOMER" | "INVESTOR" | "INVESTEE" | "PARTNER" | "COMPETITOR" | "OTHER";
+export type RoleKey = "SUPPLIER" | "CUSTOMER" | "INVESTOR" | "INVESTEE" | "PARTNER" | "COMPETITOR" | "COMENTION" | "OTHER";
 
 export interface RoleMeta {
   label: string;
@@ -23,10 +23,12 @@ export const ROLE_META: Record<RoleKey, RoleMeta> = {
   INVESTEE: { label: "피투자", type: "INVEST", dir: "out" },
   PARTNER: { label: "협력", type: "PARTNER", dir: "none" },
   COMPETITOR: { label: "경쟁", type: "COMPETE", dir: "none" },
+  /** 빅카인즈 같은 문장 동시언급 — 관계의 근거가 아니라 별도 역할로 둔다 */
+  COMENTION: { label: "함께 언급", type: "CO_MENTIONED", dir: "none" },
   OTHER: { label: "기타", type: "OTHER", dir: "none" },
 };
 /** 표시 순서 — RELATIONSHIP_ORDER(공급·투자·협력·경쟁)를 따르고 방향 있는 유형은 들어오는 쪽을 먼저 */
-export const ROLE_ORDER: RoleKey[] = ["SUPPLIER", "CUSTOMER", "INVESTOR", "INVESTEE", "PARTNER", "COMPETITOR", "OTHER"];
+export const ROLE_ORDER: RoleKey[] = ["SUPPLIER", "CUSTOMER", "INVESTOR", "INVESTEE", "PARTNER", "COMPETITOR", "COMENTION", "OTHER"];
 
 export function roleColor(role: RoleKey) {
   return relationshipMeta(ROLE_META[role].type).color;
@@ -43,6 +45,8 @@ export function roleOf(e: SceneEdge, selfId: string): RoleKey {
       return "PARTNER";
     case "COMPETE":
       return "COMPETITOR";
+    case "CO_MENTIONED":
+      return "COMENTION";
     default:
       return "OTHER";
   }

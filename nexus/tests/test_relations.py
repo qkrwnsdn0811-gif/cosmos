@@ -66,3 +66,23 @@ def test_extract_supply_direction():
 def test_extract_skips_fragment_without_both():
     docs = [pair_doc("<b>A사</b>는 장비를 납품한다..<b>B사</b>가 증설했다.")]
     assert extract_evidence(docs, A, B, aliases_of) == []
+
+
+TES = Company("KOSDAQ:095610", "KOSDAQ", "095610", "테스", "SEMICONDUCTOR", "장비")
+DI = Company("KOSPI:003160", "KOSPI", "003160", "디아이", "SEMICONDUCTOR", "장비")
+
+
+def tes_aliases(key):
+    return {TES.key: ["테스"], DI.key: ["디아이"]}[key]
+
+
+def test_alias_inside_another_word_is_not_a_company():
+    docs = [pair_doc("유니<b>테스</b>트는 번인 장비 분야에서 <b>디아이</b>, 엑시콘 등과 경쟁하고 있다."),
+            pair_doc("<b>디아이</b>는 신규 제품 <b>테스</b>트를 국내에서 수행하기로 협약했다.")]
+    assert extract_evidence(docs, TES, DI, tes_aliases) == []
+
+
+def test_alias_followed_by_a_particle_still_counts():
+    [snippet] = extract_evidence([pair_doc("<b>테스</b>는 <b>디아이</b>와 검사장비 시장에서 경쟁하고 있다.")],
+                                 TES, DI, tes_aliases)
+    assert snippet.rel == "COMPETE"

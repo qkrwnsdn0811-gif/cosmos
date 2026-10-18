@@ -22,8 +22,30 @@ def hilight_fragments(hilight: str) -> list[str]:
     return [f for f in fragments if f]
 
 
+# First syllables of the particles that may follow a company name ("테스는", "디아이와", "삼성전자 등").
+# Any other Hangul right after the alias, or Hangul right before it, means the alias sits inside another word —
+# "테스" in "테스트"/"유니테스트" produced false relations (2026-10-18).
+PARTICLE_START = set("은는이가을를와과에의도로으만까부처보랑등측께며")
+
+
+def _is_hangul(ch: str) -> bool:
+    return "가" <= ch <= "힣"
+
+
+def _standalone(fragment: str, alias: str) -> bool:
+    start = 0
+    while (i := fragment.find(alias, start)) != -1:
+        before = fragment[i - 1] if i else ""
+        j = i + len(alias)
+        after = fragment[j] if j < len(fragment) else ""
+        if not _is_hangul(before) and (not _is_hangul(after) or after in PARTICLE_START):
+            return True
+        start = i + 1
+    return False
+
+
 def _first_alias(fragment: str, aliases: list[str]) -> str | None:
-    return next((a for a in aliases if a in fragment), None)
+    return next((a for a in aliases if _standalone(fragment, a)), None)
 
 
 def extract_evidence(docs: list[dict], a: Company, b: Company,

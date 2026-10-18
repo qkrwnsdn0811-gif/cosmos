@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import csv
 import pickle
+import shutil
 import subprocess
 import sys
 import time
@@ -514,7 +515,8 @@ def _review_agreement(path: Path) -> float | None:
 def cmd_train_relations(args) -> int:
     from .relations.fragments import read_fragments
     from .relations.kpfbert import render_relation_report, train_relation_model
-    from .relations.labels import dedupe_near_duplicates, read_labels, should_apply, split_by_pair
+    from .relations.labels import (dedupe_near_duplicates, purge_seen_sentences, read_labels, should_apply,
+                                   split_by_pair)
     rel = _relations_dir()
     labels_path = rel / "labels.jsonl"
     if not labels_path.is_file():
@@ -530,22 +532,33 @@ def cmd_train_relations(args) -> int:
     ids_by_pair = dedupe_near_duplicates(ids_by_pair, {fid: by_id[fid].text for fid in labels})
     after = sum(len(v) for v in ids_by_pair.values())
     print(f"near-duplicates grouped: {before:,} → {after:,} labelled sentences", flush=True)
-    train_ids, valid_ids, test_ids = split_by_pair(ids_by_pair)
+    train_ids, valid_ids, test_ids, moved = purge_seen_sentences(*split_by_pair(ids_by_pair),
+                                                                 {fid: by_id[fid].text for fid in labels})
+    print(f"moved to train (near-duplicate already in train): valid {moved['valid']}, test {moved['test']}", flush=True)
     rows = lambda ids: [(by_id[fid], labels[fid]) for fid in ids]
     started = time.monotonic()
-    stats = train_relation_model(rows(train_ids), rows(valid_ids), rows(test_ids), rel / "model")
+    # train beside the applied model; it is replaced only when the new one passes, and kept as model-prev
+    new = rel / "model-new"
+    if new.exists():
+        shutil.rmtree(new)
+    stats = train_relation_model(rows(train_ids), rows(valid_ids), rows(test_ids), new)
     stats["labels"] = dict(Counter(labels.values()))
     stats["dedup"] = (before, after)
+    stats["moved"] = moved
     stats["review"] = _review_agreement(rel / "review.csv")
     precision = stats["test_precision"]
     stats["applied"] = should_apply(precision)
-    if not stats["applied"]:
-        # below APPLY_PRECISION on the test split the model is not used — analyze falls back to the rules
-        rejected = rel / "model-rejected"
-        if rejected.exists():
-            import shutil
-            shutil.rmtree(rejected)
-        (rel / "model").rename(rejected)
+    if stats["applied"]:
+        if (rel / "model").exists():
+            if (rel / "model-prev").exists():
+                shutil.rmtree(rel / "model-prev")
+            (rel / "model").rename(rel / "model-prev")
+        new.rename(rel / "model")
+    else:
+        # below APPLY_PRECISION on the test split the new model is not used; an applied model stays as it is
+        if (rel / "model-rejected").exists():
+            shutil.rmtree(rel / "model-rejected")
+        new.rename(rel / "model-rejected")
     RELATION_REPORT.write_text(render_relation_report(stats), encoding="utf-8")
     print(f"tau {stats['tau']:.2f}, test precision {precision}, recall {stats['test_recall']}, "
           f"rules {stats['rule_precision']}/{stats['rule_recall']}, applied {stats['applied']} "

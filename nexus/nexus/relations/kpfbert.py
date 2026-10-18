@@ -57,7 +57,7 @@ def _predict(model, tokenizer, texts: list[str], labels: tuple[str, ...]) -> lis
 def load_predictor(model_dir: Path, threads: int = 8, device: str | None = None) -> tuple[Predictor, float] | None:
     """(predictor, τ) from a trained model folder; None when the folder or torch/transformers is missing."""
     model_dir = Path(model_dir)
-    if not (model_dir / "config.json").is_file() or not (model_dir / "tau.json").is_file():
+    if not all((model_dir / name).is_file() for name in ("config.json", "model.safetensors", "tau.json")):
         return None
     try:
         import torch
@@ -186,6 +186,9 @@ def render_relation_report(stats: dict) -> str:
     ]
     if stats.get("dedup"):
         lines.append(f"- 같은 보도자료처럼 거의 같은 문장 묶기: {stats['dedup'][0]:,} → {stats['dedup'][1]:,}문장")
+    if stats.get("moved"):
+        lines.append(f"- 학습에 거의 같은 문장이 있어 학습으로 옮긴 문장: 검증 {stats['moved']['valid']} · "
+                     f"시험 {stats['moved']['test']} (점수는 처음 보는 문장으로만 낸다)")
     sizes = stats.get("sizes")
     if sizes:
         lines.append(f"- 분할(기업쌍 단위): 학습 {sizes['train']} · 검증 {sizes['valid']} · 시험 {sizes['test']}")

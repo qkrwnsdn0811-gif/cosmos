@@ -1,8 +1,8 @@
 import json
 
 from nexus.relations.fragments import Fragment
-from nexus.relations.labels import (LABELS, choose_threshold, flip_label, marked_text, read_labels, should_apply,
-                                    split_by_pair, write_review, write_sample)
+from nexus.relations.labels import (LABELS, choose_threshold, flip_label, marked_text, purge_seen_sentences,
+                                    read_labels, should_apply, split_by_pair, write_review, write_sample)
 
 
 def frag(text, a="삼성전기", b="솔브레인", fid="0" * 16):
@@ -85,3 +85,24 @@ def test_model_is_applied_from_80_percent_test_precision():
     assert should_apply(0.80)
     assert not should_apply(0.79)
     assert not should_apply(None)
+
+
+def test_purge_moves_eval_sentences_seen_in_train():
+    release = "삼성전자는 대덕전자, 티엘비, 피에스케이 등 협력사 사업장을 방문해 상생 방안을 논의했다."
+    texts = {"t1": release, "v1": release.replace("방문해", "찾아"), "v2": "솔브레인이 새 공장을 세운다.",
+             "s1": release, "s2": "티씨케이가 실리콘카바이드 링을 납품한다.", "s3": "솔브레인이 새 공장을 세운다고 밝혔다."}
+    train, valid, test, moved = purge_seen_sentences(["t1"], ["v1", "v2"], ["s1", "s2", "s3"], texts)
+    assert (valid, test) == (["v2"], ["s2"])                  # s3 is a near-duplicate of v2 (valid), so it goes too
+    assert train == ["t1", "v1", "s1", "s3"]
+    assert moved == {"valid": 1, "test": 2}
+
+
+def test_read_labels_drops_non_object_lines_and_repeated_ids(tmp_path):
+    path = tmp_path / "labels.jsonl"
+    path.write_text("\n".join([json.dumps({"fragment_id": "a", "label": "PARTNER"}),
+                               json.dumps([{"fragment_id": "b", "label": "NONE"}]),
+                               json.dumps("NONE"),
+                               json.dumps({"fragment_id": "a", "label": "NONE"})]), encoding="utf-8")
+    labels, dropped = read_labels(path, {"a", "b"})
+    assert labels == {"a": "PARTNER"}
+    assert dropped == 3

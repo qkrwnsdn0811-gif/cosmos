@@ -64,7 +64,8 @@ def write_sample(fragments: list[Fragment], path: Path, names: dict[str, str]) -
 
 
 def read_labels(path: Path, known_ids: set[str]) -> tuple[dict[str, str], int]:
-    """Labels keyed by fragment id, and the number of lines dropped (unknown id, label outside LABELS, bad JSON)."""
+    """Labels keyed by fragment id, and the number of lines dropped (bad JSON, not an object, unknown id, label
+    outside LABELS, an id already labelled — the first label stands)."""
     labels, dropped = {}, 0
     for line in Path(path).read_text(encoding="utf-8").splitlines():
         if not line.strip():
@@ -74,8 +75,11 @@ def read_labels(path: Path, known_ids: set[str]) -> tuple[dict[str, str], int]:
         except json.JSONDecodeError:
             dropped += 1
             continue
+        if not isinstance(row, dict):
+            dropped += 1
+            continue
         fid, label = row.get("fragment_id"), row.get("label")
-        if fid not in known_ids or label not in LABELS:
+        if fid not in known_ids or label not in LABELS or fid in labels:
             dropped += 1
             continue
         labels[fid] = label
@@ -145,6 +149,37 @@ def near_duplicate_groups(texts: list[str], threshold: float = NEAR_DUPLICATE) -
             members.append([s])
             groups.append(len(members) - 1)
     return groups
+
+
+def _seen(s: set[str], seen: list[set[str]], threshold: float) -> bool:
+    return any(len(s & m) / min(len(s), len(m)) >= threshold - EPS for m in seen)
+
+
+def purge_seen_sentences(train: list[str], valid: list[str], test: list[str], texts: dict[str, str],
+                         threshold: float = NEAR_DUPLICATE) -> tuple[list[str], list[str], list[str], dict[str, int]]:
+    """Move a valid sentence with a near-duplicate in train, and a test sentence with one in train or valid, into
+    train, so every scored sentence is new to the model. A sentence naming three companies yields a fragment per pair,
+    and the pair split can put those pairs in different parts (2026-10-19 review: 173 of 312 test sentences had a
+    near-duplicate in train; precision 0.81 overall, 0.70 on the unseen ones). Grouping pairs that share a sentence
+    instead makes one component of 87% of the sentences, so the copies are moved, not the pairs."""
+    shingles = {fid: _shingles(texts[fid]) for fid in (*train, *valid, *test)}
+    train = list(train)
+    seen = [shingles[fid] for fid in train]
+    kept_valid = []
+    for fid in valid:
+        if _seen(shingles[fid], seen, threshold):
+            train.append(fid)
+        else:
+            kept_valid.append(fid)
+    moved_valid = len(valid) - len(kept_valid)
+    seen = [shingles[fid] for fid in (*train, *kept_valid)]
+    kept_test = []
+    for fid in test:
+        if _seen(shingles[fid], seen, threshold):
+            train.append(fid)
+        else:
+            kept_test.append(fid)
+    return train, kept_valid, kept_test, {"valid": moved_valid, "test": len(test) - len(kept_test)}
 
 
 def dedupe_near_duplicates(ids_by_pair: dict[tuple[str, str], list[str]],

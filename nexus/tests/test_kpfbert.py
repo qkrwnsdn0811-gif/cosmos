@@ -46,6 +46,19 @@ def test_report_has_sections():
         assert head in text
 
 
+def test_load_predictor_without_weights(tmp_path):
+    (tmp_path / "config.json").write_text("{}", encoding="utf-8")       # a save that died before the weights landed
+    (tmp_path / "tau.json").write_text('{"tau": 0.8}', encoding="utf-8")
+    assert load_predictor(tmp_path) is None
+
+
+def test_report_lists_eval_sentences_moved_to_train():
+    text = render_relation_report({"labels": {}, "review": None, "tau": 0.9, "test_precision": 0.9,
+                                   "test_recall": 0.5, "rule_precision": 0.9, "rule_recall": 0.2, "per_class": {},
+                                   "confusion": [], "moved": {"valid": 180, "test": 173}})
+    assert "학습에 거의 같은 문장이 있어 학습으로 옮긴 문장: 검증 180 · 시험 173" in text
+
+
 def test_report_states_the_80_percent_bar_when_rejected():
     text = render_relation_report({"labels": {}, "review": None, "tau": 0.9, "test_precision": 0.7,
                                    "test_recall": 0.5, "rule_precision": 0.9, "rule_recall": 0.2, "per_class": {},

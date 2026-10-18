@@ -258,6 +258,82 @@ def test_build_graph_adds_model_snippets_without_double_counting(tmp_path):
     assert sorted((s.snippet, s.pattern) for s in snippets) == [(model_text, "kpfbert"), (rule_text, "clause+kw")]
 
 
+def test_build_graph_points_a_model_supply_ba_from_b_to_a(tmp_path):
+    from datetime import datetime, timedelta, timezone
+
+    from nexus.models import Article
+    from nexus.pipeline import build_graph
+
+    a = Company("KOSPI:009150", "KOSPI", "009150", "삼성전기", "SEMICONDUCTOR", "부품")
+    b = Company("KOSDAQ:357780", "KOSDAQ", "357780", "솔브레인", "SEMICONDUCTOR", "소재")
+    recognizer = Recognizer([a, b], alias_rows([a, b], [], []))
+    kst = timezone(timedelta(hours=9))
+    article = Article("n1", "t", "", date(2026, 10, 13), datetime(2026, 10, 13, 10, tzinfo=kst), "p", "", (), (), "",
+                      ("삼성전기", "솔브레인"), (), ())
+    hits = [{"news_id": "x0", "title": "제목", "dateline": "2026-07-01T10:00:00.000+09:00", "provider": "p",
+             "provider_link_page": "", "hilight": "삼성전기를 고객사로 둔 솔브레인의 실적이 좋아졌다."}]
+
+    class Client:
+        def post(self, path, argument, *, cache):
+            return {"documents": hits}
+
+    def predictor(frags):
+        # pair order is by key: A = KOSDAQ:357780 (솔브레인), B = KOSPI:009150 (삼성전기); SUPPLY_BA = B supplies A
+        assert [(f.a_key, f.b_key) for f in frags] == [(b.key, a.key)]
+        return [("SUPPLY_AB", 0.95) for _ in frags]
+
+    cosmos_csv = tmp_path / "rel.csv"
+    cosmos_csv.write_text("source_market,source_stock_code,target_market,target_stock_code,relationship_type_code" + chr(10),
+                          encoding="utf-8")
+    _, edges, _ = build_graph([article], recognizer, {c.key: c for c in (a, b)}, Client(),
+                              start=date(2025, 1, 1), end=date(2026, 10, 14), today=date(2026, 10, 14),
+                              cosmos_csv=cosmos_csv, predictor=(predictor, 0.9))
+    assert [(e.src, e.dst) for e in edges if e.rel == "SUPPLY"] == [(b.key, a.key)]   # 솔브레인 → 삼성전기
+
+
+def _train_relations_setup(tmp_path, monkeypatch, precision):
+    import argparse
+    import json
+
+    import nexus.pipeline as pipeline
+    import nexus.relations.kpfbert as kpfbert
+    from nexus.relations.fragments import Fragment, write_fragments
+
+    rel = tmp_path / "relations"
+    frags = [Fragment(f"{i:016x}", f"KOSDAQ:9000{i % 4}", "KOSPI:900009", "가", "나", f"문장 {i}번은 서로 다르다 {i * 7}",
+                      f"N{i}", "", "", None, "", None, None) for i in range(40)]
+    write_fragments(frags, rel / "fragments.parquet")
+    (rel / "labels.jsonl").write_text("\n".join(json.dumps({"fragment_id": f.fragment_id, "label": "NONE"})
+                                                for f in frags), encoding="utf-8")
+    (rel / "model").mkdir()
+    (rel / "model" / "old.txt").write_text("applied", encoding="utf-8")
+
+    def fake_train(train, valid, test, out_dir, **kw):
+        out_dir.mkdir(parents=True, exist_ok=True)
+        (out_dir / "new.txt").write_text("trained", encoding="utf-8")
+        return {"tau": 0.9, "test_precision": precision, "test_recall": 0.5, "rule_precision": 1.0,
+                "rule_recall": 0.1, "per_class": {}, "confusion": [], "sizes": {}}
+
+    monkeypatch.setattr(pipeline, "_relations_dir", lambda: rel)
+    monkeypatch.setattr(pipeline, "RELATION_REPORT", tmp_path / "report.md")
+    monkeypatch.setattr(kpfbert, "train_relation_model", fake_train)
+    assert pipeline.cmd_train_relations(argparse.Namespace()) == 0
+    return rel
+
+
+def test_train_relations_keeps_the_applied_model_when_a_new_one_fails(tmp_path, monkeypatch):
+    rel = _train_relations_setup(tmp_path, monkeypatch, precision=0.7)
+    assert (rel / "model" / "old.txt").is_file() and not (rel / "model" / "new.txt").exists()
+    assert (rel / "model-rejected" / "new.txt").is_file()
+
+
+def test_train_relations_replaces_the_applied_model_and_keeps_the_previous_one(tmp_path, monkeypatch):
+    rel = _train_relations_setup(tmp_path, monkeypatch, precision=0.9)
+    assert (rel / "model" / "new.txt").is_file() and not (rel / "model" / "old.txt").exists()
+    assert (rel / "model-prev" / "old.txt").is_file()
+    assert not (rel / "model-new").exists()
+
+
 @pytest.mark.parametrize("command", ["relation-fragments", "train-relations"])
 def test_relation_commands_are_registered(command):
     with pytest.raises(SystemExit) as exc:

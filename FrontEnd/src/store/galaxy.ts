@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import type { AltitudeWindow, MetricWindow, PricePeriod, RelationshipType } from "@/api/types";
 import type { CameraPresetId } from "@/lib/guide";
-import { RELATIONSHIP_ORDER } from "@/lib/meta";
+import { GALAXY_EDGE_TYPES } from "@/lib/meta";
 import type { RoleKey } from "@/lib/roles";
 
 /** 모바일에서 행성을 이만큼 누르면 관계망으로 워프한다 — HoldRing 의 채움 애니메이션 길이와 같은 값 */
@@ -136,7 +136,7 @@ export const useGalaxy = create<GalaxyState>((set, get) => ({
   scope: "all",
   industryId: null,
   minScore: 0,
-  activeTypes: new Set(RELATIONSHIP_ORDER),
+  activeTypes: new Set(GALAXY_EDGE_TYPES),
   showLabels: true,
   edgeBudget: true,
   altitudeOn: true,
@@ -264,7 +264,7 @@ export const useGalaxy = create<GalaxyState>((set, get) => ({
     set({ dockOpen: v });
   },
   resetControls() {
-    set({ spread: 0, activeTypes: new Set(RELATIONSHIP_ORDER), minScore: 0, altitudeOn: true, altitudeWindow: "30D", edgeWindow: "30D" });
+    set({ spread: 0, activeTypes: new Set(GALAXY_EDGE_TYPES), minScore: 0, altitudeOn: true, altitudeWindow: "30D", edgeWindow: "30D" });
   },
   toggleLabels() {
     set((s) => ({ showLabels: !s.showLabels }));

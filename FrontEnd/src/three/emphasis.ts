@@ -1,3 +1,4 @@
+import { COMENTION_DIM, isComention } from "@/lib/edgePick";
 import type { SceneModel } from "@/lib/graph";
 import type { PathResult } from "@/lib/path";
 import { roleOf, type RoleKey } from "@/lib/roles";
@@ -154,7 +155,10 @@ export function computeEmphasis(model: SceneModel, input: EmphasisInput): Emphas
   }
 
   model.nodes.forEach((n) => node.set(n.id, base(n.id)));
-  model.edges.forEach((e) => edge.set(e.id, shown.has(e.id) ? Math.min(base(e.source), base(e.target)) : 0));
+  // 함께 언급은 관계의 근거가 아니라 기본 상태에서 흐리게 둔다 — 호버·선택하면 다른 간선처럼 밝아진다
+  model.edges.forEach((e) =>
+    edge.set(e.id, shown.has(e.id) ? Math.min(base(e.source), base(e.target)) * (isComention(String(e.type)) ? COMENTION_DIM : 1) : 0),
+  );
   if (model.centerId) {
     pinned.add(model.centerId);
     badges.add(model.centerId);

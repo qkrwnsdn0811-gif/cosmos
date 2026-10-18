@@ -5,6 +5,7 @@
 import type { CompanyGraph, GraphEdge, LatestGraph, LatestGraphNode, Market, RelationshipType } from "@/api/types";
 import { ARMS, ARM_SPREAD, CORE_Y, DISC_Y, R_CORE, R_MAX, armTheta, nearestArm } from "./galaxyShape";
 import { INDUSTRY_COLORS, NEIGHBOR_NODE_COLOR, UNCLASSIFIED_INDUSTRY, industryColor, relationshipMeta } from "./meta";
+import { strongestPerPair } from "./edgePick";
 import { gaussian, hashString, seededRandom } from "./rng";
 
 export type Vec3 = [number, number, number];
@@ -191,16 +192,9 @@ function finish(kind: SceneModel["kind"], centerId: string | null, nodes: SceneN
   const neighbors = new Map<string, Set<string>>();
   const incident = new Map<string, Set<string>>();
   const sceneEdges: SceneEdge[] = [];
-  // 같은 두 기업(방향 무관) 사이 관계가 여럿이면 점수가 가장 높은 것 하나만 그린다 — 뷰마다 다른 관계(협력/경쟁)가 보이지 않게 경로 뷰와 같은 규칙
-  const strongest = new Map<string, GraphEdge>();
-  edges.forEach((e) => {
-    const a = e.sourceCompanyId;
-    const b = e.targetCompanyId;
-    const key = a < b ? `${a}:${b}` : `${b}:${a}`;
-    const cur = strongest.get(key);
-    if (!cur || e.score > cur.score) strongest.set(key, e);
-  });
-  strongest.forEach((e) => {
+  // 같은 두 기업(방향 무관) 사이 관계가 여럿이면 하나만 그린다 — 뷰마다 다른 관계(협력/경쟁)가 보이지 않게 경로 뷰와 같은 규칙.
+  // 빅카인즈 함께 언급은 관계의 근거가 아니라서 근거 관계가 있으면 점수와 관계없이 그쪽을 남긴다 (edgePick)
+  strongestPerPair(edges).forEach((e) => {
     const a = nodeById.get(e.sourceCompanyId);
     const b = nodeById.get(e.targetCompanyId);
     if (!a || !b) return;

@@ -71,8 +71,11 @@ export const RELATIONSHIP_META: Record<string, RelationshipMeta> = {
   INVEST: { code: "INVEST", label: "투자·지분", color: "#C6A5FF", directed: true, description: "지분 보유·출자 관계. 지배 방향으로 표시합니다." },
   PARTNER: { code: "PARTNER", label: "협력", color: "#4F8DFF", directed: false, description: "합작·제휴·공동 개발처럼 방향이 없는 협력 관계." },
   COMPETE: { code: "COMPETE", label: "경쟁", color: "#FF4D6D", directed: false, description: "같은 시장에서 점유율·가격을 다투는 관계." },
+  CO_MENTIONED: { code: "CO_MENTIONED", label: "함께 언급", color: "#8A93A3", directed: false, description: "같은 문장에 함께 나온 기사 수 기반 · 관계의 근거는 아님" },
 };
 export const RELATIONSHIP_ORDER: RelationshipType[] = ["SUPPLY", "INVEST", "PARTNER", "COMPETE"];
+/** 은하의 관계 종류 필터 — 근거 관계 4종 뒤에 빅카인즈 함께 언급. 뉴스 2D 지도·범례·역할은 RELATIONSHIP_ORDER 만 쓴다 */
+export const GALAXY_EDGE_TYPES: RelationshipType[] = [...RELATIONSHIP_ORDER, "CO_MENTIONED"];
 /**
  * 지분 관계로 취급할 유형 코드. relationship_type 시드가 아직 없어 코드가 바뀔 수 있으므로
  * 화면(투자·지분 트리)이 문자열을 직접 비교하지 않고 이 배열만 참조하게 한다.

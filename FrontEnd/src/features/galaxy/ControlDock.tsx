@@ -2,7 +2,7 @@ import { useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent a
 import type { AltitudeWindow } from "@/api/types";
 import { Icon } from "@/components/ui";
 import { DOCK_UI } from "@/lib/guide";
-import { METRIC_WINDOWS, METRIC_WINDOW_LABEL, RELATIONSHIP_ORDER, relationshipMeta } from "@/lib/meta";
+import { GALAXY_EDGE_TYPES, METRIC_WINDOWS, METRIC_WINDOW_LABEL, relationshipMeta } from "@/lib/meta";
 import { spreadStage } from "@/lib/spread";
 import { useGalaxy } from "@/store/galaxy";
 import { pct, useWeight } from "@/store/weight";
@@ -110,7 +110,7 @@ export default function ControlDock() {
     </div>
   );
 
-  const typeChips = RELATIONSHIP_ORDER.map((t) => {
+  const typeChips = GALAXY_EDGE_TYPES.map((t) => {
     const m = relationshipMeta(t);
     const on = activeTypes.has(t);
     return (

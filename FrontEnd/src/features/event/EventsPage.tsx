@@ -5,7 +5,7 @@ import { Empty, ErrorNotice, Skeleton } from "@/components/ui";
 import { fmtDateTime } from "@/lib/format";
 import { useEventFeed, useEventMap } from "@/lib/queries";
 import EventEvidencePanel from "./EventEvidencePanel";
-import EventRadialMap from "./EventRadialMap";
+import EventGalaxy from "./EventGalaxy";
 import "@/features/news/news.css";
 import "./events.css";
 
@@ -13,7 +13,7 @@ const DISCLAIMER =
   "관계·추정 결과와 초과수익률은 투자 권유가 아닙니다. 초과수익률은 이미 관측된 주가 변화이며 미래 주가 예측이 아닙니다.";
 
 /**
- * NEXUS 이벤트 — 빅카인즈 기사 1건을 고르면 그 기사만의 관계 지도(근거 실선 · 추정 점선)를 연다.
+ * NEXUS 이벤트 — 빅카인즈 기사 1건을 고르면 그 기사만의 3D 관계 지도(기사 별 · 언급 기업 · 추정 기업 궤도)를 연다.
  * 레이아웃은 뉴스 화면(news.css)의 레일·지도 카드를 그대로 쓰고, 이벤트 전용 부분만 events.css 에 둔다.
  */
 export default function EventsPage() {
@@ -110,7 +110,7 @@ export default function EventsPage() {
                 {map.isError ? (
                   <Empty>이벤트를 찾을 수 없습니다. 목록에서 다른 이벤트를 골라 주세요.</Empty>
                 ) : map.data ? (
-                  <EventRadialMap map={map.data} selectedId={selectedCompany} onSelect={selectCompany} />
+                  <EventGalaxy map={map.data} selectedId={selectedCompany} onSelect={selectCompany} />
                 ) : (
                   <Skeleton h={420} style={{ borderRadius: 14 }} />
                 )}

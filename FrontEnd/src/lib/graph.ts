@@ -619,7 +619,7 @@ export function layoutGalaxy(graph: LatestGraph, capT: CapScale = capScale(graph
  */
 export const ORBIT = [0, 42, 76, 108];
 /** 궤도 타원의 z 축 비율 — 비스듬히 내려다볼 때 원으로 보이도록 살짝 눌렀다 */
-const SYSTEM_SQUASH = 0.82;
+export const SYSTEM_SQUASH = 0.82;
 /**
  * 전체 은하의 z 축(안길이) 비율 — 행성이 가운데(원형)에 몰려 보인다는 피드백에 따라, 은하를 좌우로
  * 긴 타원으로 눌러 화면의 좌우 공간을 더 쓰게 한다. x 는 그대로 두고 z 만 이 비율만큼 줄인다.

@@ -24,43 +24,6 @@
   line-height: 1.5;
   color: var(--text-3);
 }
-.event-map svg {
-  display: block;
-  width: 100%;
-  max-width: 560px;
-  margin: 0 auto;
-  height: auto;
-}
-.event-map-center-label {
-  font-size: 12px;
-  font-weight: 700;
-  fill: var(--text);
-}
-.event-map-center-date {
-  font-size: 10.5px;
-  fill: var(--text-3);
-}
-.event-map-node {
-  cursor: pointer;
-  outline: none;
-}
-.event-map-node:focus-visible circle {
-  stroke: var(--text);
-}
-.event-map-name {
-  font-size: 11px;
-  fill: var(--text-2);
-  pointer-events: none;
-}
-.event-map-node.on .event-map-name {
-  fill: var(--text);
-  font-weight: 700;
-}
-.event-map-ar {
-  font-size: 10.5px;
-  font-family: var(--mono);
-  pointer-events: none;
-}
 .event-map-legend {
   display: flex;
   flex-wrap: wrap;
@@ -81,33 +44,6 @@
   width: 22px;
   height: 0;
   border-top: 2px solid var(--primary);
-}
-.event-map-legend .sw.dashed {
-  border-top: 2px dashed var(--accent);
-}
-.event-map-legend .sw.hold {
-  border-top: 2px dashed var(--text-4);
-}
-.event-map-legend .dot {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-}
-.event-map-legend .dot.pos {
-  background: var(--pos);
-}
-.event-map-legend .dot.neg {
-  background: var(--neg);
-}
-.event-map-legend .dot.neu {
-  background: var(--impact-neutral);
-}
-.event-map-legend .dot.hollow {
-  border: 2px solid var(--primary);
-}
-.event-map-ring {
-  pointer-events: none;
 }
 .event-impact {
   margin: 10px 0 4px;
@@ -211,17 +147,24 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
-.event-map-hit {
-  fill: transparent;
-  pointer-events: all;
+
+/* 3D 이벤트 지도 (EventGalaxy) — 캔버스는 카드 폭을 채우고 높이는 고정 */
+.event-galaxy-stage {
+  height: 460px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #05070f;
 }
-/* 판단 보류 노드는 이름표를 숨겨 화면을 덜 복잡하게 하고, 고르거나 올려 둘 때만 보여준다 */
-.event-map-node.hold .event-map-label {
-  opacity: 0;
-  transition: opacity 0.12s;
+@media (max-width: 720px) {
+  .event-galaxy-stage {
+    height: 340px;
+  }
 }
-.event-map-node.hold:hover .event-map-label,
-.event-map-node.hold:focus-visible .event-map-label,
-.event-map-node.hold.on .event-map-label {
-  opacity: 1;
+.event-map-legend .star {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #fff1c9;
+  box-shadow: 0 0 8px #ffcf6b;
 }

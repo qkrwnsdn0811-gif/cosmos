@@ -10,6 +10,7 @@ import Backdrop from "./Backdrop";
 import { LAB } from "./toon";
 import { computeEmphasis, type Emphasis } from "./emphasis";
 import { dragState } from "./morph";
+import { fitDistance } from "./fit";
 
 /**
  * 행성을 끄는 동안 궤도 회전을 멈춘다 — 메인 씬은 Director 가 같은 일을 하지만, 여기에는 연출 카메라가 없다.
@@ -26,22 +27,20 @@ function DragGuard() {
 const VIEW_DIR = new THREE.Vector3(0, 0.9, 2.1).normalize();
 
 /**
- * 캔버스 비율에 맞춰 궤도 전체(반지름 radius)가 들어오도록 카메라 거리를 잡는다. 좁은 세로 칸에서는 가로 시야가
- * 좁아져 바깥 궤도 행성이 잘렸다 (이벤트 지도, 2026-10-19). 크기가 바뀌면 다시 맞춘다.
+ * 캔버스 비율에 맞춰 궤도 전체(반지름 radius, 높이 ±height)가 여유 있게 들어오도록 카메라 거리를 잡는다(fitDistance).
+ * 좁은 세로 칸에서는 가로 시야가 좁아져 바깥 궤도 행성이 잘렸다 (이벤트 지도, 2026-10-19). 크기가 바뀌면 다시 맞춘다.
  */
-function FitCamera({ radius }: { radius: number }) {
+function FitCamera({ radius, height }: { radius: number; height: number }) {
   const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera;
   const size = useThree((s) => s.size);
   const controls = useThree((s) => s.controls) as unknown as { target: THREE.Vector3; update(): void } | null;
   useEffect(() => {
-    const v = THREE.MathUtils.degToRad(camera.fov) / 2;
-    const h = Math.atan(Math.tan(v) * (size.width / Math.max(1, size.height)));
-    const dist = Math.max((radius * 1.2) / Math.tan(h), (radius * 0.8) / Math.tan(v));
+    const dist = fitDistance(radius, height, camera.fov, size.width / Math.max(1, size.height));
     camera.position.copy(VIEW_DIR).multiplyScalar(dist);
     camera.lookAt(0, 0, 0);
     controls?.target.set(0, 0, 0);
     controls?.update();
-  }, [camera, controls, radius, size.width, size.height]);
+  }, [camera, controls, radius, height, size.width, size.height]);
   return null;
 }
 
@@ -84,13 +83,15 @@ export default function MiniScene({
     const e = computeEmphasis(model, { hoveredId: hovered ?? highlightId, hoveredEdgeId: hoveredEdge, selectedEdgeId: null, minScore: 0, activeTypes });
     return adjustEmphasis ? adjustEmphasis(e) : e;
   }, [model, hovered, hoveredEdge, highlightId, activeTypes, adjustEmphasis]);
-  const radius = useMemo(() => {
-    if (!model) return 60;
+  const { radius, height } = useMemo(() => {
+    if (!model) return { radius: 60, height: 0 };
     let r = 10;
+    let h = 0;
     model.nodes.forEach((n) => {
       r = Math.max(r, Math.hypot(n.pos[0], n.pos[2]));
+      h = Math.max(h, Math.abs(n.pos[1]));
     });
-    return r;
+    return { radius: r, height: h };
   }, [model]);
 
   return (
@@ -108,7 +109,7 @@ export default function MiniScene({
       <color attach="background" args={["#05070f"]} />
       <OrbitControls makeDefault enablePan={false} enableDamping dampingFactor={0.08} autoRotate={autoRotate && !hovered} autoRotateSpeed={0.6} minDistance={14} maxDistance={radius * 8 + 40} maxPolarAngle={Math.PI * 0.6} />
       <DragGuard />
-      <FitCamera radius={radius} />
+      <FitCamera radius={radius} height={height} />
       <Backdrop radius={600} stars={400} />
       <ambientLight intensity={0.55} color="#c9d4ff" />
       <hemisphereLight args={["#9ab3ff", "#3a1f5c", 0.6]} />

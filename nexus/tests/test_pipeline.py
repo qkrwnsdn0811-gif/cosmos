@@ -184,3 +184,42 @@ def test_build_graph_searches_relation_words_for_pairs_outside_sentence_comentio
     assert len(client.queries) == 1 and " AND (" in client.queries[0]
     assert len(snippets) == 1 and snippets[0].rel == "INVEST"
     assert [(e.src, e.dst, e.rel, e.source) for e in edges if e.source == "NEWS"] == [(b.key, a.key, "INVEST", "NEWS")]
+
+
+def test_build_graph_skips_a_pair_the_api_keeps_rejecting(tmp_path, monkeypatch):
+    from datetime import datetime, timedelta, timezone
+
+    import nexus.pipeline as pipeline
+    from nexus.bigkinds.client import BigKindsError
+    from nexus.models import Article
+    from nexus.pipeline import build_graph
+
+    monkeypatch.setattr(pipeline.time, "sleep", lambda seconds: None)
+    a = Company("KOSDAQ:166090", "KOSDAQ", "166090", "하나머티리얼즈", "SEMICONDUCTOR", "소재")
+    b = Company("KOSDAQ:067310", "KOSDAQ", "067310", "하나마이크론", "SEMICONDUCTOR", "후공정")
+    c = Company("KOSPI:005930", "KOSPI", "005930", "삼성전자", "SEMICONDUCTOR", "제조")
+    recognizer = Recognizer([a, b, c], alias_rows([a, b, c], [], []))
+    kst = timezone(timedelta(hours=9))
+    article = Article("n1", "t", "", date(2026, 10, 13), datetime(2026, 10, 13, 10, tzinfo=kst), "p", "", (), (), "",
+                      ("하나머티리얼즈", "하나마이크론", "삼성전자"), (), ())
+    hit = {"news_id": "x1", "title": "제목", "dateline": "2026-07-01T10:00:00.000+09:00", "provider": "p",
+           "provider_link_page": "", "hilight": "하나마이크론, 종속회사 하나머티리얼즈 1000억 교환사채"}
+
+    class Client:
+        queries = []
+
+        def post(self, path, argument, *, cache):
+            self.queries.append(argument["query"])
+            if "삼성전자" in argument["query"]:
+                raise BigKindsError(-1, "Parameter Error!: 1990-01-01 이전 날짜는 조회할 수 없습니다.")
+            return {"documents": [hit]}
+
+    cosmos_csv = tmp_path / "rel.csv"
+    cosmos_csv.write_text("source_market,source_stock_code,target_market,target_stock_code,relationship_type_code" + chr(10),
+                          encoding="utf-8")
+    client = Client()
+    _, edges, snippets = build_graph([article], recognizer, {x.key: x for x in (a, b, c)}, client,
+                                     start=date(2025, 1, 1), end=date(2026, 10, 14), today=date(2026, 10, 14),
+                                     cosmos_csv=cosmos_csv)
+    assert [s.rel for s in snippets] == ["INVEST"]                       # the healthy pair still yields evidence
+    assert sum("삼성전자" in q for q in client.queries) == 2 * 3          # two rejected pairs, three tries each

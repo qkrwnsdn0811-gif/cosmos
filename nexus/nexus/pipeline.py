@@ -14,7 +14,7 @@ from itertools import combinations
 from pathlib import Path
 from urllib.parse import urlparse
 
-from .bigkinds.client import BigKindsClient
+from .bigkinds.client import BigKindsClient, BigKindsError
 from .bigkinds.search import pair_hilights, relation_hilights, search_documents
 from .config import REPO_ROOT, load_settings
 from .entities.master import ALIAS_COLUMNS, alias_rows, build_master
@@ -42,6 +42,8 @@ COSMOS_COMPANIES = REPO_ROOT / "AI" / "ner" / "data" / "companies.csv"
 COSMOS_ALIASES = REPO_ROOT / "AI" / "ner" / "data" / "aliases.csv"
 COSMOS_RELATIONS = REPO_ROOT / "AI" / "graph" / "data" / "db_full_20260922" / "company_relationship.csv"
 PRICE_LOOKBACK = timedelta(days=14)
+RELATION_RETRIES = 2              # BigKinds sometimes rejects a valid query once (seen 2026-10-18) — retry, then skip
+RELATION_RETRY_WAIT = 5.0
 PRICE_HISTORY = timedelta(days=150)       # 60 trading days of sigma before the earliest event
 IMPACT_REPORT = REPO_ROOT / "docs" / "nexus" / "impact-model-report.md"
 
@@ -80,6 +82,19 @@ def candidate_pairs(articles: list[Article], recognizer: Recognizer, companies: 
     return [pair for pair, _ in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))]
 
 
+def _relation_docs(client, a_term: str, b_term: str, *, start: date, end: date, today: date) -> list[dict] | None:
+    """Relation-word search for one pair; a pair the API keeps rejecting is skipped instead of aborting analyze."""
+    for attempt in range(RELATION_RETRIES + 1):
+        try:
+            return relation_hilights(client, a_term, b_term, start=start, end=end, today=today)
+        except BigKindsError as exc:
+            if attempt == RELATION_RETRIES:
+                print(f"  skipped relation search {a_term} / {b_term}: {exc}", flush=True)
+                return None
+            time.sleep(RELATION_RETRY_WAIT)
+    return None
+
+
 def _unique_snippets(snippets: list[EvidenceSnippet]) -> list[EvidenceSnippet]:
     """The plain and the relation-word search can return the same article fragment; count it once."""
     seen, unique = set(), []
@@ -106,12 +121,17 @@ def build_graph(articles: list[Article], recognizer: Recognizer, companies: dict
     # Every pair that shares an article also gets a relation-word search (2026-10-18: evidence relations were
     # only 15 with the plain search over the top 300 sentence pairs).
     pairs = candidate_pairs(articles, recognizer, companies)
+    skipped = 0
     for i, (key_a, key_b) in enumerate(pairs, 1):
         a, b = companies[key_a], companies[key_b]
-        docs = relation_hilights(client, terms[a.key], terms[b.key], start=start, end=end, today=today)
+        docs = _relation_docs(client, terms[a.key], terms[b.key], start=start, end=end, today=today)
+        if docs is None:
+            skipped += 1
+            continue
         snippets.extend(extract_evidence(docs, a, b, recognizer.aliases_of))
         if i % 100 == 0:
-            print(f"  relation hilights {i}/{len(pairs)}, snippets {len(snippets)}", flush=True)
+            print(f"  relation hilights {i}/{len(pairs)}, snippets {len(snippets)}, skipped {skipped}", flush=True)
+    print(f"  relation hilights done: {len(pairs)} pairs, skipped {skipped}", flush=True)
     snippets = _unique_snippets(snippets)
     edges = news_edges(snippets) + comention_edges(stats) + load_cosmos_edges(cosmos_csv, set(companies))
     return BaseGraph(edges), edges, snippets

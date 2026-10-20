@@ -13,6 +13,8 @@ export type Vec3 = [number, number, number];
 export interface SceneNode {
   id: string;
   name: string;
+  /** 이름표에 쓸 글 — 없으면 name. 이벤트 지도는 기업명 뒤에 초과수익률을 붙인다 (로고 이니셜은 계속 name 에서 만든다) */
+  label?: string;
   industry: string;
   market: Market;
   /** company.stock_code 는 DDL 상 NULL 허용 — 로고 조회에만 쓰고 표시에는 쓰지 않는다 */

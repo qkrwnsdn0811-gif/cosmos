@@ -1,4 +1,7 @@
 import * as THREE from "three";
+import type { Market } from "@/api/types";
+import { initials } from "@/lib/format";
+import { logoUrl } from "@/lib/logos";
 
 /**
  * 로고 아틀라스 — 기업 로고(또는 모노그램)를 셀 하나씩 그린 큰 캔버스 텍스처.
@@ -42,9 +45,11 @@ export function logoAtlasTexture() {
   texture = new THREE.CanvasTexture(canvas);
   texture.flipY = false; // 캔버스 좌표(y 아래)를 그대로 uv 로 쓴다 — 셀 행이 뒤집히지 않도록
   texture.colorSpace = THREE.SRGBColorSpace;
-  texture.minFilter = THREE.LinearFilter;
+  // 행성이 곧 로고 원판이라 128px 셀이 화면 10~40px 로 크게 줄어 그려진다 — 밉맵 없이 bilinear 만 쓰면 회전 중 로고 글자가 반짝인다.
+  // 셀(128)이 2의 거듭제곱이라 7 레벨까지는 밉맵 텍셀이 셀 경계를 넘지 않아 이웃 로고가 새지 않는다. 부분 업로드 뒤에는 flush 가 밉맵을 다시 만든다
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
   texture.magFilter = THREE.LinearFilter;
-  texture.generateMipmaps = false;
+  texture.generateMipmaps = true;
   texture.anisotropy = 4;
   return texture;
 }
@@ -125,6 +130,13 @@ function flush() {
       renderer!.copyTextureToTexture(cellTexture!, texture!, null, DST.set(x, y));
     });
     dirtyCells.clear();
+    // copyTextureToTexture 는 0 레벨만 고친다 — 작게 그려지는 행성이 옛 모노그램 밉맵을 읽지 않게 밉맵을 다시 만든다 (2048² 라 GPU 에서 1ms 안쪽)
+    const gl = renderer.getContext();
+    const webglTexture = (renderer.properties.get(texture) as { __webglTexture?: WebGLTexture }).__webglTexture;
+    if (webglTexture) {
+      renderer.state.bindTexture(gl.TEXTURE_2D, webglTexture);
+      gl.generateMipmap(gl.TEXTURE_2D);
+    }
   } catch {
     // 컨텍스트 손실 등 — 예전 방식(전체 업로드)으로 되돌린다
     dirtyCells.clear();
@@ -248,4 +260,9 @@ export function ensureLogoCell(key: string, monogram: string, color: string, log
 export function cellUv(index: number): [number, number] {
   if (index < 0) return [0, 0];
   return [(index % COLS) * ATLAS_CELL_UV, Math.floor(index / COLS) * ATLAS_CELL_UV];
+}
+
+/** 기업 노드의 로고 셀 uv 원점 — 행성(CompanyNodes)과 워프 때 날아가는 유령 행성(GhostNodes)이 같은 셀을 쓴다 */
+export function nodeLogoCell(node: { market: Market | null; stockCode: string | null; name: string; color: string }): [number, number] {
+  return cellUv(ensureLogoCell(`${node.market}|${node.stockCode}|${node.name}`, initials(node.name), node.color, logoUrl(node.stockCode, node.market)));
 }

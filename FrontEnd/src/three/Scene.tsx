@@ -473,7 +473,7 @@ function Content({ galaxy, system, next = null, warpRef, isolateOnFocus = false,
   const path = useMemo(() => hoverPath(model, hoveredId, selectedId, allowed)?.path ?? null, [model, hoveredId, selectedId, allowed]);
   // 강조의 주인공 — 호버 중이면 호버 노드, 아니면 미리보기로 고른 기업 (고른 기업은 손을 떼도 이웃·역할이 켜져 있다)
   const focusNode = hoveredId ?? (model && selectedId && model.nodeById.has(selectedId) ? selectedId : null);
-  // 주인공의 이웃 역할 — 이웃 링(RoleRings)과 칩 역할 태그(CompanyNodes)가 같은 맵을 쓴다
+  // 주인공의 이웃 역할 — 이웃 링(RoleRings)과 이름표 역할 태그(CompanyNodes)가 같은 맵을 쓴다
   const roleTags = useMemo(() => (model && focusNode && model.nodeById.has(focusNode) ? neighborRoles(model, focusNode, allowed) : null), [model, focusNode, allowed]);
   const emphasis = useMemo(
     () =>
@@ -548,7 +548,7 @@ function Content({ galaxy, system, next = null, warpRef, isolateOnFocus = false,
             <ReferenceRings model={model} />
             <RoleRings model={model} hoveredId={focusNode} roles={roleTags} />
             {/* 클릭 = 미리보기(뉴스·연결 단계 패널, 이웃 강조) · 더블클릭 = 그 기업의 관계망으로 워프 */}
-            <CompanyNodes model={model} emphasis={emphasis} hoveredId={focusNode} onHover={setHovered} onClick={selectCompany} onDoubleClick={warpTo} showLabels={showLabels} roleTags={roleTags} />
+            <CompanyNodes model={model} emphasis={emphasis} hoveredId={focusNode} selectedId={selectedId} onHover={setHovered} onClick={selectCompany} onDoubleClick={warpTo} showLabels={showLabels} pinnedNames={isolateOnFocus} roleTags={roleTags} />
           </group>
         )}
       </group>

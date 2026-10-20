@@ -114,7 +114,8 @@ export default function EventGalaxy({
       const reported = scene.reported.has(n.id);
       // 이 모델은 여기서 막 만든 것이라 좌표를 바로 고친다 — 간선 from/to 가 같은 배열을 가리켜 선도 함께 따라온다
       n.pos[1] += altitudeY(ar === null ? null : ar * 100);
-      n.name = chipName(n.name, ar);
+      // 이름표(마우스를 올리거나 고른 행성에만 뜬다)에 1일 초과수익률을 붙인다 — name 은 로고 이니셜용으로 그대로 둔다
+      n.label = chipName(n.name, ar);
       n.size = Math.max(n.size * SIZE_GAIN, reported ? MIN_SIZE.reported : MIN_SIZE.inferred);
       if (reported) n.tier = 0;
       // 은하는 바깥 궤도일수록 흐리게 그리지만(emphasis DEPTH_DIM), 이 지도에서 흐림은 '판단 보류' 만 뜻한다
@@ -184,7 +185,7 @@ export default function EventGalaxy({
           </li>
         ))}
         <li>흐린 행성: 판단 보류</li>
-        <li className="meta">행성 높이·숫자: 사건 다음 거래일 초과수익률(위 상승 · 아래 하락, 관측값)</li>
+        <li className="meta">행성 높이 · 이름표 숫자(행성에 마우스를 올리면 보임): 사건 다음 거래일 초과수익률(위 상승 · 아래 하락, 관측값)</li>
       </ul>
     </div>
   );

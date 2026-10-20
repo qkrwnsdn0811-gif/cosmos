@@ -52,7 +52,7 @@ interface Props {
   autoRotate?: boolean;
   /** 그릴 관계 종류 — 기본은 근거 관계 4종 */
   activeTypes?: Set<string>;
-  /** 계산된 강조를 화면별로 고친다 (이벤트 지도: 보류 기업 흐리게, 이름표 항상, 가운데 기사 노드 숨김) */
+  /** 계산된 강조를 화면별로 고친다 (이벤트 지도: 보류 기업 흐리게, 가운데 기사 노드 숨김) */
   adjustEmphasis?: (e: Emphasis) => Emphasis;
   /** 이 값이 바뀌면 행성·선을 새로 만든다 — 중심 기업이 늘 같은 화면(이벤트 지도)은 이벤트 id 를 넘긴다 */
   sceneKey?: string;
@@ -117,7 +117,7 @@ export default function MiniScene({
       {model && emphasis && (
         <group key={sceneKey ?? model.centerId ?? "m"}>
           <RelationLines model={model} edges={model.edges} emphasis={emphasis} onHover={setHoveredEdge} onSelect={(id) => onPickEdge?.(id)} />
-          <CompanyNodes model={model} emphasis={emphasis} hoveredId={hovered ?? highlightId} onHover={setHovered} onClick={(id) => onPickCompany?.(id)} />
+          <CompanyNodes model={model} emphasis={emphasis} hoveredId={hovered ?? highlightId} selectedId={highlightId} onHover={setHovered} onClick={(id) => onPickCompany?.(id)} />
         </group>
       )}
       {children}

@@ -1,5 +1,5 @@
 """NEXUS slice pipeline: build-master → collect → analyze → migrate → load → sentiment → train-impact → predict-impact,
-and publish-graph (BigKinds galaxy snapshot over every analyzed value chain)."""
+publish-graph (BigKinds galaxy snapshot over every analyzed value chain) and cases (investor view: news types, past-case reactions, labels)."""
 from __future__ import annotations
 
 import argparse
@@ -435,6 +435,88 @@ def cmd_predict_impact(args) -> int:
     return 0
 
 
+CASE_REPORT = REPO_ROOT / "docs" / "nexus" / "case-reaction-report.md"
+
+
+def cmd_cases(args) -> int:
+    """News types, past-case reactions, direction labels and their hit rate (investor view, V12 tables)."""
+    import psycopg
+    from .cases.newstype import classify
+    from .cases.reaction import (HORIZONS, TRAIN_END, WINDOWS, SignalBook, backtest, case_frame, position_of,
+                                 reaction_stats, unique_cases)
+    from .cases.report import write_report
+    from .load.cases import (write_abnormal_returns, write_backtest, write_index_prices, write_news_types,
+                             write_signals, write_stats)
+    from .load.postgres import ensure_companies
+    p = _paths(args.chain)
+    value_chain = CHAINS[args.chain]["value_chain"]
+    companies, _ = _load_master(args.chain)
+    bundles = _load_bundles(args.chain)
+    started = time.monotonic()
+    types = {b.article.news_id: classify(b.article) for b in bundles}
+    print(f"events: {len(bundles):,}, typed: {Counter(t.code for t in types.values()).most_common(5)}", flush=True)
+
+    prices, today = PriceCache(p["prices"]), datetime.now(KST).date()
+    days = [b.trading_date for b in bundles if b.trading_date]
+    start = min(days) - PRICE_LOOKBACK
+    index_closes = {market: prices.closes(symbol, start, today) for market, symbol in BENCHMARK.items()}
+    stock_closes, ar_cache = {}, {}
+
+    def returns(key: str, t0: date) -> list:
+        if (key, t0) not in ar_cache:
+            company = companies.get(key)
+            if not company or company.market not in BENCHMARK:
+                ar_cache[(key, t0)] = []
+            else:
+                if company.ticker not in stock_closes:
+                    stock_closes[company.ticker] = prices.closes(company.ticker, start, today)
+                ar_cache[(key, t0)] = abnormal_returns(key, t0, stock_closes[company.ticker],
+                                                       index_closes[company.market], company.market, windows=WINDOWS)
+        return ar_cache[(key, t0)]
+
+    frame = case_frame(bundles, {k: v.code for k, v in types.items()},
+                       lambda key, t0: {r.window_days: r.abnormal_return for r in returns(key, t0)})
+    cases = unique_cases(frame)
+    stats = reaction_stats(cases)
+    book = SignalBook(stats)
+    tested = backtest(cases, book)
+    test_days = [d for d in days if d > TRAIN_END]
+    print(f"cases: {len(cases):,}, stats rows: {len(stats):,} ({time.monotonic() - started:,.0f}s)", flush=True)
+    for r in tested[tested["news_type"].isna()].itertuples(index=False):
+        hit = r.hit_count / r.labeled_count if r.labeled_count else float("nan")
+        print(f"  {r.horizon}: labeled {r.labeled_count:,}/{r.case_count:,}, hit {hit:.3f}, "
+              f"base down share {r.base_down_share:.3f}", flush=True)
+    write_report(CASE_REPORT, types=Counter(t.code for t in types.values()), stats=stats, backtest=tested,
+                 cases=len(cases), train_end=TRAIN_END, test_end=max(test_days, default=None), now=datetime.now(KST))
+
+    with psycopg.connect(args.database_url) as conn:
+        ids = ensure_companies(conn, list(companies.values()))
+        print(f"news types written: {write_news_types(conn, value_chain, [(k, v.code, v.confidence) for k, v in types.items()]):,}",
+              flush=True)
+        ar_rows, signal_rows = [], []
+        for b in bundles:
+            news_type = types[b.article.news_id].code
+            for i in b.impacts:
+                if i.key not in ids:
+                    continue
+                if b.trading_date:
+                    ar_rows += [(b.article.news_id, ids[i.key], r) for r in returns(i.key, b.trading_date)]
+                position = position_of(i.key, i.basis, i.path)
+                for horizon in HORIZONS:
+                    s = book.signal(news_type, position, i.key, horizon, status=i.status)
+                    signal_rows.append((b.article.news_id, ids[i.key], horizon, position, s.label, s.hold_reason,
+                                        s.scope, s.case_count, s.same_share, s.mean_ar, s.down_share))
+        print(f"abnormal returns written: {write_abnormal_returns(conn, ar_rows):,}", flush=True)
+        print(f"signals written: {write_signals(conn, value_chain, signal_rows):,}", flush=True)
+        print(f"stats written: {write_stats(conn, value_chain, stats, ids, period_start=min(days), period_end=TRAIN_END):,}",
+              flush=True)
+        write_backtest(conn, value_chain, tested, train_end=TRAIN_END,
+                       test_start=min(test_days, default=TRAIN_END), test_end=max(test_days, default=TRAIN_END))
+        print(f"index closes written: {write_index_prices(conn, index_closes)}", flush=True)
+    print(f"report: {CASE_REPORT} ({time.monotonic() - started:,.0f}s)")
+    return 0
+
+
 def galaxy_chains() -> list[str]:
     """Value chains that `analyze` has produced relations for; publish-graph puts them in one snapshot."""
     return [chain for chain in CHAINS if (_paths(chain)["analyzed"] / "relations.pkl").is_file()]
@@ -593,12 +675,15 @@ def main(argv: list[str] | None = None) -> int:
     predict.add_argument("--chain", choices=sorted(CHAINS), required=True)
     predict.add_argument("--database-url", required=True)
     sub.add_parser("publish-graph").add_argument("--database-url", required=True)
+    cases = sub.add_parser("cases")
+    cases.add_argument("--chain", choices=sorted(CHAINS), required=True)
+    cases.add_argument("--database-url", required=True)
     for name in ("relation-fragments", "train-relations"):
         sub.add_parser(name).add_argument("--chain", choices=sorted(CHAINS), required=True)
     args = parser.parse_args(argv)
     handler = {"build-master": cmd_build_master, "collect": cmd_collect, "analyze": cmd_analyze,
                "migrate": cmd_migrate, "load": cmd_load, "sentiment": cmd_sentiment,
                "train-impact": cmd_train_impact, "predict-impact": cmd_predict_impact,
-               "publish-graph": cmd_publish_graph, "relation-fragments": cmd_relation_fragments,
+               "publish-graph": cmd_publish_graph, "cases": cmd_cases, "relation-fragments": cmd_relation_fragments,
                "train-relations": cmd_train_relations}[args.command]
     return handler(args)

@@ -106,7 +106,9 @@ export default function InvestPage() {
           )}
         </section>
       </div>
-      <p className="invest-disclaimer">{DISCLAIMER}</p>
+      <p className="invest-disclaimer">
+        {DISCLAIMER} 뉴스: 빅카인즈(한국언론진흥재단) · 주가: FinanceDataReader · 일부 기업 로고: 토스증권 종목 이미지(시연용)
+      </p>
     </div>
   );
 }

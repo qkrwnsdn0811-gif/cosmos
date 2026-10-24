@@ -28,6 +28,12 @@ def _read_dotenv(path: Path) -> dict[str, str]:
     return values
 
 
+def dart_key(repo_root: Path | None = None) -> str:
+    """OpenDART key (DART_API_KEY), environment first, then the repo-root .env. Empty when missing."""
+    root = Path(repo_root) if repo_root is not None else REPO_ROOT
+    return os.environ.get("DART_API_KEY") or _read_dotenv(root / ".env").get("DART_API_KEY", "")
+
+
 def load_settings(repo_root: Path | None = None) -> Settings:
     """Environment variables win over the repo-root .env file."""
     root = Path(repo_root) if repo_root is not None else REPO_ROOT

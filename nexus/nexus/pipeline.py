@@ -517,6 +517,59 @@ def cmd_cases(args) -> int:
     return 0
 
 
+def cmd_fundamentals(args) -> int:
+    """Market cap and size class from the KRX listing; PER, PBR and dividend yield from OpenDART when the key works."""
+    import FinanceDataReader as fdr
+    import psycopg
+    from .config import dart_key
+    from .fundamentals.dart import ANNUAL, DartClient, DartError, interim_candidates, trailing_net_income
+    from .fundamentals.metrics import compute, size_ranks
+    from .load.fundamentals import write_fundamentals
+    from .load.postgres import ensure_companies
+    companies, _ = _load_master(args.chain)
+    listing = fdr.StockListing("KRX")
+    ranks = size_ranks(listing)
+    by_code = listing.set_index("Code")
+    today = datetime.now(KST).date()
+
+    dart, corp = None, {}
+    try:
+        dart = DartClient(dart_key())
+        corp = dart.corp_codes()
+        print(f"OpenDART: {len(corp):,} listed corp codes", flush=True)
+    except (DartError, OSError, ValueError) as e:
+        print(f"OpenDART unavailable — PER/PBR/dividend stay empty: {e}", flush=True)
+        dart = None
+
+    results, filled = {}, 0
+    for key, c in companies.items():
+        if c.ticker not in by_code.index:
+            continue
+        row = by_code.loc[c.ticker]
+        market_cap, close = int(row["Marcap"]), float(row["Close"])
+        net_income = equity = dps = None
+        basis = ""
+        if dart and c.ticker in corp:
+            code = corp[c.ticker]
+            try:
+                annual = dart.statement(code, today.year - 1, ANNUAL)
+                interim = next((s for y, r in interim_candidates(today) if (s := dart.statement(code, y, r))), None)
+                net_income, basis = trailing_net_income(annual, interim)
+                equity = (interim or annual).equity if (interim or annual) else None
+                dps = dart.dividend(code, today.year - 1)
+                filled += net_income is not None
+            except (OSError, ValueError) as e:
+                print(f"  {c.name}: OpenDART failed ({e})", flush=True)
+        results[key] = compute(market_cap, ranks.get(c.ticker), close, net_income, equity, dps, basis)
+    with psycopg.connect(args.database_url) as conn:
+        ids = ensure_companies(conn, list(companies.values()))
+        written = write_fundamentals(conn, {ids[k]: v for k, v in results.items() if k in ids}, price_date=today,
+                                     source="KRX listing + OpenDART" if dart else "KRX listing")
+    sizes = Counter(f.size_class for f in results.values())
+    print(f"fundamentals written: {written} (with financials: {filled}), sizes: {dict(sizes)}")
+    return 0
+
+
 def galaxy_chains() -> list[str]:
     """Value chains that `analyze` has produced relations for; publish-graph puts them in one snapshot."""
     return [chain for chain in CHAINS if (_paths(chain)["analyzed"] / "relations.pkl").is_file()]
@@ -675,15 +728,16 @@ def main(argv: list[str] | None = None) -> int:
     predict.add_argument("--chain", choices=sorted(CHAINS), required=True)
     predict.add_argument("--database-url", required=True)
     sub.add_parser("publish-graph").add_argument("--database-url", required=True)
-    cases = sub.add_parser("cases")
-    cases.add_argument("--chain", choices=sorted(CHAINS), required=True)
-    cases.add_argument("--database-url", required=True)
+    for name in ("cases", "fundamentals"):
+        cmd = sub.add_parser(name)
+        cmd.add_argument("--chain", choices=sorted(CHAINS), required=True)
+        cmd.add_argument("--database-url", required=True)
     for name in ("relation-fragments", "train-relations"):
         sub.add_parser(name).add_argument("--chain", choices=sorted(CHAINS), required=True)
     args = parser.parse_args(argv)
     handler = {"build-master": cmd_build_master, "collect": cmd_collect, "analyze": cmd_analyze,
                "migrate": cmd_migrate, "load": cmd_load, "sentiment": cmd_sentiment,
                "train-impact": cmd_train_impact, "predict-impact": cmd_predict_impact,
-               "publish-graph": cmd_publish_graph, "cases": cmd_cases, "relation-fragments": cmd_relation_fragments,
+               "publish-graph": cmd_publish_graph, "cases": cmd_cases, "fundamentals": cmd_fundamentals, "relation-fragments": cmd_relation_fragments,
                "train-relations": cmd_train_relations}[args.command]
     return handler(args)

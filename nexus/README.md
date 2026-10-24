@@ -25,3 +25,15 @@ nexus/.venv/Scripts/python -X utf8 -m pytest nexus/tests -q
 ```
 
 DB 적재 테스트는 `TEST_DATABASE_URL`(예: `postgresql://cosmos:cosmos1234@localhost:5432/postgres`)이 있을 때만 실행된다. DB는 `docker compose -f BackEnd/docker-compose.yml up -d postgres`로 띄운다.
+
+## 투자자용 계산 (2026-10-25)
+
+`load` 다음에 실행한다. `load`가 이벤트마다 초과수익률을 1·3거래일로 다시 쓰므로 `cases`는 항상 그 뒤에 돌린다.
+
+```bash
+nexus/.venv/Scripts/python -I -X utf8 -m nexus cases --chain semis --database-url postgresql://cosmos:cosmos1234@localhost:5432/cosmos
+nexus/.venv/Scripts/python -I -X utf8 -m nexus fundamentals --chain semis --database-url postgresql://cosmos:cosmos1234@localhost:5432/cosmos
+```
+
+- `cases`: 뉴스 유형 분류, 1·3·5·20거래일 초과수익률, 과거 사례 반응표(2026-06까지), 단기·장기 방향 딱지, 2026-07 이후 적중률. 보고서는 `docs/nexus/case-reaction-report.md`.
+- `fundamentals`: 시가총액·규모(대형/중형/소형)는 KRX 상장 목록(FinanceDataReader)으로, PER·PBR·배당수익률은 OpenDART 재무제표로 계산한다. 저장소 루트 `.env`의 `DART_API_KEY`가 발급받은 40자리 인증키여야 하고, 아니면 재무 지표는 비워 둔다.

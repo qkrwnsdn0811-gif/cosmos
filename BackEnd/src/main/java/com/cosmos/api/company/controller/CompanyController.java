@@ -1,6 +1,7 @@
 package com.cosmos.api.company.controller;
 
 import com.cosmos.api.company.dto.CompanyDetailResponse;
+import com.cosmos.api.company.dto.CompanyFundamentalResponse;
 import com.cosmos.api.company.dto.CompanyMetricHistoryResponse;
 import com.cosmos.api.company.dto.CompanyMetricResponse;
 import com.cosmos.api.company.dto.CompanySummaryResponse;
@@ -75,6 +76,11 @@ public class CompanyController {
             @RequestParam(defaultValue = "1D") String interval
     ) {
         return companyService.findStockPrices(companyId, period, interval);
+    }
+
+    @GetMapping("/companies/{companyId}/fundamental")
+    public CompanyFundamentalResponse findFundamental(@PathVariable UUID companyId) {
+        return companyService.findFundamental(companyId);
     }
 
     @GetMapping("/industries")

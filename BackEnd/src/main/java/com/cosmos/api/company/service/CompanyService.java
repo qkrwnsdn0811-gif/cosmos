@@ -1,6 +1,7 @@
 package com.cosmos.api.company.service;
 
 import com.cosmos.api.company.dto.CompanyDetailResponse;
+import com.cosmos.api.company.dto.CompanyFundamentalResponse;
 import com.cosmos.api.company.dto.CompanyIndustryResponse;
 import com.cosmos.api.company.dto.CompanyMetricHistoryItemResponse;
 import com.cosmos.api.company.dto.CompanyMetricHistoryResponse;
@@ -14,6 +15,7 @@ import com.cosmos.api.company.dto.StockPriceItemResponse;
 import com.cosmos.api.company.entity.Company;
 import com.cosmos.api.company.entity.StockPriceHistory;
 import com.cosmos.api.company.error.CompanyErrorCode;
+import com.cosmos.api.company.repository.CompanyFundamentalQueryRepository;
 import com.cosmos.api.company.repository.CompanyIndustryRepository;
 import com.cosmos.api.company.repository.CompanyMetricHistoryRepository;
 import com.cosmos.api.company.repository.CompanyQueryRepository;
@@ -46,6 +48,7 @@ public class CompanyService {
     private final CompanyQueryRepository companyQueryRepository;
     private final CompanyMetricHistoryRepository companyMetricHistoryRepository;
     private final StockPriceHistoryRepository stockPriceHistoryRepository;
+    private final CompanyFundamentalQueryRepository fundamentalRepository;
     private final CompanyCursorCodec cursorCodec;
     private final Clock clock;
 
@@ -55,6 +58,7 @@ public class CompanyService {
             CompanyQueryRepository companyQueryRepository,
             CompanyMetricHistoryRepository companyMetricHistoryRepository,
             StockPriceHistoryRepository stockPriceHistoryRepository,
+            CompanyFundamentalQueryRepository fundamentalRepository,
             CompanyCursorCodec cursorCodec,
             Clock clock
     ) {
@@ -63,6 +67,7 @@ public class CompanyService {
         this.companyQueryRepository = companyQueryRepository;
         this.companyMetricHistoryRepository = companyMetricHistoryRepository;
         this.stockPriceHistoryRepository = stockPriceHistoryRepository;
+        this.fundamentalRepository = fundamentalRepository;
         this.cursorCodec = cursorCodec;
         this.clock = clock;
     }
@@ -186,6 +191,13 @@ public class CompanyService {
 
         return new StockPriceHistoryResponse(
                 companyId, period.code(), interval.code(), asOfAt, items);
+    }
+
+    /** 기업 지표(F8). 아직 지표가 없으면 값이 모두 null인 객체를 돌려준다(404는 기업이 없을 때만). */
+    public CompanyFundamentalResponse findFundamental(UUID companyId) {
+        ensureActiveCompany(companyId);
+        return fundamentalRepository.findByCompanyIds(List.of(companyId))
+                .getOrDefault(companyId, CompanyFundamentalResponse.empty());
     }
 
     private void ensureActiveCompany(UUID companyId) {

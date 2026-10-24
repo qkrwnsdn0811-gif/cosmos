@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.cosmos.api.company.dto.CompanyDetailResponse;
+import com.cosmos.api.company.dto.CompanyFundamentalResponse;
 import com.cosmos.api.company.dto.CompanyIndustryResponse;
 import com.cosmos.api.company.dto.CompanyMetricHistoryItemResponse;
 import com.cosmos.api.company.dto.CompanyMetricHistoryResponse;
@@ -126,6 +127,35 @@ class CompanyControllerTest {
                 .andExpect(jsonPath("$.window").value("30D"))
                 .andExpect(jsonPath("$.newsMentionCount").value(152))
                 .andExpect(jsonPath("$.measuredAt").value("2026-09-07T06:00:00Z"));
+    }
+
+    @Test
+    void returnsFundamental() throws Exception {
+        when(companyService.findFundamental(COMPANY_ID)).thenReturn(new CompanyFundamentalResponse(
+                new BigDecimal("1500000000000"), 3, "MID", new BigDecimal("15.0000"), new BigDecimal("2.0000"),
+                new BigDecimal("0.016667"), new BigDecimal("100000000000"), new BigDecimal("750000000000"),
+                new BigDecimal("500.00"), new BigDecimal("30000.00"), LocalDate.parse("2026-10-16"), "TTM"));
+
+        mockMvc.perform(get("/api/companies/{companyId}/fundamental", COMPANY_ID))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.marketCap").value(1500000000000L))
+                .andExpect(jsonPath("$.marketCapRank").value(3))
+                .andExpect(jsonPath("$.sizeClass").value("MID"))
+                .andExpect(jsonPath("$.per").value(15.0))
+                .andExpect(jsonPath("$.dividendYield").value(0.016667))
+                .andExpect(jsonPath("$.priceDate").value("2026-10-16"))
+                .andExpect(jsonPath("$.fiscalBasis").value("TTM"));
+    }
+
+    @Test
+    void returnsEmptyFundamentalWithNullFields() throws Exception {
+        when(companyService.findFundamental(COMPANY_ID)).thenReturn(CompanyFundamentalResponse.empty());
+
+        mockMvc.perform(get("/api/companies/{companyId}/fundamental", COMPANY_ID))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.marketCap").isEmpty())
+                .andExpect(jsonPath("$.per").isEmpty())
+                .andExpect(jsonPath("$.priceDate").isEmpty());
     }
 
     @Test

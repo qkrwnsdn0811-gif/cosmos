@@ -10,9 +10,11 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,18 +24,21 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
-/** NEXUS 이벤트 조회(V10 테이블). 쓰기는 파이프라인(nexus/)이 하고 여기서는 읽기만 한다. */
+/** NEXUS 이벤트 조회(V10·V12 테이블). 쓰기는 파이프라인(nexus/)이 하고 여기서는 읽기만 한다. */
 @Repository
 public class EventQueryRepository {
 
     private static final String EVENT_COLUMNS = """
             e.event_id, e.document_id AS news_id, sd.title, sd.summary, na.publisher, sd.original_url,
-            e.dateline, e.event_trading_date, e.value_chain, e.categories,
+            e.dateline, e.event_trading_date, e.value_chain, e.categories, e.event_type,
             (SELECT count(*) FROM event_company_impact i
               WHERE i.event_id = e.event_id AND i.basis = 'INFERRED' AND i.status = 'OK') AS inferred_count,
             (SELECT count(*) FROM event_company_impact i
               WHERE i.event_id = e.event_id AND i.basis = 'INFERRED' AND i.status = 'HOLD') AS hold_count
             """;
+
+    /** 기업 과거 뉴스 조회에서 OK 영향이 이만큼 이상이면 최신 이벤트부터 훑고, 적으면 기업 영향부터 모은다. */
+    static final int DENSE_COMPANY_IMPACTS = 2000;
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
@@ -48,6 +53,7 @@ public class EventQueryRepository {
                 LEFT JOIN news_article na ON na.document_id = e.document_id
                 WHERE e.status = 'ACTIVE'
                   AND (CAST(:valueChain AS VARCHAR) IS NULL OR e.value_chain = :valueChain)
+                  AND (CAST(:newsType AS VARCHAR) IS NULL OR e.event_type = :newsType)
                   AND (CAST(:companyId AS UUID) IS NULL OR EXISTS (
                         SELECT 1 FROM event_company_impact c
                         WHERE c.event_id = e.event_id AND c.company_id = CAST(:companyId AS UUID) AND c.status = 'OK'))
@@ -62,6 +68,7 @@ public class EventQueryRepository {
                 new MapSqlParameterSource()
                         .addValue("valueChain", condition.valueChain())
                         .addValue("companyId", condition.companyId())
+                        .addValue("newsType", condition.newsType())
                         .addValue("hasInferred", condition.hasInferred())
                         .addValue("cursorAt", cursor == null ? null : Timestamp.from(cursor.at()))
                         .addValue("cursorId", cursor == null ? null : cursor.id())
@@ -76,6 +83,54 @@ public class EventQueryRepository {
                 LEFT JOIN news_article na ON na.document_id = e.document_id
                 WHERE e.event_id = :eventId AND e.status = 'ACTIVE'
                 """, new MapSqlParameterSource("eventId", eventId), this::mapEvent).stream().findFirst();
+    }
+
+    /**
+     * 이 기업이 OK 영향으로 들어간 이벤트, 최신순(F13). basis는 이 기업의 근거 구분이다.
+     *
+     * <p>플래너는 기업별 OK 비율을 몰라(인덱스가 company_id, basis뿐) 한 가지 계획만 고르는데, 최신 이벤트부터 훑는 계획은
+     * OK 영향이 드문 기업(추정 HOLD만 많은 기업, 없는 기업)에서 이벤트 전체를 훑어 수백 ms~수 초가 걸리고, 기업 영향부터
+     * 모으는 계획은 삼성전자처럼 수만 건인 기업에서 느리다. 그래서 OK 영향 수를 상한까지만 세어 계획을 나눈다.
+     */
+    public List<CompanyEventRow> findCompanyEvents(UUID companyId, TimeIdCursor cursor, int limit) {
+        Integer okImpacts = jdbcTemplate.queryForObject("""
+                SELECT count(*) FROM (
+                    SELECT 1 FROM event_company_impact
+                    WHERE company_id = :companyId AND status = 'OK'
+                    LIMIT :dense
+                ) capped
+                """, new MapSqlParameterSource().addValue("companyId", companyId)
+                        .addValue("dense", DENSE_COMPANY_IMPACTS), Integer.class);
+        return findCompanyEvents(companyId, cursor, limit, okImpacts != null && okImpacts >= DENSE_COMPANY_IMPACTS);
+    }
+
+    /** 계획을 직접 고르는 판. scanByDateline이면 최신 이벤트부터 훑고, 아니면 기업 영향부터 모은다. 결과는 같다. */
+    public List<CompanyEventRow> findCompanyEvents(UUID companyId, TimeIdCursor cursor, int limit,
+            boolean scanByDateline) {
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("companyId", companyId)
+                .addValue("cursorAt", cursor == null ? null : Timestamp.from(cursor.at()))
+                .addValue("cursorId", cursor == null ? null : cursor.id())
+                .addValue("limit", limit);
+        // OFFSET 0 은 서브쿼리를 펼치지 못하게 막아, 기업 영향(인덱스)부터 모은 뒤 이벤트를 붙이게 한다
+        String from = scanByDateline
+                ? "FROM event_company_impact ci\n"
+                : """
+                FROM (SELECT event_id, company_id, basis, status FROM event_company_impact
+                      WHERE company_id = :companyId AND status = 'OK' OFFSET 0) ci
+                """;
+        return jdbcTemplate.query("SELECT " + EVENT_COLUMNS + ", ci.basis AS company_basis\n" + from + """
+                JOIN news_event e ON e.event_id = ci.event_id
+                JOIN source_document sd ON sd.document_id = e.document_id
+                LEFT JOIN news_article na ON na.document_id = e.document_id
+                WHERE ci.company_id = :companyId AND ci.status = 'OK' AND e.status = 'ACTIVE'
+                  AND (CAST(:cursorAt AS TIMESTAMPTZ) IS NULL
+                       OR (e.dateline, e.event_id) < (CAST(:cursorAt AS TIMESTAMPTZ), CAST(:cursorId AS UUID)))
+                ORDER BY e.dateline DESC, e.event_id DESC
+                LIMIT :limit
+                """,
+                params,
+                (rs, rowNum) -> new CompanyEventRow(mapEvent(rs, rowNum), rs.getString("company_basis")));
     }
 
     public Map<UUID, List<EventCompanyRefResponse>> findReportedCompanies(List<UUID> eventIds) {
@@ -113,16 +168,138 @@ public class EventQueryRepository {
                 rs.getBigDecimal("impact_magnitude"), rs.getBigDecimal("confidence"), rs.getString("path")));
     }
 
+    /** 이벤트의 모든 기업·모든 기간(1·3·5·20거래일) 초과수익률. 기간을 거르지 않는다. */
     public List<AbnormalReturnRow> findAbnormalReturns(UUID eventId) {
         return jdbcTemplate.query("""
-                SELECT company_id, window_days, benchmark, stock_return, benchmark_return, abnormal_return
+                SELECT event_id, company_id, window_days, benchmark, stock_return, benchmark_return, abnormal_return
                 FROM event_abnormal_return
                 WHERE event_id = :eventId
                 ORDER BY company_id, window_days
-                """, new MapSqlParameterSource("eventId", eventId), (rs, rowNum) -> new AbnormalReturnRow(
-                rs.getObject("company_id", UUID.class), rs.getInt("window_days"), rs.getString("benchmark"),
-                rs.getBigDecimal("stock_return"), rs.getBigDecimal("benchmark_return"),
-                rs.getBigDecimal("abnormal_return")));
+                """, new MapSqlParameterSource("eventId", eventId), this::mapAbnormalReturn);
+    }
+
+    /** 기업 한 곳의 여러 이벤트 초과수익률(기업 과거 뉴스 한 페이지 분량을 한 번에). */
+    public List<AbnormalReturnRow> findCompanyAbnormalReturns(UUID companyId, List<UUID> eventIds) {
+        if (eventIds.isEmpty()) {
+            return List.of();
+        }
+        return jdbcTemplate.query("""
+                SELECT event_id, company_id, window_days, benchmark, stock_return, benchmark_return, abnormal_return
+                FROM event_abnormal_return
+                WHERE company_id = :companyId AND event_id IN (:eventIds)
+                ORDER BY event_id, window_days
+                """, new MapSqlParameterSource().addValue("companyId", companyId).addValue("eventIds", eventIds),
+                this::mapAbnormalReturn);
+    }
+
+    /** 이벤트별 · 투자 기간별 · 딱지별 기업 수(목록 한 페이지 분량을 한 번에). */
+    public List<SignalCountRow> findSignalCounts(List<UUID> eventIds) {
+        if (eventIds.isEmpty()) {
+            return List.of();
+        }
+        return jdbcTemplate.query("""
+                SELECT event_id, horizon, label, count(*) AS cnt
+                FROM event_company_signal
+                WHERE event_id IN (:eventIds)
+                GROUP BY event_id, horizon, label
+                """, new MapSqlParameterSource("eventIds", eventIds), (rs, rowNum) -> new SignalCountRow(
+                rs.getObject("event_id", UUID.class), rs.getString("horizon"), rs.getString("label"),
+                rs.getInt("cnt")));
+    }
+
+    /** 이벤트 한 건의 모든 기업 방향 딱지. 기업마다 SHORT, LONG 순이다. */
+    public List<SignalRow> findSignals(UUID eventId) {
+        return jdbcTemplate.query("""
+                SELECT event_id, company_id, horizon, position, label, hold_reason, case_scope, case_count,
+                       same_share, mean_ar, down_share
+                FROM event_company_signal
+                WHERE event_id = :eventId
+                ORDER BY company_id, CASE horizon WHEN 'SHORT' THEN 0 ELSE 1 END
+                """, new MapSqlParameterSource("eventId", eventId), this::mapSignal);
+    }
+
+    /** 기업 한 곳의 여러 이벤트 방향 딱지. 이벤트마다 SHORT, LONG 순이다. */
+    public List<SignalRow> findCompanySignals(UUID companyId, List<UUID> eventIds) {
+        if (eventIds.isEmpty()) {
+            return List.of();
+        }
+        return jdbcTemplate.query("""
+                SELECT event_id, company_id, horizon, position, label, hold_reason, case_scope, case_count,
+                       same_share, mean_ar, down_share
+                FROM event_company_signal
+                WHERE company_id = :companyId AND event_id IN (:eventIds)
+                ORDER BY event_id, CASE horizon WHEN 'SHORT' THEN 0 ELSE 1 END
+                """, new MapSqlParameterSource().addValue("companyId", companyId).addValue("eventIds", eventIds),
+                this::mapSignal);
+    }
+
+    /** 이 이벤트의 영향 기업(OK·HOLD 모두)이면 그 기업의 시장. 영향 기업이 아니면 빈 값. */
+    public Optional<ImpactCompanyRow> findImpactCompany(UUID eventId, UUID companyId) {
+        return jdbcTemplate.query("""
+                SELECT c.company_id, c.market
+                FROM event_company_impact i
+                JOIN company c ON c.company_id = i.company_id
+                WHERE i.event_id = :eventId AND i.company_id = :companyId
+                """, new MapSqlParameterSource().addValue("eventId", eventId).addValue("companyId", companyId),
+                (rs, rowNum) -> new ImpactCompanyRow(rs.getObject("company_id", UUID.class), rs.getString("market")))
+                .stream().findFirst();
+    }
+
+    /**
+     * 지수 거래일 달력 조각: tradingDate 앞 거래일 최대 {@code before}개와 tradingDate 이후(당일 포함) 최대 {@code from}개,
+     * 오래된 순. 차트의 거래일 기준이다.
+     */
+    public List<IndexCloseRow> findIndexCalendar(String indexCode, LocalDate tradingDate, int before, int from) {
+        return jdbcTemplate.query("""
+                SELECT trading_date, close_price FROM (
+                    (SELECT trading_date, close_price FROM market_index_price
+                     WHERE index_code = :indexCode AND trading_date < :tradingDate
+                     ORDER BY trading_date DESC LIMIT :before)
+                    UNION ALL
+                    (SELECT trading_date, close_price FROM market_index_price
+                     WHERE index_code = :indexCode AND trading_date >= :tradingDate
+                     ORDER BY trading_date LIMIT :from)
+                ) calendar
+                ORDER BY trading_date
+                """, new MapSqlParameterSource()
+                        .addValue("indexCode", indexCode).addValue("tradingDate", tradingDate)
+                        .addValue("before", before).addValue("from", from),
+                (rs, rowNum) -> new IndexCloseRow(rs.getObject("trading_date", LocalDate.class),
+                        rs.getBigDecimal("close_price")));
+    }
+
+    /** 기업 일봉 종가, 거래일 → 종가. stock_price_history.trading_at은 거래일의 UTC 자정이다. */
+    public Map<LocalDate, BigDecimal> findDailyCloses(UUID companyId, LocalDate from, LocalDate to) {
+        Map<LocalDate, BigDecimal> result = new HashMap<>();
+        jdbcTemplate.query("""
+                SELECT CAST(trading_at AT TIME ZONE 'UTC' AS DATE) AS trading_date, close_price
+                FROM stock_price_history
+                WHERE company_id = :companyId AND interval_type = '1D'
+                  AND trading_at >= :fromAt AND trading_at < :toAt
+                """, new MapSqlParameterSource()
+                        .addValue("companyId", companyId)
+                        .addValue("fromAt", Timestamp.from(from.atStartOfDay(ZoneOffset.UTC).toInstant()))
+                        .addValue("toAt", Timestamp.from(to.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant())),
+                (ResultSet rs) -> {
+                    result.put(rs.getObject("trading_date", LocalDate.class), rs.getBigDecimal("close_price"));
+                });
+        return result;
+    }
+
+    /** 적중률 표. SHORT 먼저, 기간 안에서 전체 유형(news_type NULL) 줄 다음 딱지 수 내림차순. */
+    public List<BacktestRow> findBacktest(String valueChain) {
+        return jdbcTemplate.query("""
+                SELECT horizon, news_type, case_count, labeled_count, hit_count, up_labels, down_labels,
+                       base_down_share, train_end, test_start, test_end
+                FROM signal_backtest
+                WHERE value_chain = :valueChain
+                ORDER BY CASE horizon WHEN 'SHORT' THEN 0 ELSE 1 END, news_type IS NOT NULL, labeled_count DESC,
+                         news_type
+                """, new MapSqlParameterSource("valueChain", valueChain), (rs, rowNum) -> new BacktestRow(
+                rs.getString("horizon"), rs.getString("news_type"), rs.getInt("case_count"),
+                rs.getInt("labeled_count"), rs.getInt("hit_count"), rs.getInt("up_labels"), rs.getInt("down_labels"),
+                rs.getBigDecimal("base_down_share"), rs.getObject("train_end", LocalDate.class),
+                rs.getObject("test_start", LocalDate.class), rs.getObject("test_end", LocalDate.class)));
     }
 
     /** 파이프라인 경로의 기업 key("MARKET:TICKER") → 기업. 마스터에 없는 key는 결과에 없다. */
@@ -162,6 +339,21 @@ public class EventQueryRepository {
                         rs.getString("snippet"), rs.getBigDecimal("confidence")));
     }
 
+    private AbnormalReturnRow mapAbnormalReturn(ResultSet rs, int rowNum) throws SQLException {
+        return new AbnormalReturnRow(
+                rs.getObject("event_id", UUID.class), rs.getObject("company_id", UUID.class),
+                rs.getInt("window_days"), rs.getString("benchmark"), rs.getBigDecimal("stock_return"),
+                rs.getBigDecimal("benchmark_return"), rs.getBigDecimal("abnormal_return"));
+    }
+
+    private SignalRow mapSignal(ResultSet rs, int rowNum) throws SQLException {
+        return new SignalRow(
+                rs.getObject("event_id", UUID.class), rs.getObject("company_id", UUID.class),
+                rs.getString("horizon"), rs.getString("position"), rs.getString("label"),
+                rs.getString("hold_reason"), rs.getString("case_scope"), rs.getInt("case_count"),
+                rs.getBigDecimal("same_share"), rs.getBigDecimal("mean_ar"), rs.getBigDecimal("down_share"));
+    }
+
     private EventRow mapEvent(ResultSet rs, int rowNum) throws SQLException {
         Array categories = rs.getArray("categories");
         return new EventRow(
@@ -176,7 +368,8 @@ public class EventQueryRepository {
                 rs.getString("value_chain"),
                 categories == null ? List.of() : Arrays.asList((String[]) categories.getArray()),
                 rs.getInt("inferred_count"),
-                rs.getInt("hold_count"));
+                rs.getInt("hold_count"),
+                rs.getString("event_type"));
     }
 
     public record EventRow(
@@ -191,8 +384,12 @@ public class EventQueryRepository {
             String valueChain,
             List<String> categories,
             int inferredCount,
-            int holdCount
+            int holdCount,
+            String newsType
     ) {
+    }
+
+    public record CompanyEventRow(EventRow event, String basis) {
     }
 
     public record ImpactRow(
@@ -213,6 +410,7 @@ public class EventQueryRepository {
     }
 
     public record AbnormalReturnRow(
+            UUID eventId,
             UUID companyId,
             int windowDays,
             String benchmark,
@@ -223,5 +421,44 @@ public class EventQueryRepository {
     }
 
     public record CompanyKeyRow(UUID companyId, String name) {
+    }
+
+    public record SignalCountRow(UUID eventId, String horizon, String label, int count) {
+    }
+
+    public record SignalRow(
+            UUID eventId,
+            UUID companyId,
+            String horizon,
+            String position,
+            String label,
+            String holdReason,
+            String caseScope,
+            int caseCount,
+            BigDecimal sameShare,
+            BigDecimal meanAr,
+            BigDecimal downShare
+    ) {
+    }
+
+    public record ImpactCompanyRow(UUID companyId, String market) {
+    }
+
+    public record IndexCloseRow(LocalDate tradingDate, BigDecimal close) {
+    }
+
+    public record BacktestRow(
+            String horizon,
+            String newsType,
+            int caseCount,
+            int labeledCount,
+            int hitCount,
+            int upLabels,
+            int downLabels,
+            BigDecimal baseDownShare,
+            LocalDate trainEnd,
+            LocalDate testStart,
+            LocalDate testEnd
+    ) {
     }
 }

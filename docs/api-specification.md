@@ -148,6 +148,10 @@
 | --- | --- | --- |
 | `GET` | `/api/events` | 이벤트 목록 |
 | `GET` | `/api/events/{eventId}` | 이벤트 관계 지도 조회 |
+| `GET` | `/api/events/{eventId}/companies/{companyId}/chart` | 뉴스 전후 주가 차트 |
+| `GET` | `/api/events/backtest` | 방향 딱지 적중률 |
+| `GET` | `/api/events/company-history` | 기업 과거 뉴스와 주가 반응 |
+| `GET` | `/api/companies/{companyId}/fundamental` | 기업 지표 (NEXUS 투자자 화면용, 경로는 companies) |
 
 ### community | 커뮤니티
 
@@ -1725,6 +1729,60 @@ HDFS의 기사 본문 전체는 제공하지 않으며 사용자는 `originalUrl
 
 빅카인즈 기사 1건을 이벤트로 보고, 기사에 언급된 기업(근거, `REPORTED`)과 공급망을 타고 추정한 기업(추정, `INFERRED`)을 분리해 돌려준다. 데이터는 NEXUS 파이프라인(`nexus/`)이 V10 테이블에 적재한다. 초과수익률은 이미 관측된 주가 변화이며 미래 예측이 아니다.
 
+투자자용 값(V12 테이블, `nexus cases`·`nexus fundamentals`가 적재)도 함께 돌려준다.
+- **뉴스 유형**(`newsType`): 기사를 15개 유형 또는 `OTHER`로 분류한 코드. 과거 사례를 비교 가능하게 묶는 기준이다.
+- **방향 딱지**(`signals`, `signalCounts`): 이벤트 × 기업 × 투자 기간(`SHORT` 3거래일 / `LONG` 20거래일)마다 `UP`·`DOWN`·`HOLD`. **모델 예측이 아니라 학습 기간(2025-01 ~ 2026-06)에 같은 뉴스 유형·같은 기업 위치였던 과거 사례의 초과수익률 통계**다. 사례가 10건 이상이고 65% 이상이 같은 방향이며 평균 초과수익률이 충분히 클 때(SHORT 1%, LONG 2%)만 `UP`/`DOWN`이고, 아니면 `HOLD`와 그 이유가 붙는다.
+- **적중률**(`GET /api/events/backtest`): 딱지를 학습 기간 데이터로만 만든 뒤 **2026-06-30 이후 뉴스**에서 실제 초과수익률 부호와 맞았는지 잰 값이다.
+
+#### 공통 코드
+
+뉴스 유형(`newsType` → `newsTypeLabel`, `nexus/nexus/cases/newstype.py`와 같다)
+
+| code | label |
+| --- | --- |
+| ACCIDENT | 사고·공급 차질 |
+| EXPORT_CONTROL | 수출 규제·제재 |
+| TARIFF | 관세·통상 |
+| EARNINGS_BEAT | 실적 호조 |
+| EARNINGS_MISS | 실적 부진 |
+| SUPPLY_DEAL | 수주·공급 계약 |
+| PRICE_UP | 제품 가격 상승 |
+| PRICE_DOWN | 제품 가격 하락 |
+| PRODUCTION_CUT | 감산·재고 조정 |
+| CAPEX | 증설·투자 |
+| SHAREHOLDER | 주주환원 |
+| AI_DEMAND | AI·HBM 수요 |
+| POLICY | 정부 정책·지원 |
+| ANALYST | 증권가 전망·목표가 |
+| MARKET_WRAP | 증시 시황 |
+| OTHER | 기타 |
+
+기업 위치(`position` → `positionLabel`): 기사에 나온 기업이면 `REPORTED`, 추정 기업이면 경로 마지막 단계의 관계다.
+
+| code | label |
+| --- | --- |
+| REPORTED | 기사에 나온 기업 |
+| SUPPLIER | 공급사 |
+| CUSTOMER | 고객사 |
+| COMPETITOR | 경쟁사 |
+| PARTNER | 협력사 |
+| INVEST | 지분 관계 |
+| COMENTION | 함께 언급 |
+
+방향 딱지 한 건(`signals[]`)
+
+| 필드 | 설명 |
+| --- | --- |
+| horizon | `SHORT`(3거래일) · `LONG`(20거래일). 목록은 SHORT, LONG 순 |
+| windowDays | horizon의 거래일 수(3 · 20) |
+| label | `UP` · `DOWN` · `HOLD` |
+| holdReason | `HOLD`일 때만: 사례 부족 · 오른 경우와 내린 경우가 비슷함 · 반응이 작음 · 비슷한 유형 없음(유형이 OTHER) · 연결이 약함(추정 HOLD 기업) |
+| caseScope | `COMPANY`(이 기업 자신의 과거 사례가 10건 이상이라 그것만 씀) · `POSITION`(같은 위치 기업 전체) · null(비교할 사례 없음) |
+| caseCount | 근거가 된 과거 사례 수 |
+| sameShare | 다수 방향으로 움직인 사례 비율(0~1) |
+| meanAr | 과거 사례의 평균 초과수익률 |
+| downShare | 과거 사례 중 내린 비율(0~1) |
+
 #### GET /api/events — 이벤트 목록
 
 #### 목적
@@ -1733,7 +1791,7 @@ HDFS의 기사 본문 전체는 제공하지 않으며 사용자는 `originalUrl
 불필요.
 #### Request
 ```javascript
-GET /api/events?valueChain=SEMICONDUCTOR&hasInferred=true&size=20&cursor={cursor}
+GET /api/events?valueChain=SEMICONDUCTOR&newsType=EXPORT_CONTROL&hasInferred=true&size=20&cursor={cursor}
 ```
 #### Query Params
 <table header-row="true">
@@ -1751,6 +1809,11 @@ GET /api/events?valueChain=SEMICONDUCTOR&hasInferred=true&size=20&cursor={cursor
 <td>companyId</td>
 <td>아니요</td>
 <td>이 기업이 언급되거나 추정 OK로 들어간 이벤트만</td>
+</tr>
+<tr>
+<td>newsType</td>
+<td>아니요</td>
+<td>이 뉴스 유형의 이벤트만. 공통 코드의 뉴스 유형 코드(대문자 그대로)</td>
 </tr>
 <tr>
 <td>hasInferred</td>
@@ -1774,50 +1837,59 @@ GET /api/events?valueChain=SEMICONDUCTOR&hasInferred=true&size=20&cursor={cursor
 {
   "items": [
     {
-      "eventId": "550e8400-e29b-41d4-a716-446655440100",
-      "newsId": "550e8400-e29b-41d4-a716-446655440020",
-      "title": "넥스틴, SK하이닉스서 수주",
+      "eventId": "4238a3dd-5668-5dc2-93f0-8569026fe909",
+      "newsId": "10bf0dac-e9d5-5876-a5dd-c376a917ff95",
+      "title": "정부 믿고 삼전닉스 샀는데… ‘머니무브’ 씁쓸한 성적표",
       "summary": "본문 앞 200자",
-      "publisher": "예시경제",
+      "publisher": "국민일보",
       "originalUrl": "https://example.com/news/1",
-      "dateline": "2026-10-06T00:40:00Z",
-      "tradingDate": "2026-10-06",
+      "dateline": "2026-10-13T17:04:00Z",
+      "tradingDate": "2026-10-14",
       "valueChain": "SEMICONDUCTOR",
-      "categories": ["경제>반도체"],
+      "categories": ["경제>증권_증시", "경제>반도체"],
       "reportedCompanies": [
-        { "companyId": "550e8400-e29b-41d4-a716-446655440010", "name": "넥스틴", "stockCode": "348210", "market": "KOSDAQ" }
+        { "companyId": "928aa9d3-d527-4995-963f-ea928a8fc68b", "name": "SK하이닉스", "stockCode": "000660", "market": "KOSPI" },
+        { "companyId": "fd2cbfd5-cd56-49eb-acab-5a7ff13e2fab", "name": "삼성전자", "stockCode": "005930", "market": "KOSPI" }
       ],
-      "inferredCount": 5,
-      "holdCount": 2
+      "inferredCount": 0,
+      "holdCount": 0,
+      "newsType": "MARKET_WRAP",
+      "newsTypeLabel": "증시 시황",
+      "signalCounts": {
+        "SHORT": { "up": 0, "down": 0, "hold": 2 },
+        "LONG": { "up": 1, "down": 0, "hold": 1 }
+      }
     }
   ],
-  "nextCursor": null,
-  "hasNext": false
+  "nextCursor": "AAAAAGrOWyAAAAAAAAAAACo66ACHR1fHoPCDqbF8Xbc",
+  "hasNext": true
 }
 ```
 - `newsId`는 `GET /api/news/{newsId}`와 같은 ID다.
 - `tradingDate`는 초과수익률 기준 거래일이다. 15:30 이후 출고면 다음 거래일이고, 아직 정해지지 않았으면 null이다.
 - `inferredCount`는 추정·OK, `holdCount`는 추정·판단 보류 기업 수다.
+- `newsType`은 뉴스 유형 코드, `newsTypeLabel`은 화면 이름이다. 아직 분류되지 않은 기사는 둘 다 null이다.
+- `signalCounts`는 이 이벤트의 모든 영향 기업(언급·추정, OK·HOLD)에 붙은 방향 딱지 수를 투자 기간별로 센 값이다. 키는 `SHORT`·`LONG` 고정이고 딱지가 없으면 모두 0이다.
 
 #### Error
 | 상태 | code | 상황 |
 | --- | --- | --- |
-| 400 | VALIDATION_FAILED | valueChain이 없거나 허용 값이 아님, size가 범위 밖 |
+| 400 | VALIDATION_FAILED | valueChain이 없거나 허용 값이 아님, newsType이 알 수 없는 코드, size가 범위 밖 |
 | 400 | INVALID_CURSOR | 커서 형식이 깨짐 |
 
 #### GET /api/events/{eventId} — 이벤트 관계 지도
 
 #### 목적
-이벤트 1건의 언급·추정 기업, 추정 경로와 근거 조각, 초과수익률을 한 번에 조회한다.
+이벤트 1건의 언급·추정 기업, 추정 경로와 근거 조각, 초과수익률, 기업 위치·방향 딱지·기업 지표를 한 번에 조회한다.
 #### 인증
 불필요.
 #### Response — 200 OK
 ```json
 {
-  "event": { "eventId": "…", "title": "…", "tradingDate": "2026-10-06", "...": "목록 항목과 같음" },
+  "event": { "eventId": "…", "title": "…", "tradingDate": "2026-08-31", "newsType": "ACCIDENT", "newsTypeLabel": "사고·공급 차질", "signalCounts": { "SHORT": { "up": 1, "down": 0, "hold": 6 }, "LONG": { "up": 2, "down": 0, "hold": 5 } }, "...": "목록 항목과 같음" },
   "nodes": [
     {
-      "companyId": "550e8400-e29b-41d4-a716-446655440011",
+      "companyId": "928aa9d3-d527-4995-963f-ea928a8fc68b",
       "name": "SK하이닉스",
       "stockCode": "000660",
       "market": "KOSPI",
@@ -1832,30 +1904,41 @@ GET /api/events?valueChain=SEMICONDUCTOR&hasInferred=true&size=20&cursor={cursor
       "anchorCompanyId": null,
       "path": [],
       "abnormalReturns": [
-        { "windowDays": 1, "benchmark": "KOSPI", "stockReturn": 0.021, "benchmarkReturn": 0.004, "abnormalReturn": 0.017 }
-      ]
+        { "windowDays": 1, "benchmark": "KOSPI", "stockReturn": 0.01270417, "benchmarkReturn": 0.00458691, "abnormalReturn": 0.00811726 },
+        { "windowDays": 3, "benchmark": "KOSPI", "stockReturn": -0.02419843, "benchmarkReturn": -0.0333133, "abnormalReturn": 0.00911487 },
+        { "windowDays": 5, "benchmark": "KOSPI", "stockReturn": -0.00362976, "benchmarkReturn": -0.01497596, "abnormalReturn": 0.0113462 },
+        { "windowDays": 20, "benchmark": "KOSPI", "stockReturn": 0.08287961, "benchmarkReturn": 0.01206826, "abnormalReturn": 0.07081135 }
+      ],
+      "position": "REPORTED",
+      "positionLabel": "기사에 나온 기업",
+      "signals": [
+        { "horizon": "SHORT", "windowDays": 3, "label": "UP", "holdReason": null, "caseScope": "COMPANY", "caseCount": 121, "sameShare": 0.652893, "meanAr": 0.02026963, "downShare": 0.347107 },
+        { "horizon": "LONG", "windowDays": 20, "label": "UP", "holdReason": null, "caseScope": "COMPANY", "caseCount": 121, "sameShare": 0.768595, "meanAr": 0.13697621, "downShare": 0.231405 }
+      ],
+      "fundamental": {
+        "marketCap": 932838750105000, "marketCapRank": 2, "sizeClass": "LARGE",
+        "per": null, "pbr": null, "dividendYield": null,
+        "netIncomeTtm": null, "equity": null, "dividendPerShare": null,
+        "closePrice": 1277000.00, "priceDate": "2026-10-25", "fiscalBasis": null
+      }
     },
     {
-      "companyId": "550e8400-e29b-41d4-a716-446655440012",
-      "name": "한미반도체",
+      "companyId": "d2583bf0-f03f-4863-abd8-f7d1f9b6da94",
+      "name": "삼성전기",
       "basis": "INFERRED",
       "hop": 1,
-      "score": 0.44,
-      "status": "OK",
-      "anchorCompanyId": "550e8400-e29b-41d4-a716-446655440011",
-      "path": [
-        {
-          "sourceCompanyId": "550e8400-e29b-41d4-a716-446655440012",
-          "sourceName": "한미반도체",
-          "targetCompanyId": "550e8400-e29b-41d4-a716-446655440011",
-          "targetName": "SK하이닉스",
-          "relationshipType": "SUPPLY",
-          "edgeSource": "COSMOS",
-          "strength": 1.0,
-          "evidence": []
-        }
+      "status": "HOLD",
+      "holdReason": "전이 강도 낮음",
+      "anchorCompanyId": "fd2cbfd5-cd56-49eb-acab-5a7ff13e2fab",
+      "path": [ { "relationshipType": "PARTNER", "edgeSource": "NEWS", "...": "…" } ],
+      "abnormalReturns": [ { "windowDays": 1, "...": "…" } ],
+      "position": "PARTNER",
+      "positionLabel": "협력사",
+      "signals": [
+        { "horizon": "SHORT", "windowDays": 3, "label": "HOLD", "holdReason": "연결이 약함", "caseScope": null, "caseCount": 0, "sameShare": null, "meanAr": null, "downShare": null },
+        { "horizon": "LONG", "windowDays": 20, "label": "HOLD", "holdReason": "연결이 약함", "caseScope": null, "caseCount": 0, "sameShare": null, "meanAr": null, "downShare": null }
       ],
-      "abnormalReturns": []
+      "fundamental": null
     }
   ]
 }
@@ -1866,12 +1949,197 @@ GET /api/events?valueChain=SEMICONDUCTOR&hasInferred=true&size=20&cursor={cursor
 - `path`의 source·target은 실제 관계 방향이다. 경로의 기업이 기업 마스터에 없으면 id와 이름이 null이다.
 - `edgeSource`는 COSMOS(기존 관계 데이터) · NEWS(빅카인즈 근거) · COMENTION(같은 문장 동시언급)이다. `evidence`는 NEWS 단계에만 최대 5건 채워진다.
 - `impactDirection`(POSITIVE·NEUTRAL·NEGATIVE), `impactMagnitude`(0~1, 상승 확률과 하락 확률의 차이), `confidence`(0~1, 가장 큰 클래스의 확률)는 영향 모델(`nexus predict-impact`)이 채운다. 국내 상장사이면서 `status`가 `OK`인 노드만 값이 있다. `confidence`가 있는데 `impactDirection`이 null이면 신뢰도가 표시 기준 미만인 '방향 보류'다. 해외 상장사와 `HOLD` 노드는 셋 다 null이다.
+- `abnormalReturns`는 1·3·5·20거래일 초과수익률이다(1 = 이벤트 거래일 당일). 아직 그 기간이 지나지 않았거나 주가가 없으면 해당 기간이 빠진다.
+- `position`·`signals`는 방향 딱지가 계산된 노드만 값이 있고, 없으면 `null`·`[]`다. 딱지는 과거 사례 통계이며 예측이 아니다(위 공통 코드 참고).
+- `fundamental`은 `GET /api/companies/{companyId}/fundamental`과 같은 객체이고, 기업 지표가 아직 없으면 `null`이다.
 
 #### Error
 | 상태 | code | 상황 |
 | --- | --- | --- |
 | 400 | VALIDATION_FAILED | eventId가 UUID 형식이 아님 |
 | 404 | EVENT_NOT_FOUND | 이벤트가 없거나 취소됨 |
+
+#### GET /api/events/{eventId}/companies/{companyId}/chart — 뉴스 전후 주가 차트
+
+#### 목적
+이벤트의 영향 기업 하나에 대해 이벤트 거래일 앞 5거래일 ~ 뒤 20거래일의 종가와, 같은 기간 시장 지수 대비 누적 수익률을 조회한다.
+#### 인증
+불필요.
+#### Request
+```javascript
+GET /api/events/cb34cd32-01c4-5314-bee0-321320e1aa03/companies/928aa9d3-d527-4995-963f-ea928a8fc68b/chart
+```
+#### Response — 200 OK
+```json
+{
+  "eventId": "cb34cd32-01c4-5314-bee0-321320e1aa03",
+  "companyId": "928aa9d3-d527-4995-963f-ea928a8fc68b",
+  "tradingDate": "2026-08-31",
+  "benchmark": "KOSPI",
+  "points": [
+    { "offset": -5, "date": "2026-08-24", "close": 1671000.0000, "indexClose": 6696.9600, "stockReturn": 0.01088929, "indexReturn": -0.01353979, "abnormalReturn": 0.02442908 },
+    { "offset": -1, "date": "2026-08-28", "close": 1653000.0000, "indexClose": 6788.8800, "stockReturn": 0.00000000, "indexReturn": 0.00000000, "abnormalReturn": 0.00000000 },
+    { "offset": 0, "date": "2026-08-31", "close": 1674000.0000, "indexClose": 6820.0200, "stockReturn": 0.01270417, "indexReturn": 0.00458691, "abnormalReturn": 0.00811726 },
+    { "offset": 2, "date": "2026-09-02", "close": 1613000.0000, "indexClose": 6562.7200, "stockReturn": -0.02419843, "indexReturn": -0.03331330, "abnormalReturn": 0.00911487 },
+    { "offset": 20, "date": "2026-09-30", "close": 1783000.0000, "indexClose": 6838.0400, "stockReturn": 0.07864489, "indexReturn": 0.00724125, "abnormalReturn": 0.07140364 }
+  ]
+}
+```
+- `benchmark`는 기업 시장(KOSPI·KOSDAQ)의 지수이고, 그 지수에 종가가 있는 날을 거래일 달력으로 쓴다.
+- `offset` 0은 이벤트 거래일(`tradingDate`)이다. 그날이 달력에 없으면 그 뒤 첫 거래일이 0이다. `points`는 offset -5 ~ +20, 오래된 순이며 달력이 끝나면(최근 뉴스) 그보다 짧다. 예시는 일부만 보였다.
+- 수익률은 offset -1 종가 대비 누적이다: `stockReturn = close / (offset -1 종가) - 1`, `indexReturn`도 지수로 같게, `abnormalReturn = stockReturn - indexReturn`. 그래서 offset 0·2·4·19의 `abnormalReturn`은 노드의 1·3·5·20거래일 초과수익률과 같다.
+- 그날 기업 종가가 없으면 `close`·`stockReturn`·`abnormalReturn`이 null이다. offset -1 종가가 없으면 모든 `stockReturn`·`abnormalReturn`이 null이다.
+
+#### Error
+| 상태 | code | 상황 |
+| --- | --- | --- |
+| 400 | VALIDATION_FAILED | eventId·companyId가 UUID 형식이 아님 |
+| 404 | EVENT_NOT_FOUND | 이벤트가 없거나 취소됨 |
+| 404 | EVENT_COMPANY_NOT_FOUND | 이 기업이 이벤트의 영향 기업(언급·추정, OK·HOLD)이 아님 |
+| 404 | EVENT_CHART_UNAVAILABLE | 이벤트 거래일이 아직 없음, 또는 기업이 KOSPI·KOSDAQ 상장사가 아님(지수 없음) |
+
+#### GET /api/events/backtest — 방향 딱지 적중률
+
+#### 목적
+방향 딱지가 학습 기간 뒤 뉴스에서 실제로 얼마나 맞았는지 투자 기간 × 뉴스 유형별로 조회한다.
+#### 인증
+불필요.
+#### Request
+```javascript
+GET /api/events/backtest?valueChain=SEMICONDUCTOR
+```
+#### Query Params
+- `valueChain`: 필수. SEMICONDUCTOR·BATTERY·AUTO
+#### Response — 200 OK
+```json
+{
+  "valueChain": "SEMICONDUCTOR",
+  "trainEnd": "2026-06-30",
+  "testStart": "2026-07-01",
+  "testEnd": "2026-10-14",
+  "rows": [
+    { "horizon": "SHORT", "newsType": null, "newsTypeLabel": null, "caseCount": 10788, "labeledCount": 640, "hitCount": 307, "hitRate": 0.479688, "upLabels": 585, "downLabels": 55, "baseDownShare": 0.484983, "baselineRate": 0.515017 },
+    { "horizon": "SHORT", "newsType": "MARKET_WRAP", "newsTypeLabel": "증시 시황", "caseCount": 1860, "labeledCount": 189, "hitCount": 90, "hitRate": 0.476190, "upLabels": 176, "downLabels": 13, "baseDownShare": 0.491935, "baselineRate": 0.508065 },
+    { "horizon": "SHORT", "newsType": "CAPEX", "newsTypeLabel": "증설·투자", "caseCount": 860, "labeledCount": 0, "hitCount": 0, "hitRate": null, "upLabels": 0, "downLabels": 0, "baseDownShare": 0.470930, "baselineRate": 0.529070 },
+    { "horizon": "LONG", "newsType": null, "newsTypeLabel": null, "caseCount": 8787, "labeledCount": 2752, "hitCount": 1393, "hitRate": 0.506177, "upLabels": 2268, "downLabels": 484, "baseDownShare": 0.414931, "baselineRate": 0.585069 }
+  ]
+}
+```
+- 딱지는 `trainEnd`(2026-06-30)까지의 과거 사례로만 만들고, `testStart` ~ `testEnd`(2026-06-30 이후) 뉴스에서 채점한다. 채점 기간의 정답은 딱지를 만들 때 쓰지 않았다.
+- `rows`는 SHORT 먼저, 각 기간 안에서 전체 유형 줄(`newsType` null)이 먼저이고 그다음 `labeledCount` 내림차순이다.
+- `caseCount`는 채점 대상 사례 수(HOLD 포함), `labeledCount`는 그중 `UP`·`DOWN` 딱지가 붙은 수, `hitCount`는 딱지 방향과 실제 초과수익률 부호가 맞은 수다.
+- `hitRate = hitCount / labeledCount`이고 딱지가 0건이면 null이다.
+- `baseDownShare`는 같은 사례에서 실제로 내린 비율, `baselineRate = max(baseDownShare, 1 - baseDownShare)`는 "늘 많은 쪽으로 찍는" 단순 기준선이다. `hitRate`는 이 기준선과 비교해서 보여준다.
+- 아직 계산 전인 밸류체인은 `rows`가 `[]`이고 날짜가 모두 null이다.
+
+#### Error
+| 상태 | code | 상황 |
+| --- | --- | --- |
+| 400 | VALIDATION_FAILED | valueChain이 없거나 허용 값이 아님 |
+
+#### GET /api/events/company-history — 기업 과거 뉴스와 주가 반응
+
+#### 목적
+기업 한 곳이 영향 기업(OK)으로 들어간 과거 뉴스를 최신순으로 보고, 그때 이 기업의 위치·방향 딱지·실제 초과수익률을 함께 조회한다.
+#### 인증
+불필요.
+#### Request
+```javascript
+GET /api/events/company-history?companyId=928aa9d3-d527-4995-963f-ea928a8fc68b&size=20&cursor={cursor}
+```
+#### Query Params
+<table header-row="true">
+<tr>
+<td>필드</td>
+<td>필수</td>
+<td>규칙</td>
+</tr>
+<tr>
+<td>companyId</td>
+<td>예</td>
+<td>기업 UUID</td>
+</tr>
+<tr>
+<td>cursor</td>
+<td>아니요</td>
+<td>dateline + eventId 기반 커서</td>
+</tr>
+<tr>
+<td>size</td>
+<td>아니요</td>
+<td>기본 20, 최대 100</td>
+</tr>
+</table>
+
+#### Response — 200 OK
+```json
+{
+  "items": [
+    {
+      "event": { "eventId": "4238a3dd-5668-5dc2-93f0-8569026fe909", "title": "정부 믿고 삼전닉스 샀는데… ‘머니무브’ 씁쓸한 성적표", "dateline": "2026-10-13T17:04:00Z", "tradingDate": "2026-10-14", "newsType": "MARKET_WRAP", "newsTypeLabel": "증시 시황", "signalCounts": { "SHORT": { "up": 0, "down": 0, "hold": 2 }, "LONG": { "up": 1, "down": 0, "hold": 1 } }, "...": "목록 항목과 같음" },
+      "basis": "REPORTED",
+      "position": "REPORTED",
+      "positionLabel": "기사에 나온 기업",
+      "signals": [
+        { "horizon": "SHORT", "windowDays": 3, "label": "HOLD", "holdReason": "오른 경우와 내린 경우가 비슷함", "caseScope": "COMPANY", "caseCount": 353, "sameShare": 0.606232, "meanAr": 0.01418501, "downShare": 0.393768 },
+        { "horizon": "LONG", "windowDays": 20, "label": "UP", "holdReason": null, "caseScope": "COMPANY", "caseCount": 353, "sameShare": 0.699717, "meanAr": 0.09512769, "downShare": 0.300283 }
+      ],
+      "abnormalReturns": [
+        { "windowDays": 1, "benchmark": "KOSPI", "stockReturn": -0.02129121, "benchmarkReturn": -0.00439743, "abnormalReturn": -0.01689378 },
+        { "windowDays": 3, "benchmark": "KOSPI", "stockReturn": -0.13118132, "benchmarkReturn": -0.06085811, "abnormalReturn": -0.07032321 },
+        { "windowDays": 5, "benchmark": "KOSPI", "stockReturn": -0.18269231, "benchmarkReturn": -0.07996388, "abnormalReturn": -0.10272843 }
+      ]
+    }
+  ],
+  "nextCursor": "AAAAAGrOWyAAAAAAAAAAACo66ACHR1fHoPCDqbF8Xbc",
+  "hasNext": true
+}
+```
+- 이 기업의 영향 상태가 `OK`인 이벤트만 나온다(추정 `HOLD`만 있는 이벤트와 취소된 기사는 빠진다). 정렬과 커서는 목록과 같다.
+- `event`는 `GET /api/events` 목록 항목과 같은 객체다(`signalCounts`는 그 이벤트의 모든 기업 기준).
+- `basis`·`position`·`signals`·`abnormalReturns`는 이 기업 한 곳의 값이다. 딱지가 없으면 `position`이 null, `signals`가 `[]`이고, 초과수익률은 지난 기간만 들어 있다(예시의 최근 기사는 20거래일이 아직 안 지남).
+- 없는 기업 ID면 빈 목록을 돌려준다.
+
+#### Error
+| 상태 | code | 상황 |
+| --- | --- | --- |
+| 400 | VALIDATION_FAILED | companyId가 없거나 UUID 형식이 아님, size가 범위 밖 |
+| 400 | INVALID_CURSOR | 커서 형식이 깨짐 |
+
+#### GET /api/companies/{companyId}/fundamental — 기업 지표
+
+#### 목적
+기업 상세·이벤트 지도 패널에 보여줄 시가총액·PER·PBR·배당수익률·규모를 조회한다. 경로는 companies 도메인이지만 NEXUS 투자자 화면용이라 여기에 적는다. 이벤트 지도 노드의 `fundamental`과 같은 객체다.
+#### 인증
+불필요.
+#### Response — 200 OK
+```json
+{
+  "marketCap": 1500000000000,
+  "marketCapRank": 120,
+  "sizeClass": "MID",
+  "per": 15.2,
+  "pbr": 1.8,
+  "dividendYield": 0.0167,
+  "netIncomeTtm": 98700000000,
+  "equity": 833000000000,
+  "dividendPerShare": 500.00,
+  "closePrice": 30000.00,
+  "priceDate": "2026-10-23",
+  "fiscalBasis": "최근 4분기 합산"
+}
+```
+(값은 형식을 보이기 위한 예시다.)
+- 파이프라인(`nexus fundamentals`)이 OpenDART 재무제표와 시가총액으로 계산한 값이다. `marketCap`·`netIncomeTtm`·`equity`는 원, `dividendYield`는 비율(0.0012 = 0.12%)이다.
+- `sizeClass`는 `LARGE`·`MID`·`SMALL`, `marketCapRank`는 시가총액 순위다. `priceDate`는 `closePrice`·`marketCap`의 기준일, `fiscalBasis`는 재무 수치(`netIncomeTtm`·`equity`·`dividendPerShare`)의 기준 기간 설명이다.
+- 지표 적재가 단계적으로 진행되므로 시가총액만 있고 PER·PBR 등은 null인 기업도 있다(이벤트 지도 예시 참고).
+- 적자라 PER을 계산할 수 없는 경우처럼 개별 값이 null일 수 있다. 지표가 아직 없는 기업은 **200과 함께 모든 값이 null인 객체**를 돌려준다.
+
+#### Error
+| 상태 | code | 상황 |
+| --- | --- | --- |
+| 400 | VALIDATION_FAILED | companyId가 UUID 형식이 아님 |
+| 404 | COMPANY_NOT_FOUND | 기업이 없거나 비활성 |
 
 
 ### community | 커뮤니티

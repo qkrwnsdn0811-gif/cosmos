@@ -44,4 +44,49 @@ class EventControllerValidationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items").isArray());
     }
+
+    @Test
+    void listRejectsUnknownNewsType() throws Exception {
+        mockMvc.perform(get("/api/events").param("valueChain", "SEMICONDUCTOR").param("newsType", "FOO"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+    }
+
+    /** 고정 경로가 /{eventId}(UUID)로 잡혀 400이 되지 않고, 토큰 없이 200이 되는지 본다. */
+    @Test
+    void investorRoutesArePublicAndNotCapturedByEventId() throws Exception {
+        mockMvc.perform(get("/api/events/backtest").param("valueChain", "SEMICONDUCTOR"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.valueChain").value("SEMICONDUCTOR"))
+                .andExpect(jsonPath("$.rows").isArray());
+        mockMvc.perform(get("/api/events/company-history")
+                        .param("companyId", "7e000000-0000-0000-0000-000000000098").param("size", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items").isArray());
+    }
+
+    @Test
+    void investorRoutesValidateParams() throws Exception {
+        mockMvc.perform(get("/api/events/backtest"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+        mockMvc.perform(get("/api/events/company-history"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+        mockMvc.perform(get("/api/events/company-history")
+                        .param("companyId", "7e000000-0000-0000-0000-000000000098").param("size", "101"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+    }
+
+    @Test
+    void chartAndFundamentalArePublic404ForUnknownIds() throws Exception {
+        mockMvc.perform(get("/api/events/{eventId}/companies/{companyId}/chart",
+                        "7e000000-0000-0000-0000-000000000097", "7e000000-0000-0000-0000-000000000098"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("EVENT_NOT_FOUND"));
+        mockMvc.perform(get("/api/companies/{companyId}/fundamental", "7e000000-0000-0000-0000-000000000098"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("COMPANY_NOT_FOUND"));
+    }
 }

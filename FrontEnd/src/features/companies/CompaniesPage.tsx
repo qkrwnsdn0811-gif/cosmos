@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import type { Market } from "@/api/types";
 import { fmtDateTime } from "@/lib/format";
 import { fallbackMarketCapKrw } from "@/lib/marketCapFallback";
@@ -9,6 +9,7 @@ import { useUi } from "@/store/ui";
 import { CompanyAvatar, Empty, ErrorNotice, Icon, IndustryBadge, MarketTag, ScoreBar, Skeleton } from "@/components/ui";
 import CompanyPreviewDialog from "./CompanyPreviewDialog";
 import OwnershipView from "./OwnershipView";
+import { galaxyCompanyPath } from "@/lib/routes";
 import "./companies.css";
 
 const MARKETS: { v: Market | ""; label: string }[] = [
@@ -34,7 +35,9 @@ export default function CompaniesPage() {
   const [industryId, setIndustryId] = useState("");
   const [sort, setSort] = useState<SortState>(null);
   const [primarySort, setPrimarySort] = useState<PrimarySort>("cap");
-  const [previewId, setPreviewId] = useState<string | null>(null);
+  // 다른 화면(영향 종목 카드의 "이 종목의 뉴스 이력")에서 ?company= 로 들어오면 그 기업의 미리보기를 바로 연다
+  const [params] = useSearchParams();
+  const [previewId, setPreviewId] = useState<string | null>(() => params.get("company"));
 
   // 입력마다 요청이 나가지 않도록 디바운스한다 (live 모드에서 백엔드 호출 폭주 방지)
   useEffect(() => {
@@ -80,7 +83,7 @@ export default function CompaniesPage() {
   const openPreview = (id: string) => setPreviewId(id);
   const goToGalaxy = (id: string) => {
     setPreviewId(null);
-    navigate(`/?company=${id}`);
+    navigate(galaxyCompanyPath(id));
   };
 
   /** 지금 불러온 목록 안에서만 정렬한다 — 서버가 관계 수·점수 정렬을 지원하지 않아 전체 정렬은 아직 불가능하다 */

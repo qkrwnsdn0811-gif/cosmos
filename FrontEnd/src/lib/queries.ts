@@ -196,6 +196,42 @@ export function useEventMap(eventId: string | null) {
     enabled: Boolean(eventId),
   });
 }
+/** 뉴스 전후 주가 차트 — 카드를 펼쳤을 때만 받는다 */
+export function useEventChart(eventId: string | null, companyId: string | null) {
+  return useQuery({
+    queryKey: ["events", "chart", eventId, companyId],
+    queryFn: () => api.events.chart(eventId!, companyId!),
+    enabled: Boolean(eventId && companyId),
+    staleTime: 10 * 60_000,
+  });
+}
+/** 방향 딱지 적중률 — 파이프라인을 다시 돌릴 때만 바뀐다 */
+export function useBacktest(valueChain: T.ValueChain = "SEMICONDUCTOR") {
+  return useQuery({
+    queryKey: ["events", "backtest", valueChain],
+    queryFn: () => api.events.backtest(valueChain),
+    staleTime: 30 * 60_000,
+  });
+}
+/** 종목별 뉴스 이력 (F13) */
+export function useCompanyHistory(companyId: string | null) {
+  return useInfiniteQuery({
+    queryKey: ["events", "company-history", companyId],
+    queryFn: ({ pageParam }) => api.events.companyHistory({ companyId: companyId!, cursor: pageParam, size: 10 }),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
+    enabled: Boolean(companyId),
+  });
+}
+/** 기업 지표 (F8) */
+export function useCompanyFundamental(companyId: string | null) {
+  return useQuery({
+    queryKey: ["companies", "fundamental", companyId],
+    queryFn: () => api.companies.fundamental(companyId!),
+    enabled: Boolean(companyId),
+    staleTime: 30 * 60_000,
+  });
+}
 export function useNewsDetail(newsId: string | null) {
   const k = useKey();
   const booted = useBooted();

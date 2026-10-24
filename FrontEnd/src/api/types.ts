@@ -416,6 +416,102 @@ export interface EventCompanyRef {
   stockCode: string | null;
   market: Market | null;
 }
+/** 뉴스 유형 코드 (nexus/nexus/cases/newstype.py). 라벨은 응답의 newsTypeLabel 을 쓴다 */
+export type NewsTypeCode =
+  | "ACCIDENT" | "EXPORT_CONTROL" | "TARIFF" | "EARNINGS_BEAT" | "EARNINGS_MISS" | "SUPPLY_DEAL" | "PRICE_UP"
+  | "PRICE_DOWN" | "PRODUCTION_CUT" | "CAPEX" | "SHAREHOLDER" | "AI_DEMAND" | "POLICY" | "ANALYST" | "MARKET_WRAP"
+  | "OTHER";
+/** 투자 기간 — SHORT 3거래일, LONG 20거래일 */
+export type Horizon = "SHORT" | "LONG";
+/** 방향 딱지 — 과거 사례 통계이며 예측이 아니다 */
+export type SignalLabel = "UP" | "DOWN" | "HOLD";
+/** 기업 위치 — 기사에 나옴 또는 추정 경로 마지막 단계의 관계 */
+export type CompanyPosition = "REPORTED" | "SUPPLIER" | "CUSTOMER" | "COMPETITOR" | "PARTNER" | "INVEST" | "COMENTION";
+export interface SignalCount {
+  up: number;
+  down: number;
+  hold: number;
+}
+export interface EventSignal {
+  horizon: Horizon;
+  windowDays: number;
+  label: SignalLabel;
+  /** HOLD 일 때 사유 (사례 부족 · 오른 경우와 내린 경우가 비슷함 · 반응이 작음 · 비슷한 유형 없음 · 연결이 약함) */
+  holdReason: string | null;
+  /** COMPANY = 그 종목의 과거 사례, POSITION = 같은 위치 기업 전체 사례 */
+  caseScope: "COMPANY" | "POSITION" | null;
+  caseCount: number;
+  /** 많은 쪽으로 움직인 사례 비율 (0~1) */
+  sameShare: number | null;
+  /** 과거 사례 평균 초과수익률 (비율) */
+  meanAr: number | null;
+  /** 과거 사례 중 하락 비율 (0~1) */
+  downShare: number | null;
+}
+export interface Fundamental {
+  marketCap: number | null;
+  marketCapRank: number | null;
+  sizeClass: "LARGE" | "MID" | "SMALL" | null;
+  /** 적자거나 재무제표가 없으면 null */
+  per: number | null;
+  pbr: number | null;
+  /** 비율(0.012 = 1.2%) */
+  dividendYield: number | null;
+  netIncomeTtm: number | null;
+  equity: number | null;
+  dividendPerShare: number | null;
+  closePrice: number | null;
+  priceDate: string | null;
+  fiscalBasis: string | null;
+}
+export interface ChartPoint {
+  /** 0 = 뉴스 거래일 */
+  offset: number;
+  date: string;
+  close: number | null;
+  indexClose: number | null;
+  /** 뉴스 전날 종가 대비 누적 수익률 (비율) */
+  stockReturn: number | null;
+  indexReturn: number | null;
+  abnormalReturn: number | null;
+}
+export interface EventChart {
+  eventId: UUID;
+  companyId: UUID;
+  tradingDate: string;
+  benchmark: "KOSPI" | "KOSDAQ";
+  points: ChartPoint[];
+}
+export interface BacktestRow {
+  horizon: Horizon;
+  /** null = 전체 유형 */
+  newsType: NewsTypeCode | null;
+  newsTypeLabel: string | null;
+  caseCount: number;
+  labeledCount: number;
+  hitCount: number;
+  hitRate: number | null;
+  upLabels: number;
+  downLabels: number;
+  baseDownShare: number | null;
+  /** 무조건 많은 쪽으로 답할 때의 적중률 */
+  baselineRate: number | null;
+}
+export interface Backtest {
+  valueChain: ValueChain;
+  trainEnd: string | null;
+  testStart: string | null;
+  testEnd: string | null;
+  rows: BacktestRow[];
+}
+export interface CompanyHistoryItem {
+  event: EventSummary;
+  basis: ImpactBasis;
+  position: CompanyPosition | null;
+  positionLabel: string | null;
+  signals: EventSignal[];
+  abnormalReturns: AbnormalReturn[];
+}
 export interface EventSummary {
   eventId: UUID;
   /** /api/news/{newsId} 와 같은 문서 ID */
@@ -433,6 +529,10 @@ export interface EventSummary {
   reportedCompanies: EventCompanyRef[];
   inferredCount: number;
   holdCount: number;
+  newsType: NewsTypeCode | null;
+  newsTypeLabel: string | null;
+  /** 이 뉴스의 영향 종목 딱지 수 (기간별) */
+  signalCounts: Record<Horizon, SignalCount>;
 }
 export interface EvidenceSnippet {
   bigkindsNewsId: string;
@@ -479,6 +579,11 @@ export interface EventNode {
   anchorCompanyId: UUID | null;
   path: PathStep[];
   abnormalReturns: AbnormalReturn[];
+  position: CompanyPosition | null;
+  positionLabel: string | null;
+  /** SHORT 다음 LONG */
+  signals: EventSignal[];
+  fundamental: Fundamental | null;
 }
 export interface EventMap {
   event: EventSummary;
@@ -488,6 +593,12 @@ export interface EventListParams {
   valueChain?: ValueChain;
   companyId?: UUID;
   hasInferred?: boolean;
+  newsType?: NewsTypeCode;
+  cursor?: string;
+  size?: number;
+}
+export interface CompanyHistoryParams {
+  companyId: UUID;
   cursor?: string;
   size?: number;
 }

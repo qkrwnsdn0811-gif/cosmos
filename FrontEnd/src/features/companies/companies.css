@@ -319,6 +319,9 @@
 /* 기업 미리보기 모달 — 은하로 워프하지 않고 요약만 볼 때 사용 */
 .dialog.company-preview {
   width: min(560px, 100%);
+  /* 투자 정보(지표·뉴스 이력)가 붙어 길어졌다 — 화면보다 길면 대화상자 안에서 스크롤해 제목이 위로 잘리지 않게 */
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
 }
 .company-preview .kpi {
   flex: 1;

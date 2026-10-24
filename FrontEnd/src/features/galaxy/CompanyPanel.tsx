@@ -25,6 +25,7 @@ import {
 import { useGalaxy, type PanelTab } from "@/store/galaxy";
 import { useSession } from "@/store/session";
 import { useUi } from "@/store/ui";
+import { GALAXY_MINE_PATH } from "@/lib/routes";
 
 interface Props {
   companyId: string;
@@ -157,7 +158,7 @@ export default function CompanyPanel({ companyId, model = null, onWarp, onClose,
             className="btn btn-p btn-sm watch-popup-cta"
             onClick={() => {
               setJustWatched(false);
-              navigate("/?scope=mine");
+              navigate(GALAXY_MINE_PATH);
             }}
           >
             <Icon.Galaxy /> 내 은하로 이동

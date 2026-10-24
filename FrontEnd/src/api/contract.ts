@@ -31,6 +31,8 @@ export interface CosmosApi {
     metrics(companyId: string, window?: T.MetricWindow): Promise<T.CompanyMetrics>;
     metricsHistory(companyId: string, params?: T.MetricsHistoryParams): Promise<T.MetricsHistory>;
     stockPrices(companyId: string, period?: T.PricePeriod): Promise<T.StockPrices>;
+    /** 시가총액·규모·PER·PBR·배당수익률. 값이 없으면 각 칸이 null */
+    fundamental(companyId: string): Promise<T.Fundamental>;
     industries(): Promise<{ items: T.Industry[] }>;
   };
   news: {
@@ -48,6 +50,12 @@ export interface CosmosApi {
     /** size 는 기본 20 · 최대 100 */
     list(params?: T.EventListParams): Promise<T.Page<T.EventSummary>>;
     detail(eventId: string): Promise<T.EventMap>;
+    /** 뉴스 5거래일 전 ~ 20거래일 뒤 종목·지수 종가와 누적 초과수익률 */
+    chart(eventId: string, companyId: string): Promise<T.EventChart>;
+    /** 방향 딱지 적중률 (학습 기간 뒤 뉴스) */
+    backtest(valueChain: T.ValueChain): Promise<T.Backtest>;
+    /** 한 종목에 영향을 준 과거 뉴스와 그때의 주가 반응 */
+    companyHistory(params: T.CompanyHistoryParams): Promise<T.Page<T.CompanyHistoryItem>>;
   };
   community: {
     latest(params?: { cursor?: string; size?: number }): Promise<T.Page<T.GlobalComment>>;

@@ -5,11 +5,14 @@ import { ApiError } from "@/api";
 import Header from "@/components/Header";
 import Toasts from "@/components/Toasts";
 import AuthDialog from "@/features/auth/AuthDialog";
-import GalaxyPage from "@/features/galaxy/GalaxyPage";
+import InvestPage from "@/features/invest/InvestPage";
+import { GALAXY_PATH } from "@/lib/routes";
 import { useSession } from "@/store/session";
 
-// 은하(/)가 첫 화면이다 — 나머지 탭은 들어갈 때 받는다. 전부 정적으로 묶으면 첫 로드 번들에 뉴스·기업·커뮤니티·내 페이지·실험실 코드와
-// 그 CSS 가 함께 실려 Lighthouse 가 "미사용 JS/CSS" 로 잡았다 (2026-09-18). 각 페이지는 자기 청크(+CSS)로 나뉘어 라우트 진입 시 로드된다
+// 영향 종목 피드(/)가 첫 화면이다 (2026-10-25, 명세서 F10) — 나머지 탭은 들어갈 때 받는다. 전부 정적으로 묶으면 첫 로드 번들에
+// 뉴스·기업·커뮤니티·내 페이지·실험실 코드와 그 CSS 가 함께 실려 Lighthouse 가 "미사용 JS/CSS" 로 잡았다 (2026-09-18).
+// 3D 은하는 탐색 화면(/galaxy)으로 옮기면서 지연 로드한다 — three.js 청크가 첫 화면 전송량에서 빠진다
+const GalaxyPage = lazy(() => import("@/features/galaxy/GalaxyPage"));
 const NewsPage = lazy(() => import("@/features/news/NewsPage"));
 const EventsPage = lazy(() => import("@/features/event/EventsPage"));
 // 검색 팔레트의 "관계 검색"(기업 두 곳을 이어 주는 경로) 결과 화면 — 은하 페이지와 같은 Scene 청크를 쓰므로 여기서도 지연 로드한다
@@ -110,7 +113,8 @@ export default function App() {
           <LazyBoundary>
             <Suspense fallback={<RouteFallback />}>
               <Routes>
-                <Route path="/" element={<GalaxyPage />} />
+                <Route path="/" element={<InvestPage />} />
+                <Route path={GALAXY_PATH} element={<GalaxyPage />} />
                 <Route path="/path" element={<PathGalaxyPage />} />
                 <Route path="/news" element={<NewsPage />} />
                 <Route path="/events" element={<EventsPage />} />

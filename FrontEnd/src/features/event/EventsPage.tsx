@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import type { EventSummary } from "@/api/types";
 import { Empty, ErrorNotice, Skeleton } from "@/components/ui";
 import { fmtDateTime } from "@/lib/format";
@@ -98,7 +98,14 @@ export default function EventsPage() {
             {map.isError ? (
               <ErrorNotice message="선택한 이벤트를 불러오지 못했습니다." onRetry={() => map.refetch()} />
             ) : (
-              <div className="ttl">{map.data?.event.title ?? <Skeleton h={22} w={360} />}</div>
+              <div className="row between wrap" style={{ gap: 10 }}>
+                <div className="ttl">{map.data?.event.title ?? <Skeleton h={22} w={360} />}</div>
+                {activeId && (
+                  <Link className="btn btn-g btn-xs" to={`/?event=${activeId}`}>
+                    영향 종목 카드로 보기
+                  </Link>
+                )}
+              </div>
             )}
           </div>
           <div className="event-body">
@@ -142,6 +149,7 @@ function EventCard({ event, active, onPick }: { event: EventSummary; active: boo
     >
       <div className="row between">
         <span className="lab">
+          {event.newsTypeLabel ? <span className="chip chip-sm" style={{ marginRight: 6 }}>{event.newsTypeLabel}</span> : null}
           추정 <b className="num">{event.inferredCount}</b> · 보류 <b className="num">{event.holdCount}</b>
         </span>
         <span className="meta num">{[event.publisher, fmtDateTime(event.dateline)].filter(Boolean).join(" · ")}</span>

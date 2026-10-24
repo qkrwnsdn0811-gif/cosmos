@@ -5,6 +5,7 @@ import { useCompany, useCompanyMetrics, useToggleWatch, useWatchedSet } from "@/
 import { useSession } from "@/store/session";
 import { useUi } from "@/store/ui";
 import { CompanyAvatar, Icon, IndustryBadge, Kpi, MarketTag, Skeleton } from "@/components/ui";
+import CompanyInvestSection from "@/features/invest/CompanyInvestSection";
 
 interface Props {
   companyId: string | null;
@@ -106,6 +107,10 @@ export default function CompanyPreviewDialog({ companyId, onClose, onOpenGalaxy 
               {c.marketCap != null && <Kpi label="시가총액" value={fmtCompactPrice(c.marketCap, marketCurrency(c.market))} />}
             </div>
             {metrics.data?.measuredAt && <div className="meta mt-8">{fmtDateTime(metrics.data.measuredAt)} 기준 지표</div>}
+
+            <div className="mt-16">
+              <CompanyInvestSection companyId={c.companyId} />
+            </div>
 
             <div className="row between wrap mt-20" style={{ gap: 10 }}>
               <span className="meta">더 자세한 관계망 · 주가 · 게시판은 은하 뷰의 기업 패널에서 볼 수 있습니다.</span>

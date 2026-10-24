@@ -89,6 +89,7 @@ export const liveApi: CosmosApi = {
     metricsHistory: (id, params) => request(`/companies/${id}/metrics/history${qs(params)}`),
     // interval 은 MVP 에서 1D 만 지원한다 (명세 Query Params)
     stockPrices: (id, period) => request(`/companies/${id}/stock-prices${qs({ period, interval: "1D" })}`),
+    fundamental: (id) => request(`/companies/${id}/fundamental`),
     industries: async () => {
       const res = await request<{ items: T.Industry[] }>("/industries");
       return { items: res.items.map(normIndustry) };
@@ -107,6 +108,9 @@ export const liveApi: CosmosApi = {
   events: {
     list: (p) => request(`/events${qs(p)}`),
     detail: (id) => request(`/events/${id}`),
+    chart: (eventId, companyId) => request(`/events/${eventId}/companies/${companyId}/chart`),
+    backtest: (valueChain) => request(`/events/backtest${qs({ valueChain })}`),
+    companyHistory: (p) => request(`/events/company-history${qs(p)}`),
   },
   community: {
     latest: (p) => request(`/community/comments${qs(p)}`),

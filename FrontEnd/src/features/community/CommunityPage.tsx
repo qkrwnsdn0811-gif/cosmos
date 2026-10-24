@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { fmtRelative } from "@/lib/format";
 import { useIndustries, useLatestComments, useLatestGraph } from "@/lib/queries";
 import { CompanyAvatar, Empty, ErrorNotice, Skeleton } from "@/components/ui";
+import { galaxyCompanyPath } from "@/lib/routes";
 import "./community.css";
 
 /**
@@ -37,7 +38,7 @@ export default function CommunityPage() {
     return items.filter((c) => industryOf.get(c.company.companyId) === industries.data?.items.find((i) => i.industryId === industryId)?.name);
   }, [items, industryId, industryOf, industries.data]);
 
-  const goCompany = (companyId: string) => navigate(`/?company=${companyId}`);
+  const goCompany = (companyId: string) => navigate(galaxyCompanyPath(companyId));
 
   return (
     <div className="page">

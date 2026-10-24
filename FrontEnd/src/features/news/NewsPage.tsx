@@ -10,6 +10,7 @@ import { CompanyAvatar, Empty, ErrorNotice, Icon, Kpi, ScoreBar, SentimentBadge,
 import DistributionDialog from "./DistributionDialog";
 import KpiEvidenceDialog, { type KpiEvidenceKind } from "./KpiEvidenceDialog";
 import RelationMap2D from "./RelationMap2D";
+import { galaxyCompanyPath, galaxyEdgePath } from "@/lib/routes";
 import "./news.css";
 
 /**
@@ -259,7 +260,7 @@ export default function NewsPage() {
                       <div className="ttl">{company.data.name}</div>
                       {/* 기업 상세 이동은 스크랩/산업·관계 분포/원문 보기와 성격이 달라(뉴스가 아니라 기업 자체로 이동)
                           공용 버튼 줄에서 빼고, 어떤 기업이 focused 됐는지 보여주는 이름 바로 옆에 둔다 */}
-                      <button type="button" className="btn btn-g btn-xs" onClick={() => navigate(`/?company=${companyId}`)}>
+                      <button type="button" className="btn btn-g btn-xs" onClick={() => navigate(galaxyCompanyPath(companyId))}>
                         기업 상세 ↗
                       </button>
                     </div>
@@ -323,7 +324,7 @@ export default function NewsPage() {
                   onOpenInGalaxy={(relationshipId) =>
                     // 은하 쪽 관계 화면에서 "뉴스로 돌아가기"를 누르면 지금 보고 있던 이 위치(선택 기사·기업 문맥)로 돌아올 수 있도록
                     // 현재 경로를 함께 넘긴다 (GalaxyPage.tsx newsReturnTo)
-                    navigate(`/?edge=${relationshipId}`, { state: { newsReturnTo: `${location.pathname}${location.search}` } })
+                    navigate(galaxyEdgePath(relationshipId), { state: { newsReturnTo: `${location.pathname}${location.search}` } })
                   }
                 />
               ) : (

@@ -8,11 +8,13 @@ import { useGalaxy } from "@/store/galaxy";
 import { useSession } from "@/store/session";
 import { useUi } from "@/store/ui";
 import { cycleTabFocus, Icon, useClickOutside } from "./ui";
+import { GALAXY_MINE_PATH, GALAXY_PATH } from "@/lib/routes";
 
 const NAV = [
-  { to: "/", label: "전체 은하", end: true },
+  { to: "/", label: "영향 종목", end: true },
+  { to: GALAXY_PATH, label: "관계 은하" },
   { to: "/news", label: "뉴스" },
-  { to: "/events", label: "이벤트" },
+  { to: "/events", label: "이벤트 지도" },
   { to: "/companies", label: "기업" },
   { to: "/community", label: "커뮤니티" },
 ];
@@ -59,9 +61,8 @@ export default function Header() {
 
   return (
     <header className={narrow ? "hd hd-narrow" : "hd"}>
-      {/* "/" 는 전체 은하·기업 중심 뷰가 같은 경로(query only)를 쓰므로, 기업 중심 뷰(focusId 있음)에서 로고를 눌러도
-          React Router 입장에서는 route 전환이 아니라 그대로다 — GalaxyPage 가 리마운트되지 않아 화면이 안 바뀌었다.
-          로고를 누르면 늘 전체 은하로 돌아가도록 기존 "은하로 돌아가기" 버튼과 같은 backToGalaxy(warpTo(null))를 같이 호출한다 */}
+      {/* 로고는 첫 화면(영향 종목 피드)으로 간다. 은하의 기업 중심 뷰(focusId 있음)에 머물던 상태는 같이 풀어 둔다 —
+          다음에 관계 은하 탭을 열면 전체 은하부터 보이게 (기존 "은하로 돌아가기" 버튼과 같은 backToGalaxy) */}
       <NavLink
         to="/"
         className="logo"
@@ -102,7 +103,7 @@ function DesktopAccount({ status, user, pathname, nWatch, nScrap, openAuth, togg
   return (
     <div className="account" ref={menuRef} style={{ position: "relative" }}>
       {/* 사용 안내(`?`) — 은하 화면의 읽는 법·조작법 허브. 허브 자체는 GalaxyPage 가 그리므로 그 화면에서만 보인다 */}
-      {pathname === "/" && (
+      {pathname === GALAXY_PATH && (
         <button type="button" className="help-btn" onClick={toggleHelp} aria-label={HELP_UI.button} title={HELP_UI.buttonTitle}>
           <Icon.Help />
         </button>
@@ -125,7 +126,7 @@ function DesktopAccount({ status, user, pathname, nWatch, nScrap, openAuth, togg
                   <span style={{ fontWeight: 600 }}>내 페이지</span>
                 </button>
                 {/* 탭은 3개로 두기로 했으므로 개인 은하 진입은 프로필 메뉴에서 연다 */}
-                <button type="button" className="item" role="menuitem" onClick={() => (close(), navigate("/?scope=mine"))}>
+                <button type="button" className="item" role="menuitem" onClick={() => (close(), navigate(GALAXY_MINE_PATH))}>
                   <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
                     <Icon.Galaxy /> 내 은하
                   </span>
@@ -208,7 +209,7 @@ function MobileMenu({ status, user, pathname, nWatch, nScrap, openAuth, toggleHe
                 </NavLink>
               ))}
               {/* 사용 안내(`?`) — 넓은 화면의 헤더 버튼과 같은 허브. 허브는 GalaxyPage 가 그리므로 은하 화면에서만 */}
-              {pathname === "/" && (
+              {pathname === GALAXY_PATH && (
                 <button type="button" className="item" onClick={run(toggleHelp)} title={HELP_UI.buttonTitle}>
                   <span className="item-ico">
                     <Icon.Help /> {HELP_UI.button}
@@ -226,7 +227,7 @@ function MobileMenu({ status, user, pathname, nWatch, nScrap, openAuth, toggleHe
                 <button type="button" className="item" onClick={run(() => navigate("/me"))}>
                   내 페이지
                 </button>
-                <button type="button" className="item" onClick={run(() => navigate("/?scope=mine"))}>
+                <button type="button" className="item" onClick={run(() => navigate(GALAXY_MINE_PATH))}>
                   <span className="item-ico">
                     <Icon.Galaxy /> 내 은하
                   </span>

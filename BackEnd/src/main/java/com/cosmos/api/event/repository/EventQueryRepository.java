@@ -192,16 +192,20 @@ public class EventQueryRepository {
                 this::mapAbnormalReturn);
     }
 
-    /** 이벤트별 · 투자 기간별 · 딱지별 기업 수(목록 한 페이지 분량을 한 번에). */
+    /**
+     * 이벤트별 · 투자 기간별 · 딱지별 기업 수(목록 한 페이지 분량을 한 번에). 화면의 '영향 받을 종목'과 같게 OK 영향만 센다 —
+     * 연결이 약해 보류된 기업(영향 HOLD)은 접어 두는 목록이라 세지 않는다.
+     */
     public List<SignalCountRow> findSignalCounts(List<UUID> eventIds) {
         if (eventIds.isEmpty()) {
             return List.of();
         }
         return jdbcTemplate.query("""
-                SELECT event_id, horizon, label, count(*) AS cnt
-                FROM event_company_signal
-                WHERE event_id IN (:eventIds)
-                GROUP BY event_id, horizon, label
+                SELECT s.event_id, s.horizon, s.label, count(*) AS cnt
+                FROM event_company_signal s
+                JOIN event_company_impact i ON i.event_id = s.event_id AND i.company_id = s.company_id AND i.status = 'OK'
+                WHERE s.event_id IN (:eventIds)
+                GROUP BY s.event_id, s.horizon, s.label
                 """, new MapSqlParameterSource("eventIds", eventIds), (rs, rowNum) -> new SignalCountRow(
                 rs.getObject("event_id", UUID.class), rs.getString("horizon"), rs.getString("label"),
                 rs.getInt("cnt")));

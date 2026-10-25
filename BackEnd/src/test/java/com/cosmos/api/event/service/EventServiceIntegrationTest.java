@@ -307,8 +307,9 @@ class EventServiceIntegrationTest {
 
         assertThat(e1.newsType()).isEqualTo("EARNINGS_MISS");
         assertThat(e1.newsTypeLabel()).isEqualTo("실적 부진");
-        assertThat(e1.signalCounts().shortTerm()).isEqualTo(new HorizonCount(1, 1, 1));
-        assertThat(e1.signalCounts().longTerm()).isEqualTo(new HorizonCount(0, 1, 2));
+        // 연결이 약해 보류된 기업(C4, 영향 HOLD)은 카드 목록처럼 세지 않는다
+        assertThat(e1.signalCounts().shortTerm()).isEqualTo(new HorizonCount(1, 1, 0));
+        assertThat(e1.signalCounts().longTerm()).isEqualTo(new HorizonCount(0, 1, 1));
         assertThat(e2.newsTypeLabel()).isEqualTo("기타");
         assertThat(e2.signalCounts().shortTerm()).isEqualTo(new HorizonCount(0, 0, 0));
         assertThat(e2.signalCounts().longTerm()).isEqualTo(new HorizonCount(0, 0, 0));
@@ -336,8 +337,8 @@ class EventServiceIntegrationTest {
 
         assertThat(event.newsType()).isEqualTo("EARNINGS_MISS");
         assertThat(event.newsTypeLabel()).isEqualTo("실적 부진");
-        assertThat(event.signalCounts().shortTerm()).isEqualTo(new HorizonCount(1, 1, 1));
-        assertThat(event.signalCounts().longTerm()).isEqualTo(new HorizonCount(0, 1, 2));
+        assertThat(event.signalCounts().shortTerm()).isEqualTo(new HorizonCount(1, 1, 0));
+        assertThat(event.signalCounts().longTerm()).isEqualTo(new HorizonCount(0, 1, 1));
     }
 
     @Test
@@ -598,7 +599,7 @@ class EventServiceIntegrationTest {
         assertThat(e1.abnormalReturns()).extracting(AbnormalReturnResponse::windowDays).containsExactly(1, 3, 5, 20);
         assertThat(e1.abnormalReturns().get(3).abnormalReturn()).isEqualByComparingTo("0.07");
         assertThat(e1.event().newsTypeLabel()).isEqualTo("실적 부진");
-        assertThat(e1.event().signalCounts().longTerm()).isEqualTo(new HorizonCount(0, 1, 2));
+        assertThat(e1.event().signalCounts().longTerm()).isEqualTo(new HorizonCount(0, 1, 1));
     }
 
     @Test

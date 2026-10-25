@@ -2,7 +2,6 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import type { EventSignal, ExpectedMove, Fundamental, MoveBacktestRow } from "../src/api/types.ts";
 import {
-  accuracyText,
   afterNews,
   countsText,
   fmtPct,
@@ -85,17 +84,14 @@ test("metrics order follows the horizon and marks losses", () => {
   assert.equal(metricsText(null, "SHORT"), "");
 });
 
-test("accuracy compares with the baseline", () => {
-  const row = { horizon: "LONG" as const, newsType: null, newsTypeLabel: null, caseCount: 8787, labeledCount: 2752, hitCount: 1393, hitRate: 0.506, upLabels: 0, downLabels: 0, baseDownShare: 0.415, baselineRate: 0.585 };
-  assert.deepEqual(accuracyText(row), { line: "딱지 2,752건 중 50.6% 적중 · 무조건 많은 쪽으로 답할 때 58.5%", beats: false });
-  assert.equal(accuracyText({ ...row, labeledCount: 0, hitRate: null }), null);
-});
-
-test("path text walks outward from the anchor whatever the edge direction", () => {
+test("path text walks outward from the anchor and draws each relation in its own direction", () => {
   const step = (s: string, t: string, rel: string) => ({ sourceCompanyId: s, sourceName: s.toUpperCase(), targetCompanyId: t, targetName: t.toUpperCase(), relationshipType: rel as never, edgeSource: "NEWS", strength: 1, evidence: [] });
-  // anchor a; first edge b→a (b supplies a), then b competes with c
+  // anchor a; first edge b→a (b supplies a, so the arrow points back at a), then b competes with c (no direction)
   const node = { basis: "INFERRED" as const, companyId: "c", anchorCompanyId: "a", path: [step("b", "a", "SUPPLY"), step("b", "c", "COMPETE")] };
-  assert.equal(pathText(node), "A → 공급 → B → 경쟁 → C");
+  assert.equal(pathText(node), "A ← 공급 ← B — 경쟁 — C");
+  // a supplies b, b invests in d: arrows point outward
+  const out = { basis: "INFERRED" as const, companyId: "d", anchorCompanyId: "a", path: [step("a", "b", "SUPPLY"), step("b", "d", "INVEST")] };
+  assert.equal(pathText(out), "A → 공급 → B → 투자 → D");
   assert.equal(pathText({ ...node, basis: "REPORTED" }), null);
 });
 

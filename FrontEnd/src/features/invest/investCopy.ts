@@ -1,10 +1,9 @@
 /**
- * 투자자 화면 문구와 숫자 표기 — 딱지·과거 사례·지표·적중률을 어떤 말로 보여 줄지 한곳에서 정한다.
+ * 투자자 화면 문구와 숫자 표기 — 딱지·과거 사례·예상 변동폭·지표를 어떤 말로 보여 줄지 한곳에서 정한다.
  * 딱지는 과거 사례 통계라서 언제나 "과거 …"로 쓰고, 예측처럼 읽히는 말("오른다", "추천")은 쓰지 않는다.
  * import 가 타입뿐인 순수 함수라 node --test 로 바로 검증한다 (FrontEnd/tests/investCopy.test.ts).
  */
 import type {
-  BacktestRow,
   EventNode,
   EventSignal,
   ExpectedMove,
@@ -122,15 +121,6 @@ export function metricsText(f: Fundamental | null | undefined, horizon: Horizon)
   return order.filter(Boolean).join(" · ");
 }
 
-/** 적중률 한 줄과 기준선 비교. 딱지가 하나도 없으면 null */
-export function accuracyText(row: BacktestRow | null | undefined): { line: string; beats: boolean } | null {
-  if (!row || !row.labeledCount || row.hitRate == null) return null;
-  const base = row.baselineRate;
-  const line = `딱지 ${row.labeledCount.toLocaleString("ko-KR")}건 중 ${fmtPct(row.hitRate, 1, false)} 적중` +
-    (base != null ? ` · 무조건 많은 쪽으로 답할 때 ${fmtPct(base, 1, false)}` : "");
-  return { line, beats: base == null ? false : row.hitRate > base };
-}
-
 /** 종목 카드의 DOM id — 관계 지도에서 행성을 고르면 이 카드로 스크롤한다 */
 export const stockCardId = (companyId: string) => `stock-${companyId}`;
 
@@ -167,7 +157,7 @@ export function moveLine(move: ExpectedMove | null, graded: boolean): string | n
   return graded ? base : `${base}. 이 기간 등급은 검증에서 맞지 않아 참고치로만 보여 줍니다`;
 }
 
-/** 적중률 공개 띠의 변동폭 검증 한 줄. 검증 행이 없으면 null */
+/** 예상 변동폭 검증 띠의 한 줄. 검증 행이 없으면 null */
 export function moveCheckText(rows: MoveBacktestRow[], horizon: Horizon): { line: string; holds: boolean } | null {
   const small = rows.find((r) => r.horizon === horizon && r.grade === "SMALL");
   const large = rows.find((r) => r.horizon === horizon && r.grade === "LARGE");
@@ -188,11 +178,14 @@ export function afterNews(publishedAt: string, dateline: string): boolean {
 }
 
 const REL_KO: Record<string, string> = { SUPPLY: "공급", PARTNER: "협력", COMPETE: "경쟁", INVEST: "투자", CO_MENTIONED: "함께 언급" };
+/** 방향이 있는 관계 — source 가 target 에 공급·투자한다 */
+const DIRECTED = new Set(["SUPPLY", "INVEST"]);
 
 /**
- * 영향 경로 — "삼성전자 → 공급 → 한미반도체". 기사에 나온 기업이면 null.
+ * 영향 경로 — "SK하이닉스 ← 공급 ← 넥스틴"(넥스틴이 SK하이닉스에 공급). 기사에 나온 기업이면 null.
  * 경로는 언급 기업(anchor)에서 바깥으로 가고, 단계의 source/target 은 관계 방향이라 전파 방향과 다를 수 있다 —
- * 그래서 단계마다 "지금 기업이 아닌 쪽"을 다음 기업으로 잡는다
+ * 그래서 단계마다 "지금 기업이 아닌 쪽"을 다음 기업으로 잡고, 화살표는 관계 방향(공급·투자하는 쪽 → 받는 쪽)으로 그린다.
+ * 방향이 없는 관계(협력·경쟁·함께 언급)는 "—"로 잇는다
  */
 export function pathText(node: Pick<EventNode, "basis" | "path" | "companyId" | "anchorCompanyId">): string | null {
   if (node.basis === "REPORTED" || node.path.length === 0) return null;
@@ -200,11 +193,15 @@ export function pathText(node: Pick<EventNode, "basis" | "path" | "companyId" | 
   let cur: string | null = node.anchorCompanyId ?? (first.targetCompanyId === node.companyId ? first.sourceCompanyId : first.targetCompanyId);
   const nameOf = (id: string | null) =>
     node.path.flatMap((s) => [[s.sourceCompanyId, s.sourceName], [s.targetCompanyId, s.targetName]]).find(([i]) => i === id)?.[1] ?? "?";
-  const parts = [nameOf(cur)];
+  let text = nameOf(cur);
   for (const s of node.path) {
-    const next = s.sourceCompanyId === cur ? s.targetCompanyId : s.sourceCompanyId;
-    parts.push(REL_KO[s.relationshipType ?? ""] ?? "관계", nameOf(next));
+    const forward = s.sourceCompanyId === cur;
+    const next = forward ? s.targetCompanyId : s.sourceCompanyId;
+    const rel = REL_KO[s.relationshipType ?? ""] ?? "관계";
+    if (!DIRECTED.has(s.relationshipType ?? "")) text += ` — ${rel} — `;
+    else text += forward ? ` → ${rel} → ` : ` ← ${rel} ← `;
+    text += nameOf(next);
     cur = next;
   }
-  return parts.join(" → ");
+  return text;
 }

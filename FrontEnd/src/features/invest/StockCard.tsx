@@ -97,7 +97,13 @@ export default function StockCard({
               ))}
             </div>
           )}
-          {node.companyId && <PriceChart eventId={event.eventId} companyId={node.companyId} name={node.name} />}
+          {node.companyId &&
+            (event.tradingDate ? (
+              <PriceChart eventId={event.eventId} companyId={node.companyId} name={node.name} />
+            ) : (
+              // 주말·장 마감 뒤 뉴스는 다음 거래일 주가가 들어와야 뉴스 거래일이 정해진다 — 오류가 아니라 아직 없는 것
+              <p className="invest-muted">아직 이 뉴스 뒤 거래일이 오지 않아 주가 차트와 실제 반응이 없습니다.</p>
+            ))}
           <Evidence node={node} event={event} />
           <div className="row wrap invest-links">
             {node.companyId && (

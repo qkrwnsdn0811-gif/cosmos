@@ -62,52 +62,22 @@
   outline-offset: 2px;
 }
 
-/* 적중률 공개 (F11) */
+/* 예상 변동폭 검증 (MoveCheckBanner) — 등급이 맞은 기간은 초록 테두리, 참고치인 기간은 무채색 */
 .invest-accuracy {
   padding: 12px 16px;
   border-radius: var(--r-md);
-  border: 1px solid rgba(245, 166, 35, 0.32);
-  background: rgba(245, 166, 35, 0.06);
-}
-.invest-accuracy.beats {
-  border-color: var(--border-strong);
+  border: 1px solid var(--border-strong);
   background: rgba(255, 255, 255, 0.03);
 }
+.invest-accuracy.holds {
+  border-color: rgba(42, 199, 105, 0.45);
+  background: rgba(42, 199, 105, 0.05);
+}
 .invest-accuracy-line {
-  margin: 4px 0 2px;
+  margin: 6px 0 2px;
   font-size: 15px;
   font-weight: 600;
   color: var(--text);
-}
-.invest-accuracy-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 12px;
-  margin-top: 8px;
-}
-.invest-accuracy-part {
-  padding-left: 10px;
-  border-left: 2px solid var(--border-strong);
-}
-.invest-accuracy-part.holds {
-  border-left-color: rgba(42, 199, 105, 0.6);
-}
-.invest-accuracy-table {
-  margin-top: 10px;
-  width: 100%;
-  max-width: 560px;
-  border-collapse: collapse;
-  font-size: 12.5px;
-}
-.invest-accuracy-table th,
-.invest-accuracy-table td {
-  padding: 6px 8px;
-  border-bottom: 1px solid var(--border);
-  text-align: left;
-}
-.invest-accuracy-table th {
-  color: var(--text-4);
-  font-weight: 600;
 }
 
 /* 관심 종목 알림 (F14) */

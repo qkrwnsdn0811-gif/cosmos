@@ -5,7 +5,7 @@ import { CompanyAvatar, Empty, ErrorNotice, Skeleton } from "@/components/ui";
 import { fmtDateTime } from "@/lib/format";
 import { useBacktest, useEventFeed, useEventMap } from "@/lib/queries";
 import { useInvest } from "@/store/invest";
-import AccuracyBanner from "./AccuracyBanner";
+import MoveCheckBanner from "./MoveCheckBanner";
 import { countsText, DISCLAIMER, gradesHold, HORIZONS, NEWS_TYPES, stockCardId } from "./investCopy";
 import StockCard from "./StockCard";
 import WatchAlerts from "./WatchAlerts";
@@ -53,7 +53,7 @@ export default function InvestPage() {
         </div>
         <HorizonToggle />
       </div>
-      <AccuracyBanner horizon={horizon} />
+      <MoveCheckBanner horizon={horizon} />
       <WatchAlerts onPick={(eventId) => update((n) => n.set("event", eventId))} />
 
       <div className="invest-grid">

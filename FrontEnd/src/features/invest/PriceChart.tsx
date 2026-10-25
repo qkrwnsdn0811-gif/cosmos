@@ -1,4 +1,5 @@
 import { useMemo, useState, type PointerEvent } from "react";
+import { ApiError } from "@/api";
 import type { ChartPoint } from "@/api/types";
 import { ErrorNotice, Skeleton } from "@/components/ui";
 import { useEventChart } from "@/lib/queries";
@@ -54,7 +55,12 @@ export default function PriceChart({ eventId, companyId, name }: { eventId: stri
   }, [chart.data]);
 
   if (chart.isLoading) return <Skeleton h={H} style={{ borderRadius: 12 }} />;
-  if (chart.isError) return <ErrorNotice message="주가 차트를 불러오지 못했습니다." onRetry={() => chart.refetch()} />;
+  if (chart.isError) {
+    // 거래일 미정·국내 상장사 아님은 다시 시도해도 같다 — 오류 대신 이유를 말한다
+    if (chart.error instanceof ApiError && chart.error.code === "EVENT_CHART_UNAVAILABLE")
+      return <p className="invest-muted">이 뉴스는 아직 거래일이 정해지지 않았거나 국내 상장사가 아니라 주가 차트가 없습니다.</p>;
+    return <ErrorNotice message="주가 차트를 불러오지 못했습니다." onRetry={() => chart.refetch()} />;
+  }
   if (!geo || !chart.data) return <p className="invest-muted">이 뉴스 전후의 주가 데이터가 아직 없습니다.</p>;
 
   const bench = chart.data.benchmark === "KOSDAQ" ? "코스닥" : "코스피";

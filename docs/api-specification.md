@@ -1869,7 +1869,7 @@ GET /api/events?valueChain=SEMICONDUCTOR&newsType=EXPORT_CONTROL&hasInferred=tru
 - `tradingDate`는 초과수익률 기준 거래일이다. 15:30 이후 출고면 다음 거래일이고, 아직 정해지지 않았으면 null이다.
 - `inferredCount`는 추정·OK, `holdCount`는 추정·판단 보류 기업 수다.
 - `newsType`은 뉴스 유형 코드, `newsTypeLabel`은 화면 이름이다. 아직 분류되지 않은 기사는 둘 다 null이다.
-- `signalCounts`는 이 이벤트의 모든 영향 기업(언급·추정, OK·HOLD)에 붙은 방향 딱지 수를 투자 기간별로 센 값이다. 키는 `SHORT`·`LONG` 고정이고 딱지가 없으면 모두 0이다.
+- `signalCounts`는 이 이벤트의 OK 영향 기업(언급·추정)에 붙은 방향 딱지 수를 투자 기간별로 센 값이다. 연결이 약해 판단 보류된 기업(영향 HOLD)은 세지 않는다(화면의 '영향 받을 종목' 수와 같다). 키는 `SHORT`·`LONG` 고정이고 딱지가 없으면 모두 0이다.
 
 #### Error
 | 상태 | code | 상황 |

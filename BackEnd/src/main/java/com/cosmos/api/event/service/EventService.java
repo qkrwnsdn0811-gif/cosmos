@@ -169,8 +169,11 @@ public class EventService {
                 .filter(i -> "REPORTED".equals(i.basis()))
                 .map(i -> new EventCompanyRefResponse(i.companyId(), i.name(), i.stockCode(), i.market()))
                 .toList();
+        // 목록 요약(findSignalCounts)과 같게 OK 영향만 센다
+        Set<UUID> kept = new HashSet<>();
+        impacts.stream().filter(i -> "OK".equals(i.status())).forEach(i -> kept.add(i.companyId()));
         SignalTally tally = new SignalTally();
-        signalRows.forEach(s -> tally.add(s.horizon(), s.label(), 1));
+        signalRows.stream().filter(s -> kept.contains(s.companyId())).forEach(s -> tally.add(s.horizon(), s.label(), 1));
         return new EventMapResponse(summary(event, reportedCompanies, tally.toResponse()), nodes);
     }
 

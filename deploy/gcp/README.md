@@ -2,7 +2,7 @@
 
 시연 주소: **https://34-158-212-210.sslip.io**
 
-`NEXUS` 브랜치에 앱 코드가 push되면 GitHub Actions(`.github/workflows/nexus.yml`)가 테스트하고 이 서버에 배포한다.
+`main` 브랜치에 앱 코드가 push되면 GitHub Actions(`.github/workflows/nexus.yml`)가 테스트하고 이 서버에 배포한다.
 설계는 [docs/superpowers/specs/2026-10-26-nexus-gcp-cicd-design.md](../../docs/superpowers/specs/2026-10-26-nexus-gcp-cicd-design.md).
 
 ## 흐름
@@ -13,11 +13,13 @@
 | `backend` | `BackEnd/`에서 일회용 Postgres 17·Redis 7로 `./gradlew test` |
 | `deploy` | WIF로 GCP 인증 → 두 이미지를 Artifact Registry에 `gh-<sha12>` 태그로 푸시 → IAP SSH로 VM의 `deploy/scripts/deploy-from-registry.sh` → `/healthz` 확인 |
 
-- 배포하는 push: `NEXUS`의 `BackEnd/**`, `FrontEnd/**`, `deploy/compose.yml`, `deploy/scripts/**`, 워크플로 파일 변경. 문서만 바꾼 커밋은 배포하지 않는다.
-- `NEXUS` 대상 PR은 `frontend`·`backend`만 돈다. Actions 화면의 **Run workflow**로 `NEXUS`를 수동 배포할 수 있다.
+- 배포하는 push: `main`의 `BackEnd/**`, `FrontEnd/**`, `deploy/compose.yml`, `deploy/scripts/**`, 워크플로 파일 변경. 문서만 바꾼 커밋은 배포하지 않는다.
+- `main` 대상 PR은 `frontend`·`backend`만 돈다. Actions 화면의 **Run workflow**로 `main`을 수동 배포할 수 있다.
+- 2026-10-26에 `NEXUS`를 `main`에 합치고 원격 `NEXUS`를 지워서, 배포 기준을 `NEXUS`에서 `main`으로 바꿨다.
+- `main` 실행은 push 순서대로 하나씩 돈다. 예전 실행을 다시 돌려도(re-run) 지금 서버에 있는 것보다 오래된 커밋이면 배포하지 않고 넘어간다.
 - 헬스체크·HTTPS 스모크 테스트·실패 시 직전 릴리스 복구는 기존 `deploy.sh`가 한다. 실패하면 Actions 잡이 빨간색이 되고 서버는 직전 버전으로 돌아가 있다.
-- PARTION-LAB(AWS)과 달리 `workflow_run`을 쓰지 않는다. `workflow_run`은 기본 브랜치(`main`)의 워크플로로만 동작하기 때문이다.
-- GitHub Secrets는 쓰지 않는다. GCP 인증은 Workload Identity Federation이고 이 저장소의 `refs/heads/NEXUS` 토큰만 받는다.
+- PARTION-LAB(AWS)과 달리 ci와 deploy를 `workflow_run` 대신 한 워크플로의 `needs`로 잇는다. 배포가 같은 커밋의 두 테스트를 기다린다.
+- GitHub Secrets는 쓰지 않는다. GCP 인증은 Workload Identity Federation이고 이 저장소의 `refs/heads/main` 토큰만 받는다.
 
 ## 리소스
 
@@ -91,7 +93,7 @@ sudo -u cosmos-ci bash -c 'cd /opt/cosmos/checkouts/cosmos && bash deploy/script
 sudo -u cosmos-ci bash -c 'cd /opt/cosmos/checkouts/cosmos && bash deploy/scripts/deploy.sh "$(cat /opt/cosmos/releases/.previous)"'
 ```
 
-이미지 롤백은 DB 마이그레이션을 되돌리지 않는다. 그다음 `NEXUS`에 push하면 다시 최신으로 배포된다.
+이미지 롤백은 DB 마이그레이션을 되돌리지 않는다. 그다음 `main`에 push하면 다시 최신으로 배포된다.
 
 ## 시연 뒤 정리
 

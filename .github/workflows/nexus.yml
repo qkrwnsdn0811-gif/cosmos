@@ -1,10 +1,10 @@
 name: nexus
 
-# NEXUS 시연 서버(GCP) CI/CD. 테스트가 통과한 NEXUS push만 Artifact Registry를 거쳐 VM의 deploy.sh로 배포한다.
-# workflow_run은 기본 브랜치(main)의 워크플로로만 동작하므로 ci와 deploy를 한 워크플로의 needs로 잇는다.
+# NEXUS 시연 서버(GCP) CI/CD. 테스트가 통과한 main push만 Artifact Registry를 거쳐 VM의 deploy.sh로 배포한다.
+# ci와 deploy는 workflow_run 대신 한 워크플로의 needs로 이어, 배포가 같은 커밋의 두 테스트를 기다리게 한다.
 on:
   push:
-    branches: [NEXUS]
+    branches: [main]
     paths:
       - 'BackEnd/**'
       - 'FrontEnd/**'
@@ -12,7 +12,7 @@ on:
       - 'deploy/scripts/**'
       - '.github/workflows/nexus.yml'
   pull_request:
-    branches: [NEXUS]
+    branches: [main]
     paths:
       - 'BackEnd/**'
       - 'FrontEnd/**'
@@ -23,6 +23,12 @@ on:
 
 permissions:
   contents: read
+
+# main 실행은 push 순서대로 하나씩 돈다. 진행 중인 실행은 끊지 않고, 기다리는 오래된 실행은 최신 실행으로 바뀐다.
+# PR 실행은 PR마다 따로, 새 커밋이 오면 이전 실행을 끊는다.
+concurrency:
+  group: nexus-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   GCP_PROJECT: cosmos-nexus-1026
@@ -100,16 +106,12 @@ jobs:
 
   deploy:
     needs: [frontend, backend]
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/NEXUS'
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment:
       name: nexus-demo
       url: ${{ env.DEMO_URL }}
-    # 진행 중인 배포는 끊지 않는다. 기다리는 오래된 실행은 최신 실행으로 바뀐다.
-    concurrency:
-      group: nexus-deploy
-      cancel-in-progress: false
     permissions:
       contents: read
       id-token: write
@@ -153,10 +155,16 @@ jobs:
           cache-to: type=gha,scope=frontend,mode=max
       - uses: google-github-actions/setup-gcloud@v3
       # 헬스체크·스모크 테스트·실패 시 직전 릴리스 복구는 VM의 deploy.sh가 한다.
+      # 러너마다 새 SSH 키를 OS Login 프로필(32 KiB 한도)에 올리므로 만료를 걸고 끝나면 지운다.
       - name: Deploy on the VM
         run: >-
           gcloud compute ssh "$GCP_VM" --zone "$GCP_ZONE" --project "$GCP_PROJECT"
-          --tunnel-through-iap --quiet --strict-host-key-checking=no
+          --tunnel-through-iap --quiet --strict-host-key-checking=no --ssh-key-expire-after=30m
           --command "sudo -u cosmos-ci bash /opt/cosmos/checkouts/cosmos/deploy/scripts/deploy-from-registry.sh $GITHUB_SHA $REGISTRY"
       - name: Check the demo URL
         run: curl --fail --silent --show-error --max-time 15 "$DEMO_URL/healthz" | grep -q '"status":"UP"'
+      - name: Remove this run's SSH key from OS Login
+        if: always() && steps.auth.outcome == 'success'
+        run: |
+          key="$HOME/.ssh/google_compute_engine.pub"
+          [ ! -f "$key" ] || gcloud compute os-login ssh-keys remove --key-file="$key" || true

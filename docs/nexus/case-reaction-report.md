@@ -1,6 +1,6 @@
 # 과거 사례 반응표와 방향 딱지 적중률
 
-`python -m nexus cases --chain semis` 가 실행할 때마다 다시 쓴다. 마지막 실행: 2026-10-25 16:33 (KST).
+`python -m nexus cases --chain semis` 가 실행할 때마다 다시 쓴다. 마지막 실행: 2026-10-25 22:14 (KST).
 
 ## 방법
 

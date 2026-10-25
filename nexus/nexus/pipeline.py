@@ -489,8 +489,9 @@ def cmd_cases(args) -> int:
     from .cases.reaction import (HORIZONS, TRAIN_END, WINDOWS, MoveBook, SignalBook, backtest, case_frame,
                                  move_backtest, position_of, reaction_stats, unique_cases)
     from .cases.report import write_report
-    from .load.cases import (write_abnormal_returns, write_backtest, write_index_prices, write_move_backtest,
-                             write_moves, write_news_types, write_signals, write_stats)
+    from .cases.feed import feed_times, main_companies
+    from .load.cases import (write_abnormal_returns, write_backtest, write_feed_times, write_index_prices,
+                             write_move_backtest, write_moves, write_news_types, write_signals, write_stats)
     from .load.postgres import ensure_companies
     p = _paths(args.chain)
     value_chain = CHAINS[args.chain]["value_chain"]
@@ -542,6 +543,9 @@ def cmd_cases(args) -> int:
     with psycopg.connect(args.database_url) as conn:
         ids = ensure_companies(conn, list(companies.values()))
         print(f"news types written: {write_news_types(conn, value_chain, [(k, v.code, v.confidence) for k, v in types.items()]):,}",
+              flush=True)
+        mains = main_companies(bundles)
+        print(f"feed order written: {write_feed_times(conn, value_chain, feed_times(bundles, mains), mains, ids):,}",
               flush=True)
         ar_rows, signal_rows = [], []
         for b in bundles:

@@ -37,6 +37,20 @@ def write_news_types(conn, value_chain: str, rows: list[tuple[str, str, float]])
         return cur.rowcount
 
 
+def write_feed_times(conn, value_chain: str, times: dict, mains: dict, company_ids: dict[str, UUID]) -> int:
+    """times: news_id → feed time (cases.feed.feed_times), mains: news_id → main company key (cases.feed.main_companies).
+    The first screen's feed sorts by the time, newest first, and lists the main company first among the article's."""
+    with conn.transaction(), conn.cursor() as cur:
+        cur.execute("DROP TABLE IF EXISTS pg_temp.feed_in")
+        cur.execute("CREATE TEMP TABLE feed_in (event_id UUID, feed_at TIMESTAMPTZ, main_company_id UUID) ON COMMIT DROP")
+        with cur.copy("COPY feed_in (event_id, feed_at, main_company_id) FROM STDIN") as copy:
+            for news_id, feed_at in times.items():
+                copy.write_row((event_id(news_id), feed_at, company_ids.get(mains.get(news_id) or "")))
+        cur.execute("UPDATE news_event e SET feed_at = f.feed_at, main_company_id = f.main_company_id FROM feed_in f "
+                    "WHERE e.event_id = f.event_id AND e.value_chain = %s", (value_chain,))
+        return cur.rowcount
+
+
 def write_abnormal_returns(conn, rows: list[tuple[str, UUID, AbnormalReturn]]) -> int:
     """rows: (news_id, company_id, return). Upserts, so the existing 1 and 3 trading-day rows stay valid."""
     with conn.transaction(), conn.cursor() as cur:

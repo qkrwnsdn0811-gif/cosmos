@@ -30,7 +30,8 @@ public class EventQueryRepository {
 
     private static final String EVENT_COLUMNS = """
             e.event_id, e.document_id AS news_id, sd.title, sd.summary, na.publisher, sd.original_url,
-            e.dateline, e.event_trading_date, e.value_chain, e.categories, e.event_type,
+            e.dateline, COALESCE(e.feed_at, e.dateline) AS feed_at, e.event_trading_date, e.value_chain, e.categories,
+            e.event_type,
             (SELECT count(*) FROM event_company_impact i
               WHERE i.event_id = e.event_id AND i.basis = 'INFERRED' AND i.status = 'OK') AS inferred_count,
             (SELECT count(*) FROM event_company_impact i
@@ -46,6 +47,10 @@ public class EventQueryRepository {
         this.jdbcTemplate = jdbcTemplate;
     }
 
+    /**
+     * 첫 화면 피드. 파이프라인이 매긴 피드 순서(feed_at: 날짜는 최신순, 같은 날 안에서는 기업을 돌아가며)로 정렬하고,
+     * 아직 순서가 없으면 dateline 으로 대신한다. 커서도 같은 값(feed_at, event_id)이다.
+     */
     public List<EventRow> findEvents(EventSearchCondition condition, TimeIdCursor cursor, int limit) {
         return jdbcTemplate.query("SELECT " + EVENT_COLUMNS + """
                 FROM news_event e
@@ -61,8 +66,9 @@ public class EventQueryRepository {
                         SELECT 1 FROM event_company_impact c
                         WHERE c.event_id = e.event_id AND c.basis = 'INFERRED' AND c.status = 'OK'))
                   AND (CAST(:cursorAt AS TIMESTAMPTZ) IS NULL
-                       OR (e.dateline, e.event_id) < (CAST(:cursorAt AS TIMESTAMPTZ), CAST(:cursorId AS UUID)))
-                ORDER BY e.dateline DESC, e.event_id DESC
+                       OR (COALESCE(e.feed_at, e.dateline), e.event_id)
+                          < (CAST(:cursorAt AS TIMESTAMPTZ), CAST(:cursorId AS UUID)))
+                ORDER BY COALESCE(e.feed_at, e.dateline) DESC, e.event_id DESC
                 LIMIT :limit
                 """,
                 new MapSqlParameterSource()
@@ -133,6 +139,7 @@ public class EventQueryRepository {
                 (rs, rowNum) -> new CompanyEventRow(mapEvent(rs, rowNum), rs.getString("company_basis")));
     }
 
+    /** 이벤트별 기사에 나온 기업. 파이프라인이 정한 주인공 기업(main_company_id)을 맨 앞에, 나머지는 비중 순이다. */
     public Map<UUID, List<EventCompanyRefResponse>> findReportedCompanies(List<UUID> eventIds) {
         Map<UUID, List<EventCompanyRefResponse>> result = new LinkedHashMap<>();
         if (eventIds.isEmpty()) {
@@ -142,8 +149,9 @@ public class EventQueryRepository {
                 SELECT i.event_id, c.company_id, c.name, c.stock_code, c.market
                 FROM event_company_impact i
                 JOIN company c ON c.company_id = i.company_id
+                JOIN news_event e ON e.event_id = i.event_id
                 WHERE i.event_id IN (:eventIds) AND i.basis = 'REPORTED'
-                ORDER BY i.propagation_score DESC, c.name
+                ORDER BY (c.company_id = e.main_company_id) DESC NULLS LAST, i.propagation_score DESC, c.name
                 """, new MapSqlParameterSource("eventIds", eventIds), (ResultSet rs) -> {
             result.computeIfAbsent(rs.getObject("event_id", UUID.class), k -> new ArrayList<>())
                     .add(new EventCompanyRefResponse(rs.getObject("company_id", UUID.class), rs.getString("name"),
@@ -406,6 +414,7 @@ public class EventQueryRepository {
                 rs.getString("publisher"),
                 rs.getString("original_url"),
                 rs.getTimestamp("dateline").toInstant(),
+                rs.getTimestamp("feed_at").toInstant(),
                 rs.getObject("event_trading_date", LocalDate.class),
                 rs.getString("value_chain"),
                 categories == null ? List.of() : Arrays.asList((String[]) categories.getArray()),
@@ -422,6 +431,7 @@ public class EventQueryRepository {
             String publisher,
             String originalUrl,
             Instant dateline,
+            Instant feedAt,
             LocalDate tradingDate,
             String valueChain,
             List<String> categories,

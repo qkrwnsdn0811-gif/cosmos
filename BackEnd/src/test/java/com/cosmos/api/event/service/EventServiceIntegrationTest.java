@@ -239,6 +239,31 @@ class EventServiceIntegrationTest {
     }
 
     @Test
+    void listFollowsFeedOrderWhenSetAndPagesThroughIt() {
+        // 파이프라인의 피드 순서: 같은 날 안에서 기업을 돌아가며 — E1(09-01 01:00)을 맨 앞으로, E3·E2 는 그대로(dateline)
+        jdbcTemplate.update("UPDATE news_event SET feed_at = TIMESTAMPTZ '2026-09-01T10:00:00Z' WHERE event_id = ?", E1);
+
+        assertThat(eventService.findEvents("AUTO", null, null, false, null, 20).items())
+                .extracting(EventSummaryResponse::eventId).containsExactly(E1, E3, E2);
+        CursorPageResponse<EventSummaryResponse> first = eventService.findEvents("AUTO", null, null, false, null, 1);
+        CursorPageResponse<EventSummaryResponse> second =
+                eventService.findEvents("AUTO", null, null, false, first.nextCursor(), 1);
+        assertThat(second.items()).extracting(EventSummaryResponse::eventId).containsExactly(E3);
+        assertThat(second.items().getFirst().dateline()).isEqualTo(Instant.parse("2026-09-01T03:00:00Z"));
+    }
+
+    @Test
+    void reportedCompaniesListTheMainCompanyFirst() {
+        // E1 은 기업1(1.0)·기업2(0.8)가 기사에 나온다. 파이프라인이 기업2를 주인공으로 정하면 목록 맨 앞에 온다
+        jdbcTemplate.update("UPDATE news_event SET main_company_id = ? WHERE event_id = ?", C2, E1);
+
+        EventSummaryResponse e1 = eventService.findEvents("AUTO", null, null, false, null, 20).items().stream()
+                .filter(e -> e.eventId().equals(E1)).findFirst().orElseThrow();
+
+        assertThat(e1.reportedCompanies()).extracting(EventCompanyRefResponse::companyId).containsExactly(C2, C1);
+    }
+
+    @Test
     void pagesWithCursor() {
         CursorPageResponse<EventSummaryResponse> first = eventService.findEvents("AUTO", null, null, false, null, 1);
         CursorPageResponse<EventSummaryResponse> second =

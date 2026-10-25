@@ -95,6 +95,17 @@ def test_write_news_evidence_replaces_sentences_and_confidence(pg, synthetic_doc
                       (doc, ids[B.key])).fetchone()[0] is None
 
 
+def test_write_feed_times_sets_feed_time_and_main_company(pg, synthetic_docs):
+    from nexus.load.cases import write_feed_times
+    ids = ensure_companies(pg, [A, B, C])
+    load_events(pg, [bundle(synthetic_docs)], ids)
+    news_id = "SYN.20261013100000001"
+    when = datetime(2026, 10, 13, 23, 59, tzinfo=timezone.utc)
+    assert write_feed_times(pg, "SEMICONDUCTOR", {news_id: when}, {news_id: B.key}, ids) == 1
+    row = pg.execute("SELECT feed_at, main_company_id FROM news_event WHERE event_id = %s", (event_id(news_id),)).fetchone()
+    assert row == (when, ids[B.key])
+
+
 def test_reload_is_idempotent(pg, synthetic_docs):
     ids = ensure_companies(pg, [A, B, C])
     load_events(pg, [bundle(synthetic_docs)], ids)

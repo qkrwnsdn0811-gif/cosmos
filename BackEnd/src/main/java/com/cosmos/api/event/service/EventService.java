@@ -120,7 +120,8 @@ public class EventService {
         String nextCursor = null;
         if (hasNext && !pageRows.isEmpty()) {
             EventRow last = pageRows.getLast();
-            nextCursor = cursorCodec.encode(new TimeIdCursor(last.dateline(), last.eventId()));
+            // 피드는 feed_at 순서라 커서도 feed_at 이다 (findEvents)
+            nextCursor = cursorCodec.encode(new TimeIdCursor(last.feedAt(), last.eventId()));
         }
         return CursorPageResponse.of(items, nextCursor, hasNext);
     }

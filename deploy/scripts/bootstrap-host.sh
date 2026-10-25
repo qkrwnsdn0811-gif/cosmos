@@ -2,6 +2,9 @@
 # Run once on the assigned Ubuntu EC2 as root. Does not issue a TLS certificate.
 set -Eeuo pipefail
 [[ "$EUID" -eq 0 ]] || { echo 'Run as root' >&2; exit 1; }
+# Another host (e.g. the GCP demo VM) passes its own name; the default keeps the SSAFY EC2 setup.
+domain="${COSMOS_DOMAIN:-j15c205.p.ssafy.io}"
+[[ "$domain" =~ ^[a-z0-9]([a-z0-9.-]{0,251}[a-z0-9])?$ ]] || { echo 'Invalid COSMOS_DOMAIN' >&2; exit 2; }
 # shellcheck source=/dev/null
 . /etc/os-release
 [[ "$ID" = ubuntu ]] || { echo 'Ubuntu is required' >&2; exit 1; }
@@ -27,7 +30,7 @@ install -d -m 0755 /var/www/cosmos-acme
 if [[ ! -f /etc/cosmos/app.env ]]; then
     umask 077
     {
-        printf 'PUBLIC_URL=https://j15c205.p.ssafy.io\n'
+        printf 'PUBLIC_URL=https://%s\n' "$domain"
         printf 'DB_PASSWORD=%s\n' "$(openssl rand -hex 32)"
         printf 'REDIS_PASSWORD=%s\n' "$(openssl rand -hex 32)"
         printf 'JWT_SECRET=%s\n' "$(openssl rand -hex 48)"
@@ -40,10 +43,10 @@ ufw allow 22/tcp
 ufw allow 80/tcp
 ufw allow 443/tcp
 ufw --force enable
-cat > /etc/nginx/sites-available/cosmos-acme <<'NGINX'
+cat > /etc/nginx/sites-available/cosmos-acme <<NGINX
 server {
     listen 80;
-    server_name j15c205.p.ssafy.io;
+    server_name ${domain};
     location ^~ /.well-known/acme-challenge/ { root /var/www/cosmos-acme; }
     location / { return 503; }
 }

@@ -135,7 +135,7 @@ export default function NewsPage() {
       <div className="row between wrap" style={{ marginBottom: 14 }}>
         <span className="status-line">
           <i className="dot" />
-          {universe.data ? `스냅샷 ${fmtDateTime(universe.data.asOfAt)} 기준 · 1시간 단위 갱신` : universe.isError ? "공개된 관계 스냅샷 없음 — 관계 지도는 분석 결과 게시 후 나타납니다" : "스냅샷 확인 중"}
+          {universe.data ? `관계 스냅샷 ${fmtDateTime(universe.data.asOfAt)} 기준 · 빅카인즈 뉴스 분석` : universe.isError ? "공개된 관계 스냅샷 없음 — 관계 지도는 분석 결과 게시 후 나타납니다" : "스냅샷 확인 중"}
         </span>
       </div>
 

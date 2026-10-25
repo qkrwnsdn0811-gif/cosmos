@@ -233,6 +233,42 @@ function dealText(me: string, industry: string | null, others: string[], industr
   return null;
 }
 
+/** 해외 반도체·AI 기업 — 실적 기사의 주인공이 이 회사들이면 국내 기업은 업황 때문에 함께 나온 것이다 */
+const FOREIGN_PEERS = ["마이크론", "TSMC", "ASML", "엔비디아", "인텔", "AMD", "퀄컴", "브로드컴", "키옥시아", "샌디스크", "웨스턴디지털",
+  "램리서치", "어플라이드", "도쿄일렉트론"];
+/** 제목에서 쓰는 줄임말 ("삼전닉스"는 두 회사 모두) */
+const SHORT_NAMES: Record<string, string[]> = { 삼성전자: ["삼전"], SK하이닉스: ["하이닉스", "하닉", "삼전닉스"] };
+
+/** 제목에서 이 이름(줄임말 포함)이 처음 나오는 자리, 없으면 -1 */
+function titleAt(title: string, name: string): number {
+  const found = [name, ...(SHORT_NAMES[name] ?? [])].map((n) => title.indexOf(n)).filter((i) => i >= 0);
+  return found.length ? Math.min(...found) : -1;
+}
+
+/**
+ * 실적 기사에서 실적의 주인이 누구인가 — 제목에서 해외 기업이 이 회사보다 먼저 나오면 그 회사의 실적이고, 이 회사가 제목에 있으면
+ * 자기 실적(null, 공통 문장), 아니면 제목에 나온 다른 기사 기업의 실적이다. 제목이 없으면 null
+ */
+function earningsText(me: string, title: string, others: string[]): string | null {
+  if (!title) return null;
+  const mine = titleAt(title, me);
+  const peer = FOREIGN_PEERS.map((p) => [p, title.indexOf(p)] as const).filter(([, i]) => i >= 0).sort((a, b) => a[1] - b[1])[0];
+  if (peer && (mine < 0 || peer[1] < mine)) {
+    return `${peer[0]}의 실적 소식에 함께 언급됐어요. 업황을 보여 주는 해외 기업의 실적은 국내 반도체 기업의 실적 기대도 바꾸곤 해요.`;
+  }
+  if (mine >= 0) return null;
+  const owner = others.find((o) => titleAt(title, o) >= 0);
+  return owner
+    ? `${owner}의 실적 소식에 함께 언급됐어요. 같은 업황을 타는 회사의 실적은 이 회사의 실적 기대도 바꾸곤 해요.`
+    : "실적 흐름을 다룬 기사에 이름이 올랐어요. 기사가 다룬 업황이 이 회사의 실적 기대도 바꿀 수 있어요.";
+}
+
+/** whyText 가 보는 기사 정보 — 제목과 기사에 나온 기업 이름 */
+export interface WhyArticle {
+  title: string;
+  reported: string[];
+}
+
 interface WhyNode {
   basis: EventNode["basis"];
   companyId: string | null;
@@ -261,16 +297,18 @@ function walk(node: WhyNode) {
 /**
  * "왜 이 뉴스가 이 종목에 닿을까" — 뉴스 유형, 기업 위치(기사 기업·공급사·고객사·경쟁사·협력사·지분·함께 언급), 업종, 경로로
  * 한두 문장을 풀어 쓴다. 규칙으로 만든 해석이라 '…할 수 있어요'로 말하고, 오른다·내린다는 말하지 않는다.
- * industryOf: 경로 위 다른 기업의 업종(같은 지도 노드에서 찾는다). reported: 기사에 나온 기업 이름 — 공급 계약에서 사는 쪽과
- * 파는 쪽을 가르는 데 쓴다. 경로가 없거나 위치를 모르면 null
+ * industryOf: 경로 위 다른 기업의 업종(같은 지도 노드에서 찾는다). article: 공급 계약에서 사는 쪽과 파는 쪽, 실적 기사에서
+ * 실적의 주인을 가르는 데 쓴다. 경로가 없거나 위치를 모르면 null
  */
 export function whyText(node: WhyNode, newsType: NewsTypeCode | null, industryOf: (name: string) => string | null,
-                        reported: string[] = []): string | null {
+                        article: WhyArticle = { title: "", reported: [] }): string | null {
   const me = node.name;
   const type = newsType ?? "OTHER";
   if (node.basis === "REPORTED") {
-    const deal = type === "SUPPLY_DEAL" ? dealText(me, node.industry, reported.filter((r) => r !== me), industryOf) : null;
-    return `${me}${josa(me, "은", "는")} 이 기사에 직접 나온 회사예요. ${deal ?? REPORTED_WHY[type] ?? "기사 내용이 이 회사에 대한 시장의 관심을 바꿔요."}`;
+    const others = article.reported.filter((r) => r !== me);
+    const special = type === "SUPPLY_DEAL" ? dealText(me, node.industry, others, industryOf)
+      : type === "EARNINGS_BEAT" || type === "EARNINGS_MISS" ? earningsText(me, article.title, others) : null;
+    return `${me}${josa(me, "은", "는")} 이 기사에 직접 나온 회사예요. ${special ?? REPORTED_WHY[type] ?? "기사 내용이 이 회사에 대한 시장의 관심을 바꿔요."}`;
   }
   if (!node.path.length) return null;
   const steps = walk(node);

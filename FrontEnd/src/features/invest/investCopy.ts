@@ -205,6 +205,34 @@ const REPORTED_WHY: Record<string, string> = {
   MARKET_WRAP: "증시 흐름 기사에 이름이 오른 종목이라 시장 분위기를 그대로 받아요.",
 };
 
+const MAKER = "반도체 제조";
+const SELLER_KINDS = new Set(["장비", "소재", "부품", "후공정"]);
+
+function sells(industry: string | null): boolean {
+  return industry !== MAKER && SELLER_KINDS.has(industry?.split(" ").pop() ?? "");
+}
+
+/**
+ * 공급 계약 기사에 함께 나온 두 회사 중 누가 사고 누가 파는가 — 칩 제조사와 장비·소재·부품·후공정 회사가 함께 나오면 제조사가
+ * 사는 쪽이다. 짝을 못 찾으면 null(공통 문장을 쓴다)
+ */
+function dealText(me: string, industry: string | null, others: string[], industryOf: (name: string) => string | null): string | null {
+  if (industry === MAKER) {
+    const seller = others.find((o) => sells(industryOf(o)));
+    if (!seller) return null;
+    const thing = supplied(industryOf(seller));
+    const verb = thing === "패키징·테스트" ? "맡기는" : "사들이는";
+    return `${seller}의 ${thing}${josa(thing, "을", "를")} ${verb} 쪽이라, 매출보다는 ${me}의 ${thing === "장비" ? "설비 투자" : "생산"} 계획이 드러나는 소식이에요.`;
+  }
+  if (sells(industry)) {
+    const buyer = others.find((o) => industryOf(o) === MAKER);
+    if (!buyer) return null;
+    const thing = supplied(industry);
+    return `${buyer}에 ${thing}${josa(thing, "을", "를")} 공급하는 계약을 따낸 쪽이라 앞으로의 매출 전망이 바로 바뀌어요.`;
+  }
+  return null;
+}
+
 interface WhyNode {
   basis: EventNode["basis"];
   companyId: string | null;
@@ -233,13 +261,16 @@ function walk(node: WhyNode) {
 /**
  * "왜 이 뉴스가 이 종목에 닿을까" — 뉴스 유형, 기업 위치(기사 기업·공급사·고객사·경쟁사·협력사·지분·함께 언급), 업종, 경로로
  * 한두 문장을 풀어 쓴다. 규칙으로 만든 해석이라 '…할 수 있어요'로 말하고, 오른다·내린다는 말하지 않는다.
- * industryOf: 경로 위 다른 기업의 업종(같은 지도 노드에서 찾는다). 경로가 없거나 위치를 모르면 null
+ * industryOf: 경로 위 다른 기업의 업종(같은 지도 노드에서 찾는다). reported: 기사에 나온 기업 이름 — 공급 계약에서 사는 쪽과
+ * 파는 쪽을 가르는 데 쓴다. 경로가 없거나 위치를 모르면 null
  */
-export function whyText(node: WhyNode, newsType: NewsTypeCode | null, industryOf: (name: string) => string | null): string | null {
+export function whyText(node: WhyNode, newsType: NewsTypeCode | null, industryOf: (name: string) => string | null,
+                        reported: string[] = []): string | null {
   const me = node.name;
   const type = newsType ?? "OTHER";
   if (node.basis === "REPORTED") {
-    return `${me}${josa(me, "은", "는")} 이 기사에 직접 나온 회사예요. ${REPORTED_WHY[type] ?? "기사 내용이 이 회사에 대한 시장의 관심을 바꿔요."}`;
+    const deal = type === "SUPPLY_DEAL" ? dealText(me, node.industry, reported.filter((r) => r !== me), industryOf) : null;
+    return `${me}${josa(me, "은", "는")} 이 기사에 직접 나온 회사예요. ${deal ?? REPORTED_WHY[type] ?? "기사 내용이 이 회사에 대한 시장의 관심을 바꿔요."}`;
   }
   if (!node.path.length) return null;
   const steps = walk(node);

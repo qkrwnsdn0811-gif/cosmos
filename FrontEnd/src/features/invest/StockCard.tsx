@@ -54,7 +54,7 @@ export default function StockCard({
   const tone = toneOf(signal?.label);
   const past = pastLine(signal, event.newsTypeLabel, node.positionLabel);
   const move = moveFor(node, horizon);
-  const why = whyText(node, event.newsType, industryOf);
+  const why = whyText(node, event.newsType, industryOf, event.reportedCompanies.map((c) => c.name));
   const badge = moveBadge(move, moveGraded);
   const path = pathText(node);
   const metrics = metricsText(node.fundamental, horizon);

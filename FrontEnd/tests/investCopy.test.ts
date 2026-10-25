@@ -172,3 +172,24 @@ test("why text explains how the news reaches the company", () => {
     /^DB하이텍은 삼성전자와 같은 시장에서 경쟁하는 회사예요\./,
   );
 });
+
+test("why text tells the buyer from the seller in a supply deal", () => {
+  const industries: Record<string, string> = { 케이씨텍: "반도체 장비", 삼성전자: "반도체 제조", 하나마이크론: "반도체 후공정", 동진쎄미켐: "반도체 소재" };
+  const industryOf = (name: string) => industries[name] ?? null;
+  const reported = (name: string) => ({ basis: "REPORTED", companyId: name, anchorCompanyId: null, path: [], position: "REPORTED", name, industry: industryOf(name) }) as never;
+
+  assert.equal(
+    whyText(reported("삼성전자"), "SUPPLY_DEAL", industryOf, ["케이씨텍", "삼성전자"]),
+    "삼성전자는 이 기사에 직접 나온 회사예요. 케이씨텍의 장비를 사들이는 쪽이라, 매출보다는 삼성전자의 설비 투자 계획이 드러나는 소식이에요.",
+  );
+  assert.equal(
+    whyText(reported("케이씨텍"), "SUPPLY_DEAL", industryOf, ["케이씨텍", "삼성전자"]),
+    "케이씨텍은 이 기사에 직접 나온 회사예요. 삼성전자에 장비를 공급하는 계약을 따낸 쪽이라 앞으로의 매출 전망이 바로 바뀌어요.",
+  );
+  assert.match(whyText(reported("삼성전자"), "SUPPLY_DEAL", industryOf, ["하나마이크론", "삼성전자"]) ?? "", /하나마이크론의 패키징·테스트를 맡기는 쪽이라, 매출보다는 삼성전자의 생산 계획/);
+  // 짝이 없으면(같은 쪽끼리, 혼자) 예전 공통 문장
+  assert.match(whyText(reported("케이씨텍"), "SUPPLY_DEAL", industryOf, ["케이씨텍", "동진쎄미켐"]) ?? "", /수주·공급 계약의 당사자라/);
+  assert.match(whyText(reported("삼성전자"), "SUPPLY_DEAL", industryOf, ["삼성전자"]) ?? "", /수주·공급 계약의 당사자라/);
+  // 공급 계약이 아니면 사는 쪽·파는 쪽을 따지지 않는다
+  assert.match(whyText(reported("삼성전자"), "EARNINGS_BEAT", industryOf, ["케이씨텍", "삼성전자"]) ?? "", /자기 회사의 실적 소식/);
+});

@@ -1,7 +1,21 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import type { EventSignal, Fundamental } from "../src/api/types.ts";
-import { accuracyText, afterNews, countsText, fmtPct, fmtWon, metricsText, pastLine, pathText, signalText } from "../src/features/invest/investCopy.ts";
+import type { EventSignal, ExpectedMove, Fundamental, MoveBacktestRow } from "../src/api/types.ts";
+import {
+  accuracyText,
+  afterNews,
+  countsText,
+  fmtPct,
+  fmtWon,
+  gradesHold,
+  metricsText,
+  moveBadge,
+  moveCheckText,
+  moveLine,
+  pastLine,
+  pathText,
+  signalText,
+} from "../src/features/invest/investCopy.ts";
 
 const signal = (over: Partial<EventSignal> = {}): EventSignal => ({
   horizon: "SHORT",
@@ -90,4 +104,35 @@ test("evidence published after the news is flagged", () => {
   assert.equal(afterNews("2026-10-06T09:00:00+09:00", dateline), true);
   assert.equal(afterNews("2026-03-26T09:00:00+09:00", dateline), false);
   assert.equal(afterNews(dateline, dateline), false);
+});
+
+const moveRow = (horizon: "SHORT" | "LONG", grade: "SMALL" | "MID" | "LARGE", realizedMove: number): MoveBacktestRow => ({
+  horizon,
+  windowDays: horizon === "SHORT" ? 3 : 20,
+  grade,
+  caseCount: 700,
+  predictedMove: realizedMove,
+  realizedMove,
+});
+
+test("move grades count only when the test period grew with them", () => {
+  const rows = [
+    moveRow("SHORT", "SMALL", 0.039), moveRow("SHORT", "MID", 0.06), moveRow("SHORT", "LARGE", 0.07),
+    moveRow("LONG", "SMALL", 0.094), moveRow("LONG", "MID", 0.161), moveRow("LONG", "LARGE", 0.141),
+  ];
+  assert.equal(gradesHold(rows, "SHORT"), true);
+  assert.equal(gradesHold(rows, "LONG"), false);
+  assert.equal(gradesHold([], "SHORT"), false);
+  assert.deepEqual(moveCheckText(rows, "SHORT"), { line: "'변동 큼' 종목 실제 ±7.0% · '변동 작음' 종목 실제 ±3.9%", holds: true });
+  assert.equal(moveCheckText(rows, "LONG")?.holds, false);
+  assert.equal(moveCheckText([], "SHORT"), null);
+});
+
+test("move badge and line speak about size, not direction", () => {
+  const move: ExpectedMove = { horizon: "SHORT", windowDays: 3, expectedMove: 0.0623, caseCount: 312, grade: "LARGE" };
+  assert.equal(moveBadge(move, true), "변동 큼 ±6.2%");
+  assert.equal(moveBadge(move, false), "변동폭 ±6.2%");
+  assert.equal(moveBadge(null, true), null);
+  assert.equal(moveLine(move, true), "예상 변동폭: 이 종목은 과거 뉴스 312번 뒤 3거래일 동안 시장 대비 평균 ±6.2% 움직였습니다(오르든 내리든)");
+  assert.match(moveLine(move, false) ?? "", /참고치로만/);
 });

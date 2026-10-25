@@ -79,6 +79,19 @@
   font-weight: 600;
   color: var(--text);
 }
+.invest-accuracy-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+  margin-top: 8px;
+}
+.invest-accuracy-part {
+  padding-left: 10px;
+  border-left: 2px solid var(--border-strong);
+}
+.invest-accuracy-part.holds {
+  border-left-color: rgba(42, 199, 105, 0.6);
+}
 .invest-accuracy-table {
   margin-top: 10px;
   width: 100%;
@@ -260,6 +273,17 @@
   line-height: 1.6;
   color: var(--text-3);
 }
+/* 뉴스 상세 안의 3D 관계 지도 (예전 /events 화면을 합쳤다) */
+.invest-map {
+  padding: 14px 16px 16px;
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+.invest-stock {
+  /* 지도에서 행성을 고르면 카드로 스크롤한다 — 고정 헤더 아래에 카드 머리가 오도록 */
+  scroll-margin-top: calc(var(--header-h) + 12px);
+}
 .invest-list-head {
   gap: 10px;
   flex-wrap: wrap;
@@ -334,6 +358,38 @@
 }
 .invest-badge.hold {
   font-weight: 600;
+  color: var(--text-3);
+}
+/* 방향 딱지 아래 예상 변동폭 배지 — 크기만 말하므로 오르내림 색을 쓰지 않고, '변동 큼'만 주의 색으로 */
+.invest-badges {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  max-width: 46%;
+}
+.invest-badges .invest-badge {
+  max-width: 100%;
+}
+.invest-move {
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-3);
+  border: 1px dashed var(--border-strong);
+  white-space: nowrap;
+}
+.invest-move.large {
+  color: #f5a623;
+  border: 1px solid rgba(245, 166, 35, 0.5);
+  background: rgba(245, 166, 35, 0.08);
+}
+.invest-move-line {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
   color: var(--text-3);
 }
 .invest-stock-body {

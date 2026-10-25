@@ -28,11 +28,12 @@ export interface EventScene {
   graph: CompanyGraph;
   reported: Set<string>;
   held: Set<string>;
-  /** 기업 → 사건 다음 거래일(1일) 초과수익률(비율). 관측값이며 예측이 아니다 */
-  dayOne: Map<string, number>;
+  /** 기업 → 이번 뉴스 뒤 windowDays 거래일 초과수익률(비율). 관측값이며 예측이 아니다 */
+  realized: Map<string, number>;
 }
 
-export function eventScene(eventId: string, asOfAt: string, nodes: EventNodeLike[]): EventScene {
+/** windowDays: 행성 높이·이름표에 쓸 초과수익률 기간 — 화면의 투자 기간 토글(3 · 20거래일)을 따른다 */
+export function eventScene(eventId: string, asOfAt: string, nodes: EventNodeLike[], windowDays = 1): EventScene {
   const placed = nodes.filter((n): n is EventNodeLike & { companyId: string } => Boolean(n.companyId));
   const onMap = new Set(placed.map((n) => n.companyId));
   const edges = new Map<string, GraphEdge>();
@@ -45,10 +46,10 @@ export function eventScene(eventId: string, asOfAt: string, nodes: EventNodeLike
 
   const reported = new Set<string>();
   const held = new Set<string>();
-  const dayOne = new Map<string, number>();
+  const realized = new Map<string, number>();
   for (const n of placed) {
-    const ar = n.abnormalReturns.find((r) => r.windowDays === 1)?.abnormalReturn;
-    if (ar != null) dayOne.set(n.companyId, ar);
+    const ar = n.abnormalReturns.find((r) => r.windowDays === windowDays)?.abnormalReturn;
+    if (ar != null) realized.set(n.companyId, ar);
     if (n.status === "HOLD") held.add(n.companyId);
     if (n.basis === "REPORTED") {
       reported.add(n.companyId);
@@ -80,14 +81,14 @@ export function eventScene(eventId: string, asOfAt: string, nodes: EventNodeLike
     ],
     edges: [...edges.values()],
   };
-  return { graph, reported, held, dayOne };
+  return { graph, reported, held, realized };
 }
 
 function relationOf(type: string | null): string {
   return type && RELATIONS.has(type) ? type : "CO_MENTIONED";
 }
 
-/** 행성 이름표 — 10자 넘는 이름은 줄이고, 1일 초과수익률을 붙인다 ("SK하이닉스 −1.7%") */
+/** 행성 이름표 — 10자 넘는 이름은 줄이고, 고른 기간의 초과수익률을 붙인다 ("SK하이닉스 −1.7%") */
 export function chipName(name: string, ar: number | null): string {
   const short = name.length > 10 ? `${name.slice(0, 9)}…` : name;
   if (ar == null) return short;

@@ -497,12 +497,32 @@ export interface BacktestRow {
   /** 무조건 많은 쪽으로 답할 때의 적중률 */
   baselineRate: number | null;
 }
+export type MoveGrade = "SMALL" | "MID" | "LARGE";
+/** 예상 변동폭 검증 한 줄 — 학습 기간 뒤 뉴스일에서 그 등급 종목의 예상과 실제 |초과수익률| 평균 */
+export interface MoveBacktestRow {
+  horizon: Horizon;
+  windowDays: number;
+  grade: MoveGrade;
+  caseCount: number;
+  predictedMove: number | null;
+  realizedMove: number | null;
+}
 export interface Backtest {
   valueChain: ValueChain;
   trainEnd: string | null;
   testStart: string | null;
   testEnd: string | null;
   rows: BacktestRow[];
+  /** SHORT 먼저, 기간 안에서 SMALL · MID · LARGE 순 */
+  moveRows: MoveBacktestRow[];
+}
+/** 종목의 예상 변동폭 — 학습 기간 이 종목 뉴스일 뒤 |초과수익률| 평균(방향과 무관). 종목마다 기간별로 하나 */
+export interface ExpectedMove {
+  horizon: Horizon;
+  windowDays: number;
+  expectedMove: number;
+  caseCount: number;
+  grade: MoveGrade;
 }
 export interface CompanyHistoryItem {
   event: EventSummary;
@@ -583,6 +603,8 @@ export interface EventNode {
   positionLabel: string | null;
   /** SHORT 다음 LONG */
   signals: EventSignal[];
+  /** SHORT 다음 LONG, 아직 없으면 빈 목록 */
+  expectedMoves: ExpectedMove[];
   fundamental: Fundamental | null;
 }
 export interface EventMap {

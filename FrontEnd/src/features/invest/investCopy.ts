@@ -3,7 +3,19 @@
  * 딱지는 과거 사례 통계라서 언제나 "과거 …"로 쓰고, 예측처럼 읽히는 말("오른다", "추천")은 쓰지 않는다.
  * import 가 타입뿐인 순수 함수라 node --test 로 바로 검증한다 (FrontEnd/tests/investCopy.test.ts).
  */
-import type { BacktestRow, EventNode, EventSignal, Fundamental, Horizon, NewsTypeCode, SignalCount, SignalLabel } from "@/api/types";
+import type {
+  BacktestRow,
+  EventNode,
+  EventSignal,
+  ExpectedMove,
+  Fundamental,
+  Horizon,
+  MoveBacktestRow,
+  MoveGrade,
+  NewsTypeCode,
+  SignalCount,
+  SignalLabel,
+} from "@/api/types";
 
 export const DISCLAIMER = "과거 사례 통계이며 투자 권유가 아닙니다. 초과수익률은 이미 관측된 주가 변화이고 미래 주가 예측이 아닙니다.";
 
@@ -117,6 +129,49 @@ export function accuracyText(row: BacktestRow | null | undefined): { line: strin
   const line = `딱지 ${row.labeledCount.toLocaleString("ko-KR")}건 중 ${fmtPct(row.hitRate, 1, false)} 적중` +
     (base != null ? ` · 무조건 많은 쪽으로 답할 때 ${fmtPct(base, 1, false)}` : "");
   return { line, beats: base == null ? false : row.hitRate > base };
+}
+
+/** 종목 카드의 DOM id — 관계 지도에서 행성을 고르면 이 카드로 스크롤한다 */
+export const stockCardId = (companyId: string) => `stock-${companyId}`;
+
+export const MOVE_GRADE_LABEL: Record<MoveGrade, string> = { SMALL: "변동 작음", MID: "변동 보통", LARGE: "변동 큼" };
+
+export function moveFor(node: Pick<EventNode, "expectedMoves">, horizon: Horizon): ExpectedMove | null {
+  // 예상 변동폭 이전 API(필드 없음)에 붙어도 카드 전체가 깨지지 않게 한다
+  return node.expectedMoves?.find((m) => m.horizon === horizon) ?? null;
+}
+
+/**
+ * 등급이 시험 기간에 맞았는가 — 실제 변동폭이 작음 < 보통 < 큼 순으로 커졌을 때만 화면에 등급을 붙인다.
+ * 파이프라인 보고서의 판정(nexus/nexus/cases/report.py grades_hold)과 같은 규칙이다
+ */
+export function gradesHold(rows: MoveBacktestRow[], horizon: Horizon): boolean {
+  const realized = (["SMALL", "MID", "LARGE"] as const).map((g) => rows.find((r) => r.horizon === horizon && r.grade === g)?.realizedMove);
+  return realized.every((v): v is number => v != null) && realized[0] < realized[1] && realized[1] < realized[2];
+}
+
+/** 카드 머리의 변동폭 배지 — "변동 큼 ±6.2%", 등급이 검증되지 않은 기간은 "변동폭 ±18.7%" */
+export function moveBadge(move: ExpectedMove | null, graded: boolean): string | null {
+  if (!move) return null;
+  const size = `±${fmtPct(move.expectedMove, 1, false)}`;
+  return graded ? `${MOVE_GRADE_LABEL[move.grade]} ${size}` : `변동폭 ${size}`;
+}
+
+/** 카드 본문 한 줄 — 방향과 무관한 크기라는 것, 몇 번의 뉴스로 잰 것인지, 검증되지 않았으면 참고치라는 것 */
+export function moveLine(move: ExpectedMove | null, graded: boolean): string | null {
+  if (!move) return null;
+  const base = `예상 변동폭: 이 종목은 과거 뉴스 ${move.caseCount.toLocaleString("ko-KR")}번 뒤 ${move.windowDays}거래일 동안 시장 대비 평균 ±${fmtPct(move.expectedMove, 1, false)} 움직였습니다(오르든 내리든)`;
+  return graded ? base : `${base}. 이 기간 등급은 검증에서 맞지 않아 참고치로만 보여 줍니다`;
+}
+
+/** 적중률 공개 띠의 변동폭 검증 한 줄. 검증 행이 없으면 null */
+export function moveCheckText(rows: MoveBacktestRow[], horizon: Horizon): { line: string; holds: boolean } | null {
+  const small = rows.find((r) => r.horizon === horizon && r.grade === "SMALL");
+  const large = rows.find((r) => r.horizon === horizon && r.grade === "LARGE");
+  if (!small || !large || small.realizedMove == null || large.realizedMove == null) return null;
+  const holds = gradesHold(rows, horizon);
+  const line = `'변동 큼' 종목 실제 ±${fmtPct(large.realizedMove, 1, false)} · '변동 작음' 종목 실제 ±${fmtPct(small.realizedMove, 1, false)}`;
+  return { line, holds };
 }
 
 export const AFTER_NEWS = "이 뉴스 뒤 기사";

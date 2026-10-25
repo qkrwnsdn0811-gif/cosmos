@@ -9,6 +9,7 @@ import MiniScene from "@/three/MiniScene";
 import { altitudeY } from "@/three/altitude";
 import type { Emphasis } from "@/three/emphasis";
 import { chipName, eventScene, MENTION, NEWS_NODE } from "./eventScene";
+import "./events.css";
 
 /** 기사 → 언급 기업 선 색 (관계 종류 색과 겹치지 않는 밝은 하늘색) */
 const MENTION_COLOR = "#8FB2FF";
@@ -66,15 +67,19 @@ function OrbitRings({ radii }: { radii: number[] }) {
 
 /**
  * 이벤트 관계 지도(3D) — 기사 1건이 하나의 태양계다. 가운데 별이 기사, 안쪽 궤도가 기사에 나온 기업, 바깥 궤도가
- * 공급망으로 추정한 기업(1단계·2단계)이다. 행성 높이는 사건 다음 거래일 초과수익률(위 상승·아래 하락, 관측값)이고,
- * 판단 보류 기업은 흐리게 그린다. 행성을 누르면 근거 패널이 그 기업으로 바뀌고, 다시 누르거나 Esc 를 누르면 풀린다.
+ * 공급망으로 추정한 기업(1단계·2단계)이다. 행성 높이는 이번 뉴스 뒤 windowDays 거래일 초과수익률(위 상승·아래 하락,
+ * 관측값)이고, 판단 보류 기업은 흐리게 그린다. 행성을 누르면 첫 화면이 그 기업의 종목 카드를 열고(onSelect),
+ * 다시 누르거나 Esc 를 누르면 선택이 풀린다.
  */
 export default function EventGalaxy({
   map,
+  windowDays,
   selectedId,
   onSelect,
 }: {
   map: EventMap;
+  /** 행성 높이·이름표의 초과수익률 기간 (투자 기간 토글: 3 · 20거래일) */
+  windowDays: number;
   selectedId: string | null;
   onSelect: (companyId: string) => void;
 }) {
@@ -99,7 +104,7 @@ export default function EventGalaxy({
     };
   }, [universe.data, map.nodes]);
 
-  const scene = useMemo(() => eventScene(map.event.eventId, map.event.dateline, map.nodes), [map]);
+  const scene = useMemo(() => eventScene(map.event.eventId, map.event.dateline, map.nodes, windowDays), [map, windowDays]);
   const { model, rings } = useMemo(() => {
     const m = layoutSystem(scene.graph, lookup);
     // 궤도 안내선 반지름 — 단계별 행성 거리의 평균 (고도를 더하기 전, 원반 위 거리)
@@ -110,11 +115,11 @@ export default function EventGalaxy({
     const radii = [...byDepth.keys()].sort((a, b) => a - b).map((d) => byDepth.get(d)!.reduce((a, b) => a + b, 0) / byDepth.get(d)!.length);
     m.nodes.forEach((n) => {
       if (n.id === NEWS_NODE) return;
-      const ar = scene.dayOne.get(n.id) ?? null;
+      const ar = scene.realized.get(n.id) ?? null;
       const reported = scene.reported.has(n.id);
       // 이 모델은 여기서 막 만든 것이라 좌표를 바로 고친다 — 간선 from/to 가 같은 배열을 가리켜 선도 함께 따라온다
       n.pos[1] += altitudeY(ar === null ? null : ar * 100);
-      // 이름표(마우스를 올리거나 고른 행성에만 뜬다)에 1일 초과수익률을 붙인다 — name 은 로고 이니셜용으로 그대로 둔다
+      // 이름표(마우스를 올리거나 고른 행성에만 뜬다)에 초과수익률을 붙인다 — name 은 로고 이니셜용으로 그대로 둔다
       n.label = chipName(n.name, ar);
       n.size = Math.max(n.size * SIZE_GAIN, reported ? MIN_SIZE.reported : MIN_SIZE.inferred);
       if (reported) n.tier = 0;
@@ -185,7 +190,8 @@ export default function EventGalaxy({
           </li>
         ))}
         <li>흐린 행성: 판단 보류</li>
-        <li className="meta">행성 높이 · 이름표 숫자(행성에 마우스를 올리면 보임): 사건 다음 거래일 초과수익률(위 상승 · 아래 하락, 관측값)</li>
+        <li className="meta">행성 높이 · 이름표 숫자(행성에 마우스를 올리면 보임): 이번 뉴스 뒤 {windowDays}거래일 초과수익률(위 상승 · 아래 하락, 관측값)</li>
+        <li className="meta">행성을 누르면 아래 종목 카드가 열립니다</li>
       </ul>
     </div>
   );

@@ -3,7 +3,21 @@ import type { EventNode, EventSummary, Horizon } from "@/api/types";
 import { CompanyAvatar } from "@/components/ui";
 import { fmtDate } from "@/lib/format";
 import { galaxyCompanyPath } from "@/lib/routes";
-import { AFTER_NEWS, afterNews, fmtPct, metricsText, pastLine, pathText, signalFor, signalText, toneOf } from "./investCopy";
+import {
+  AFTER_NEWS,
+  afterNews,
+  fmtPct,
+  metricsText,
+  moveBadge,
+  moveFor,
+  moveLine,
+  pastLine,
+  pathText,
+  signalFor,
+  signalText,
+  stockCardId,
+  toneOf,
+} from "./investCopy";
 import PriceChart from "./PriceChart";
 
 const NO_EVIDENCE: Record<string, string> = {
@@ -13,13 +27,30 @@ const NO_EVIDENCE: Record<string, string> = {
 };
 
 /**
- * 영향 종목 카드(F5) — 접힌 상태에서도 딱지(F4)·과거 사례 한 줄(F3)·지표(F8)·영향 경로를 보여 주고,
+ * 영향 종목 카드(F5) — 접힌 상태에서도 딱지(F4)·예상 변동폭·과거 사례 한 줄(F3)·지표(F8)·영향 경로를 보여 주고,
  * 펼치면 이번 뉴스 뒤 실제 초과수익률, 뉴스 전후 주가 차트(F7), 근거 문장과 원문 링크(F6)가 나온다.
  */
-export default function StockCard({ node, event, horizon, open, onToggle }: { node: EventNode; event: EventSummary; horizon: Horizon; open: boolean; onToggle: () => void }) {
+export default function StockCard({
+  node,
+  event,
+  horizon,
+  moveGraded,
+  open,
+  onToggle,
+}: {
+  node: EventNode;
+  event: EventSummary;
+  horizon: Horizon;
+  /** 이 기간의 변동폭 등급이 시험 기간 검증을 통과했는가 (gradesHold) */
+  moveGraded: boolean;
+  open: boolean;
+  onToggle: () => void;
+}) {
   const signal = signalFor(node, horizon);
   const tone = toneOf(signal?.label);
   const past = pastLine(signal, event.newsTypeLabel, node.positionLabel);
+  const move = moveFor(node, horizon);
+  const badge = moveBadge(move, moveGraded);
   const path = pathText(node);
   const metrics = metricsText(node.fundamental, horizon);
   const weak = node.status === "HOLD";
@@ -27,7 +58,7 @@ export default function StockCard({ node, event, horizon, open, onToggle }: { no
   const role = node.basis === "REPORTED" ? "기사에 나온 기업" : node.positionLabel ?? `${node.hop}단계 추정`;
 
   return (
-    <article className={`card invest-stock ${open ? "open" : ""} ${weak ? "weak" : ""}`}>
+    <article id={node.companyId ? stockCardId(node.companyId) : undefined} className={`card invest-stock ${open ? "open" : ""} ${weak ? "weak" : ""}`}>
       <button type="button" className="invest-stock-head" onClick={onToggle} aria-expanded={open}>
         <CompanyAvatar name={node.name} companyId={node.companyId} stockCode={node.stockCode} market={node.market} size={38} radius={19} />
         <span className="grow invest-stock-id">
@@ -38,11 +69,15 @@ export default function StockCard({ node, event, horizon, open, onToggle }: { no
           </span>
           {metrics && <span className="meta invest-metrics">{metrics}</span>}
         </span>
-        <span className={`invest-badge ${tone}`}>{signalText(signal)}</span>
+        <span className="invest-badges">
+          <span className={`invest-badge ${tone}`}>{signalText(signal)}</span>
+          {badge && <span className={`invest-move ${moveGraded && move?.grade === "LARGE" ? "large" : ""}`}>{badge}</span>}
+        </span>
       </button>
 
       <div className="invest-stock-body">
         {past ? <p className="invest-past">{past}</p> : null}
+        {move && <p className="invest-move-line">{moveLine(move, moveGraded)}</p>}
         {signal?.caseScope === "POSITION" && signal.caseCount > 0 && (
           <p className="meta">이 종목만의 사례가 10건이 안 되어 같은 위치 기업 전체 사례를 썼습니다.</p>
         )}

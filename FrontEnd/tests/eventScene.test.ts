@@ -53,14 +53,16 @@ test("a held company's line is weaker than a kept one's", () => {
   assert.ok(score("hold") < score("dj"));
 });
 
-test("reported, held and day-one abnormal returns are kept for the scene", () => {
+test("reported, held and the chosen window's abnormal returns are kept for the scene", () => {
   const s = eventScene("ev1", "2026-10-14T00:00:00Z", nodes);
   assert.deepEqual([...s.reported], ["sam"]);
   assert.deepEqual([...s.held], ["hold"]);
-  assert.deepEqual(Object.fromEntries(s.dayOne), { sam: 0.0065, dj: -0.048 });
+  assert.deepEqual(Object.fromEntries(s.realized), { sam: 0.0065, dj: -0.048 });
+  const three = eventScene("ev1", "2026-10-14T00:00:00Z", nodes, 3);
+  assert.deepEqual(Object.fromEntries(three.realized), { sam: 0.5, dj: 0.5, hold: 0.5, far: 0.5, lost: 0.5 });
 });
 
-test("chip names carry the day-one abnormal return", () => {
+test("chip names carry the abnormal return", () => {
   assert.equal(chipName("SK하이닉스", -0.01689), "SK하이닉스 −1.7%");
   assert.equal(chipName("삼성전자", 0.00653418), "삼성전자 +0.7%");
   assert.equal(chipName("에이디테크놀로지주식회사", null), "에이디테크놀로지주…");

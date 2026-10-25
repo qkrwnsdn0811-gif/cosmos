@@ -63,7 +63,8 @@
   transform: none;
 }
 
-.md-dialog {
+/* 공용 .dialog(440px)보다 넓게 — 로드 순서와 관계없이 이기도록 두 클래스로 */
+.dialog.md-dialog {
   width: min(560px, 100%);
   max-height: min(88vh, 860px);
   overflow-y: auto;

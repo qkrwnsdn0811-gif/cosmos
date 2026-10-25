@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import type { EventSignal, Fundamental } from "../src/api/types.ts";
-import { accuracyText, countsText, fmtPct, fmtWon, metricsText, pastLine, pathText, signalText } from "../src/features/invest/investCopy.ts";
+import { accuracyText, afterNews, countsText, fmtPct, fmtWon, metricsText, pastLine, pathText, signalText } from "../src/features/invest/investCopy.ts";
 
 const signal = (over: Partial<EventSignal> = {}): EventSignal => ({
   horizon: "SHORT",
@@ -83,4 +83,11 @@ test("path text walks outward from the anchor whatever the edge direction", () =
   const node = { basis: "INFERRED" as const, companyId: "c", anchorCompanyId: "a", path: [step("b", "a", "SUPPLY"), step("b", "c", "COMPETE")] };
   assert.equal(pathText(node), "A → 공급 → B → 경쟁 → C");
   assert.equal(pathText({ ...node, basis: "REPORTED" }), null);
+});
+
+test("evidence published after the news is flagged", () => {
+  const dateline = "2026-09-03T07:35:06+09:00";
+  assert.equal(afterNews("2026-10-06T09:00:00+09:00", dateline), true);
+  assert.equal(afterNews("2026-03-26T09:00:00+09:00", dateline), false);
+  assert.equal(afterNews(dateline, dateline), false);
 });

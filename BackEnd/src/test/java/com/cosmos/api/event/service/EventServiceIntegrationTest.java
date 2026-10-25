@@ -98,14 +98,7 @@ class EventServiceIntegrationTest {
         insertImpact(E4, C3, "REPORTED", 0, "1.0", "OK", null, "[]");
 
         // 근거 조각은 반대 방향(기업3 → 기업1)으로 넣는다. PARTNER는 무방향이라 양쪽에서 찾아야 한다.
-        jdbcTemplate.update("""
-                INSERT INTO relation_evidence_snippet
-                    (snippet_id, source_company_id, target_company_id, relationship_type_id, bigkinds_news_id, title,
-                     provider, published_at, original_url, snippet, pattern, confidence)
-                SELECT ?, ?, ?, relationship_type_id, 'TEST.S1', '근거 기사', '테스트일보', ?, 'https://example.com/s1',
-                       '테스트기업3과 테스트기업1이 협력한다.', 'enum+kw', 0.8
-                FROM relationship_type WHERE code = 'PARTNER'
-                """, id(41), C3, C1, Timestamp.from(Instant.parse("2026-08-30T00:00:00Z")));
+        insertPartnerSnippet(id(41), "TEST.S1", "2026-08-30T00:00:00Z", "테스트기업3과 테스트기업1이 협력한다.");
         jdbcTemplate.update("""
                 INSERT INTO event_abnormal_return
                     (event_id, company_id, window_days, benchmark, stock_return, benchmark_return, abnormal_return)
@@ -165,6 +158,18 @@ class EventServiceIntegrationTest {
 
         assertThat(c3.path().getFirst().evidence()).extracting(EvidenceSnippetResponse::snippet)
                 .containsExactly("테스트기업3과 테스트기업1이 협력한다.");
+    }
+
+    @Test
+    void snippetsBeforeNewsComeFirstClosestFirst() {
+        // E1은 2026-09-01T01:00Z. 뉴스 뒤 기사(09-20)가 가장 최신이어도 뉴스 전 기사(08-30, 06-01)보다 뒤에 온다
+        insertPartnerSnippet(id(42), "TEST.S2", "2026-09-20T00:00:00Z", "뉴스 뒤 기사 문장");
+        insertPartnerSnippet(id(43), "TEST.S3", "2026-06-01T00:00:00Z", "오래된 기사 문장");
+
+        EventNodeResponse c3 = node(eventService.findEventMap(E1), C3);
+
+        assertThat(c3.path().getFirst().evidence()).extracting(EvidenceSnippetResponse::snippet)
+                .containsExactly("테스트기업3과 테스트기업1이 협력한다.", "오래된 기사 문장", "뉴스 뒤 기사 문장");
     }
 
     @Test
@@ -654,6 +659,18 @@ class EventServiceIntegrationTest {
                                         event_trading_date, pipeline_version)
                 VALUES (?, ?, ?, 'AUTO', ARRAY['경제>자동차'], ?, ?, 'test')
                 """, eventId, documentId, newsId, at, tradingDate);
+    }
+
+    /** 기업3 → 기업1 협력 관계의 근거 조각. */
+    private void insertPartnerSnippet(UUID snippetId, String newsId, String publishedAt, String snippet) {
+        jdbcTemplate.update("""
+                INSERT INTO relation_evidence_snippet
+                    (snippet_id, source_company_id, target_company_id, relationship_type_id, bigkinds_news_id, title,
+                     provider, published_at, original_url, snippet, pattern, confidence)
+                SELECT ?, ?, ?, relationship_type_id, ?, '근거 기사', '테스트일보', ?, 'https://example.com/' || ?,
+                       ?, 'enum+kw', 0.8
+                FROM relationship_type WHERE code = 'PARTNER'
+                """, snippetId, C3, C1, newsId, Timestamp.from(Instant.parse(publishedAt)), newsId, snippet);
     }
 
     private void insertImpact(UUID eventId, UUID companyId, String basis, int hop, String score, String status,

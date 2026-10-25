@@ -38,6 +38,7 @@ import com.cosmos.api.global.error.CommonErrorCode;
 import com.cosmos.api.global.response.CursorPageResponse;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -143,7 +144,8 @@ public class EventService {
         impacts.stream().filter(i -> "REPORTED".equals(i.basis())).forEach(i -> reported.add(i.companyId()));
 
         List<EventNodeResponse> nodes = impacts.stream().map(i -> {
-            List<PathStepResponse> steps = paths.get(i.companyId()).stream().map(s -> step(s, companies)).toList();
+            List<PathStepResponse> steps = paths.get(i.companyId()).stream()
+                    .map(s -> step(s, companies, event.dateline())).toList();
             UUID anchor = "INFERRED".equals(i.basis()) && !steps.isEmpty() ? anchorOf(steps.getFirst(), reported) : null;
             List<SignalRow> own = signals.getOrDefault(i.companyId(), List.of());
             String position = positionOf(own);
@@ -309,7 +311,8 @@ public class EventService {
         return close.divide(base, RETURN_SCALE, RoundingMode.HALF_UP).subtract(BigDecimal.ONE);
     }
 
-    private PathStepResponse step(RawStep s, Map<String, CompanyKeyRow> companies) {
+    /** 근거 조각은 이벤트 시각(asOf) 이전 기사부터 보여 준다. */
+    private PathStepResponse step(RawStep s, Map<String, CompanyKeyRow> companies, Instant asOf) {
         CompanyKeyRow source = s.src() == null ? null : companies.get(s.src());
         CompanyKeyRow target = s.dst() == null ? null : companies.get(s.dst());
         boolean withEvidence = "NEWS".equals(s.source()) && source != null && target != null && s.rel() != null;
@@ -317,7 +320,7 @@ public class EventService {
                 source == null ? null : source.companyId(), source == null ? null : source.name(),
                 target == null ? null : target.companyId(), target == null ? null : target.name(),
                 s.rel(), s.source(), s.strength(),
-                withEvidence ? eventRepository.findSnippets(source.companyId(), target.companyId(), s.rel(),
+                withEvidence ? eventRepository.findSnippets(source.companyId(), target.companyId(), s.rel(), asOf,
                         SNIPPETS_PER_STEP) : List.of());
     }
 

@@ -1,4 +1,5 @@
 import type { AbnormalReturn, EventMap, EventNode, PathStep } from "@/api/types";
+import { AFTER_NEWS, afterNews } from "@/features/invest/investCopy";
 import { fmtDate, fmtDateTime, fmtPct } from "@/lib/format";
 import { relationshipMeta } from "@/lib/meta";
 import { IMPACT_DISCLAIMER, impactLine } from "./nodeStyle";
@@ -53,7 +54,7 @@ function ReturnsTable({ returns }: { returns: AbnormalReturn[] }) {
   );
 }
 
-function StepView({ step }: { step: PathStep }) {
+function StepView({ step, dateline }: { step: PathStep; dateline: string }) {
   const source = step.sourceName ?? "마스터에 없는 기업";
   const target = step.targetName ?? "마스터에 없는 기업";
   return (
@@ -67,7 +68,8 @@ function StepView({ step }: { step: PathStep }) {
             <li key={`${s.bigkindsNewsId}-${s.snippet.slice(0, 12)}`}>
               <p className="event-snippet">“{s.snippet}”</p>
               <div className="meta">
-                {[s.publisher, fmtDate(s.publishedAt)].filter(Boolean).join(" · ")} <OriginalLink url={s.originalUrl} />
+                {[s.publisher, fmtDate(s.publishedAt), afterNews(s.publishedAt, dateline) ? AFTER_NEWS : null].filter(Boolean).join(" · ")}{" "}
+                <OriginalLink url={s.originalUrl} />
               </div>
             </li>
           ))}
@@ -122,7 +124,7 @@ function NodeView({ node, map }: { node: EventNode; map: EventMap }) {
       <h4 className="event-panel-sub">전이 경로와 근거</h4>
       <ol className="event-steps">
         {node.path.map((step, i) => (
-          <StepView key={i} step={step} />
+          <StepView key={i} step={step} dateline={map.event.dateline} />
         ))}
       </ol>
       <h4 className="event-panel-sub">관측된 초과수익률</h4>

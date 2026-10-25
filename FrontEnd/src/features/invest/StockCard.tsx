@@ -3,7 +3,7 @@ import type { EventNode, EventSummary, Horizon } from "@/api/types";
 import { CompanyAvatar } from "@/components/ui";
 import { fmtDate } from "@/lib/format";
 import { galaxyCompanyPath } from "@/lib/routes";
-import { fmtPct, metricsText, pastLine, pathText, signalFor, signalText, toneOf } from "./investCopy";
+import { AFTER_NEWS, afterNews, fmtPct, metricsText, pastLine, pathText, signalFor, signalText, toneOf } from "./investCopy";
 import PriceChart from "./PriceChart";
 
 const NO_EVIDENCE: Record<string, string> = {
@@ -122,7 +122,7 @@ function Evidence({ node, event }: { node: EventNode; event: EventSummary }) {
               <div key={e.bigkindsNewsId + e.snippet.slice(0, 12)}>
                 <blockquote>{quoted(e.snippet || e.title)}</blockquote>
                 <div className="meta">
-                  {[e.publisher, fmtDate(e.publishedAt)].filter(Boolean).join(" · ")}
+                  {[e.publisher, fmtDate(e.publishedAt), afterNews(e.publishedAt, event.dateline) ? AFTER_NEWS : null].filter(Boolean).join(" · ")}
                   {e.originalUrl && (
                     <>
                       {" · "}

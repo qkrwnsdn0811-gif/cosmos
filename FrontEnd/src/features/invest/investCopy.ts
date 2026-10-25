@@ -119,6 +119,16 @@ export function accuracyText(row: BacktestRow | null | undefined): { line: strin
   return { line, beats: base == null ? false : row.hitRate > base };
 }
 
+export const AFTER_NEWS = "이 뉴스 뒤 기사";
+
+/**
+ * 관계 근거 기사가 이 뉴스보다 뒤에 나왔는가. 관계 그래프는 전체 기간 기사로 만들어서 뉴스 뒤 기사만 근거인 관계도 있고,
+ * API 는 뉴스 전 기사를 먼저 준다 — 뒤 기사는 화면에서 그렇다고 밝힌다
+ */
+export function afterNews(publishedAt: string, dateline: string): boolean {
+  return new Date(publishedAt).getTime() > new Date(dateline).getTime();
+}
+
 const REL_KO: Record<string, string> = { SUPPLY: "공급", PARTNER: "협력", COMPETE: "경쟁", INVEST: "투자", CO_MENTIONED: "함께 언급" };
 
 /**

@@ -319,8 +319,13 @@ public class EventQueryRepository {
         return result;
     }
 
-    /** 두 기업 사이 관계의 근거 조각, 최신순. 무방향 관계(협력·경쟁)는 반대 방향으로 저장된 조각도 찾는다. */
-    public List<EvidenceSnippetResponse> findSnippets(UUID sourceId, UUID targetId, String relationshipType, int limit) {
+    /**
+     * 두 기업 사이 관계의 근거 조각. 이벤트 시각(asOf) 이전 기사를 먼저, 그 안에서는 이벤트와 가까운 순으로 두고,
+     * 이벤트 뒤 기사는 그다음에 이벤트와 가까운 순으로 둔다(관계 그래프가 전체 기간 기사로 만들어져 뒤 기사만 있는 관계도 있다).
+     * 무방향 관계(협력·경쟁)는 반대 방향으로 저장된 조각도 찾는다.
+     */
+    public List<EvidenceSnippetResponse> findSnippets(UUID sourceId, UUID targetId, String relationshipType,
+            Instant asOf, int limit) {
         return jdbcTemplate.query("""
                 SELECT s.bigkinds_news_id, s.title, s.provider, s.published_at, s.original_url, s.snippet, s.confidence
                 FROM relation_evidence_snippet s
@@ -328,11 +333,13 @@ public class EventQueryRepository {
                 WHERE t.code = :type
                   AND ((s.source_company_id = :src AND s.target_company_id = :dst)
                        OR (t.directionality = 'UNDIRECTED' AND s.source_company_id = :dst AND s.target_company_id = :src))
-                ORDER BY s.published_at DESC
+                ORDER BY s.published_at > :asOf,
+                         CASE WHEN s.published_at <= :asOf THEN s.published_at END DESC,
+                         s.published_at
                 LIMIT :limit
                 """, new MapSqlParameterSource()
                         .addValue("type", relationshipType).addValue("src", sourceId).addValue("dst", targetId)
-                        .addValue("limit", limit),
+                        .addValue("asOf", Timestamp.from(asOf)).addValue("limit", limit),
                 (rs, rowNum) -> new EvidenceSnippetResponse(
                         rs.getString("bigkinds_news_id"), rs.getString("title"), rs.getString("provider"),
                         rs.getTimestamp("published_at").toInstant(), rs.getString("original_url"),

@@ -1947,7 +1947,7 @@ GET /api/events?valueChain=SEMICONDUCTOR&newsType=EXPORT_CONTROL&hasInferred=tru
 - `status`가 `HOLD`면 `holdReason`(전이 강도 낮음 · 우선순위 밖 · 동시언급만으로 연결)이 함께 온다.
 - `anchorCompanyId`는 추정 기업이 퍼져 나온 언급 기업이다.
 - `path`의 source·target은 실제 관계 방향이다. 경로의 기업이 기업 마스터에 없으면 id와 이름이 null이다.
-- `edgeSource`는 COSMOS(기존 관계 데이터) · NEWS(빅카인즈 근거) · COMENTION(같은 문장 동시언급)이다. `evidence`는 NEWS 단계에만 최대 5건 채워진다.
+- `edgeSource`는 COSMOS(기존 관계 데이터) · NEWS(빅카인즈 근거) · COMENTION(같은 문장 동시언급)이다. `evidence`는 NEWS 단계에만 최대 5건 채워진다. 이벤트 `dateline` 이전 기사를 먼저(이벤트와 가까운 순), 그 뒤 기사를 다음에(이벤트와 가까운 순) 둔다.
 - `impactDirection`(POSITIVE·NEUTRAL·NEGATIVE), `impactMagnitude`(0~1, 상승 확률과 하락 확률의 차이), `confidence`(0~1, 가장 큰 클래스의 확률)는 영향 모델(`nexus predict-impact`)이 채운다. 국내 상장사이면서 `status`가 `OK`인 노드만 값이 있다. `confidence`가 있는데 `impactDirection`이 null이면 신뢰도가 표시 기준 미만인 '방향 보류'다. 해외 상장사와 `HOLD` 노드는 셋 다 null이다.
 - `abnormalReturns`는 1·3·5·20거래일 초과수익률이다(1 = 이벤트 거래일 당일). 아직 그 기간이 지나지 않았거나 주가가 없으면 해당 기간이 빠진다.
 - `position`·`signals`는 방향 딱지가 계산된 노드만 값이 있고, 없으면 `null`·`[]`다. 딱지는 과거 사례 통계이며 예측이 아니다(위 공통 코드 참고).

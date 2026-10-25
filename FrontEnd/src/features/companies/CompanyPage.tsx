@@ -13,7 +13,8 @@ import RangeBar from "./RangeBar";
 import ReturnChart from "./ReturnChart";
 import {
   SIZE_LABEL,
-  alignByDate,
+  chartSeries,
+  dailyCandles,
   fmtCap,
   fmtPct,
   fmtPrice,
@@ -25,7 +26,6 @@ import {
   relationLabel,
   sliceDays,
   tone,
-  type AlignedPoint,
 } from "./quoteFormat";
 import "../invest/invest.css";
 import "./companies.css";
@@ -36,15 +36,6 @@ const BENCH: Record<string, string> = { KOSPI: "코스피", KOSDAQ: "코스닥" 
 
 /** "2026-10-23" → "10월 23일" */
 const dayLabel = (iso: string | null | undefined) => (iso ? `${Number(iso.slice(5, 7))}월 ${Number(iso.slice(8, 10))}일` : "-");
-
-interface Daily {
-  date: string;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-  volume: number;
-}
 
 /**
  * 기업 상세 (토스증권 종목 화면 + Google Finance 종목 화면을 참고).
@@ -69,23 +60,15 @@ export default function CompanyPage() {
   }, [companyId]);
 
   const q = quotes.data?.items.find((x) => x.companyId === companyId) ?? null;
-  const daily = useMemo<Daily[]>(
-    () =>
-      (prices.data?.items ?? [])
-        .map((c) => ({ date: c.tradingAt.slice(0, 10), open: c.openPrice, high: c.highPrice, low: c.lowPrice, close: c.closePrice, volume: c.tradingVolume }))
-        .sort((a, b) => a.date.localeCompare(b.date)),
-    [prices.data],
-  );
+  // 종목을 옮기면 react-query 가 이전 종목의 일봉을 잠깐 보여 준다 — 그동안은 불러오는 중으로 둔다
+  const daily = useMemo(() => dailyCandles(prices.data, companyId), [prices.data, companyId]);
+  const pricesLoading = prices.isLoading || prices.isPlaceholderData || (prices.data != null && prices.data.companyId !== companyId);
   const benchCode = q?.market === "KOSDAQ" ? "KOSDAQ" : "KOSPI";
   const benchName = `${BENCH[benchCode]} 지수`;
   const indexPoints = useMemo(() => indices.data?.items.find((i) => i.indexCode === benchCode)?.points ?? [], [indices.data, benchCode]);
 
-  const chartPoints = useMemo<AlignedPoint[]>(() => {
-    const stock = sliceDays(daily, period).map((d) => ({ date: d.date, close: d.close }));
-    if (compare) return alignByDate(stock, indexPoints);
-    const base = stock[0]?.close ?? 1;
-    return stock.map((p) => ({ ...p, indexClose: 0, stockReturn: p.close / base - 1, indexReturn: 0 }));
-  }, [daily, period, compare, indexPoints]);
+  const series = useMemo(() => chartSeries(daily, indexPoints, period, compare), [daily, indexPoints, period, compare]);
+  const chartPoints = series.points;
 
   if (quotes.isLoading) {
     return (
@@ -192,17 +175,18 @@ export default function CompanyPage() {
                 <input type="checkbox" checked={compare} onChange={(e) => setCompare(e.target.checked)} /> {benchName}와 비교
               </label>
             </div>
-            {prices.isLoading ? (
+            {pricesLoading || (compare && indices.isLoading) ? (
               <Skeleton h={240} style={{ borderRadius: 12, marginTop: 12 }} />
             ) : daily.length < 2 ? (
               <p className="invest-muted">주가 데이터가 없습니다.</p>
             ) : (
               <>
-                <ReturnChart points={chartPoints} mode={compare ? "compare" : "price"} name={q.name} benchName={benchName} />
+                {series.indexMissing && <p className="meta cp-note">지수 데이터를 불러오지 못해 주가만 보여 줍니다.</p>}
+                <ReturnChart points={chartPoints} mode={series.mode} name={q.name} benchName={benchName} />
                 {lastPoint && (
                   <p className="cp-summary num">
                     {PERIOD_LABEL[period]} <b className={`tone-${tone(lastPoint.stockReturn)}`}>{fmtPct(lastPoint.stockReturn, 1)}</b>
-                    {compare && (
+                    {series.mode === "compare" && (
                       <>
                         {" · "}
                         {BENCH[benchCode]} <b className={`tone-${tone(lastPoint.indexReturn)}`}>{fmtPct(lastPoint.indexReturn, 1)}</b>

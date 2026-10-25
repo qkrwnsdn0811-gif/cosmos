@@ -1,6 +1,6 @@
 import { useMemo, useState, type PointerEvent } from "react";
 import type { AlignedPoint } from "./quoteFormat";
-import { fmtPct, fmtPrice, tone } from "./quoteFormat";
+import { fmtPct, fmtPrice, pctTickDigits, tone } from "./quoteFormat";
 
 const INDEX = "#6b7588";
 const W = 640;
@@ -42,8 +42,9 @@ export default function ReturnChart({ points, mode, name, benchName }: { points:
     for (let t = Math.ceil(y0 / step) * step; t <= y1 + 1e-12; t += step) ticks.push(Number(t.toPrecision(12)));
     const main = mode === "compare" ? path((p) => p.stockReturn) : path((p) => p.close);
     const area = mode === "price" ? `${main}L${x(points.length - 1).toFixed(1)},${H - PAD.b}L${x(0).toFixed(1)},${H - PAD.b}Z` : null;
-    const labels = [0, Math.round((points.length - 1) / 2), points.length - 1];
-    return { x, y, ticks, main, area, index: mode === "compare" ? path((p) => p.indexReturn) : null, labels };
+    // 점이 적으면 가운데와 끝이 겹친다 — 같은 자리는 한 번만
+    const labels = [...new Set([0, Math.round((points.length - 1) / 2), points.length - 1])];
+    return { x, y, ticks, step, main, area, index: mode === "compare" ? path((p) => p.indexReturn) : null, labels };
   }, [points, mode]);
 
   if (!geo) return <p className="invest-muted">이 기간의 주가 데이터가 부족합니다.</p>;
@@ -89,7 +90,7 @@ export default function ReturnChart({ points, mode, name, benchName }: { points:
             <g key={t}>
               <line x1={PAD.l} x2={W - PAD.r} y1={geo.y(t)} y2={geo.y(t)} className={mode === "compare" && Math.abs(t) < 1e-12 ? "zero" : "grid"} />
               <text x={PAD.l - 6} y={geo.y(t) + 4} textAnchor="end" className="tick">
-                {mode === "compare" ? fmtPct(t, 0) : Math.round(t).toLocaleString("ko-KR")}
+                {mode === "compare" ? fmtPct(t, pctTickDigits(geo.step)) : Math.round(t).toLocaleString("ko-KR")}
               </text>
             </g>
           ))}

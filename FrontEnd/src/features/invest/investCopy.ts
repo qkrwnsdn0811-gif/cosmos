@@ -62,6 +62,8 @@ export function fmtPct(ratio: number | null | undefined, digits = 1, sign = true
 /** 원 단위 시가총액 → "1,260조" · "8.4조" · "6,138억" */
 export function fmtWon(won: number | null | undefined): string {
   if (won == null || Number.isNaN(won)) return "-";
+  // 적자(음수)는 크기를 같은 규칙으로 쓰고 앞에 '−' (fmtPct 와 같은 부호)
+  if (won < 0) return `−${fmtWon(-won)}`;
   const jo = won / 1e12;
   if (jo >= 100) return `${Math.round(jo).toLocaleString("ko-KR")}조`;
   if (jo >= 1) return `${jo.toFixed(1)}조`;

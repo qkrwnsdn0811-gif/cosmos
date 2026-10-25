@@ -77,6 +77,8 @@ export default function QuoteTable({
                       e.stopPropagation();
                       onToggleWatch(q.companyId, on);
                     }}
+                    // 별에서 누른 Enter 가 행의 이동(onKeyDown)까지 올라가지 않게
+                    onKeyDown={(e) => e.stopPropagation()}
                   >
                     <Icon.Star filled={on} />
                   </button>

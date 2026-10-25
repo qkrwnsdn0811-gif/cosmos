@@ -2,7 +2,7 @@
  * 기업 탭 시세판·기업 상세의 표시·계산 규칙. 화면 컴포넌트는 이 함수들만 부르고 숫자를 직접 다루지 않는다.
  * 숫자 표기는 이벤트 화면과 같다(fmtPct 의 '−', fmtWon 의 조·억). 오른다·내린다를 말하지 않고 관측값만 보여 준다.
  */
-import type { CompanyQuote, PricePeriod, RelationDirection, RelationshipType } from "@/api/types";
+import type { CompanyQuote, IndexPoint, PricePeriod, RelationDirection, RelationshipType, StockPrices } from "@/api/types";
 import { fmtPct as pct, fmtWon } from "../invest/investCopy.ts";
 
 export const fmtCap = fmtWon;
@@ -19,6 +19,7 @@ export function fmtRatio(ratio: number | null | undefined, digits = 2): string {
 
 export function fmtPrice(won: number | null | undefined): string {
   if (won == null || Number.isNaN(won)) return "-";
+  if (won < 0) return `−${fmtPrice(-won)}`;
   return `${Math.round(won).toLocaleString("ko-KR")}원`;
 }
 
@@ -160,6 +161,51 @@ export function alignByDate(stock: { date: string; close: number }[], index: { d
     const indexClose = byDate.get(p.date)!;
     return { date: p.date, close: p.close, indexClose, stockReturn: p.close / base - 1, indexReturn: indexClose / indexBase - 1 };
   });
+}
+
+export interface Daily {
+  date: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
+
+/**
+ * 일봉을 날짜순으로. 다른 기업의 응답(종목을 옮길 때 react-query 가 잠깐 보여 주는 이전 데이터)이면 빈 목록 —
+ * 새 종목 이름 아래 이전 종목 숫자가 보이지 않게 한다
+ */
+export function dailyCandles(prices: StockPrices | undefined, companyId: string): Daily[] {
+  if (!prices || prices.companyId !== companyId) return [];
+  return prices.items
+    .map((c) => ({ date: c.tradingAt.slice(0, 10), open: c.openPrice, high: c.highPrice, low: c.lowPrice, close: c.closePrice, volume: c.tradingVolume }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+/**
+ * 상세 차트에 그릴 점. 지수와 비교하려는데 지수가 없으면(불러오기 실패·겹치는 날 없음) 주가 모드로 그리고 indexMissing 을 켠다
+ */
+export function chartSeries(
+  daily: { date: string; close: number }[],
+  index: IndexPoint[],
+  period: PricePeriod,
+  compare: boolean,
+): { points: AlignedPoint[]; mode: "compare" | "price"; indexMissing: boolean } {
+  const stock = sliceDays(daily, period).map((d) => ({ date: d.date, close: d.close }));
+  if (compare) {
+    const aligned = alignByDate(stock, index);
+    if (aligned.length >= 2) return { points: aligned, mode: "compare", indexMissing: false };
+  }
+  const base = stock[0]?.close ?? 1;
+  const points = stock.map((p) => ({ ...p, indexClose: 0, stockReturn: p.close / base - 1, indexReturn: 0 }));
+  return { points, mode: "price", indexMissing: compare };
+}
+
+/** 퍼센트 눈금 간격(비율)에 맞는 소수 자리 — 0.5% 간격을 "1%"로 반올림하지 않게 */
+export function pctTickDigits(step: number): number {
+  const pct = step * 100;
+  return pct >= 1 ? 0 : Math.ceil(-Math.log10(pct) - 1e-9);
 }
 
 /** 저가—고가 막대 위 위치 0~1 (범위가 0이면 가운데) */

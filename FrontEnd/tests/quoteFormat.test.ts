@@ -3,6 +3,9 @@ import assert from "node:assert/strict";
 import type { CompanyQuote } from "../src/api/types.ts";
 import {
   alignByDate,
+  chartSeries,
+  dailyCandles,
+  pctTickDigits,
   applyPreset,
   fmtCap,
   fmtPct,
@@ -128,4 +131,43 @@ test("fmtRatio shows unsigned ratios and multiples", () => {
   assert.equal(fmtRatio(0.00774), "0.77%");
   assert.equal(fmtRatio(0.25, 1), "25.0%");
   assert.equal(fmtRatio(null), "-");
+});
+
+test("dailyCandles ignores another company's placeholder prices", () => {
+  const prices = { companyId: "A", period: "1Y" as const, interval: "1D", asOfAt: null, items: [
+    { tradingAt: "2026-10-23T00:00:00Z", openPrice: 1, highPrice: 2, lowPrice: 1, closePrice: 2, tradingVolume: 10 },
+    { tradingAt: "2026-10-22T00:00:00Z", openPrice: 1, highPrice: 1, lowPrice: 1, closePrice: 1, tradingVolume: 10 },
+  ] };
+  assert.deepEqual(dailyCandles(prices, "B"), []);
+  assert.deepEqual(dailyCandles(undefined, "A"), []);
+  const a = dailyCandles(prices, "A");
+  assert.deepEqual(a.map((d) => d.date), ["2026-10-22", "2026-10-23"]);
+  assert.equal(a[1].close, 2);
+});
+
+test("chartSeries falls back to price mode when the index is missing", () => {
+  const daily = [{ date: "d1", close: 100 }, { date: "d2", close: 110 }];
+  const none = chartSeries(daily, [], "1M", true);
+  assert.equal(none.mode, "price");
+  assert.equal(none.indexMissing, true);
+  assert.equal(none.points.length, 2);
+  assert.ok(Math.abs(none.points[1].stockReturn - 0.1) < 1e-12);
+  const both = chartSeries(daily, [{ date: "d1", close: 50 }, { date: "d2", close: 55 }], "1M", true);
+  assert.equal(both.mode, "compare");
+  assert.equal(both.indexMissing, false);
+  assert.equal(chartSeries(daily, [{ date: "d1", close: 50 }], "1M", false).mode, "price");
+});
+
+test("losses keep the app's minus sign and units", () => {
+  assert.equal(fmtCap(-523e8), "−523억");
+  assert.equal(fmtCap(-2e12), "−2.0조");
+  assert.equal(fmtPrice(-1234), "−1,234원");
+});
+
+test("percent tick labels carry enough decimals for the step", () => {
+  assert.equal(pctTickDigits(0.1), 0);
+  assert.equal(pctTickDigits(0.05), 0);
+  assert.equal(pctTickDigits(0.005), 1);
+  assert.equal(pctTickDigits(0.002), 1);
+  assert.equal(pctTickDigits(0.0005), 2);
 });

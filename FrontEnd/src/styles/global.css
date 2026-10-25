@@ -22,6 +22,11 @@
   --pos-fg: #5be08c;
   --neg: #ff5c7a;
   --neg-fg: #ff8fa3;
+  /* 가격 등락 — 국내 서비스 관례(상승 빨강·하락 파랑). 기업 탭에서만 쓴다. 감성·과거 경향은 --pos·--neg */
+  --rise: #f04452;
+  --rise-fg: #ff6b76;
+  --fall: #3182f6;
+  --fall-fg: #5c9dff;
   --warn: #f5a623;
   --warn-fg: #f5c065;
   --r-card: 18px;

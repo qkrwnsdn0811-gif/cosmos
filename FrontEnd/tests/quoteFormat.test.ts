@@ -7,6 +7,7 @@ import {
   fmtCap,
   fmtPct,
   fmtPrice,
+  fmtRatio,
   fmtSigned,
   median,
   perShare,
@@ -121,4 +122,10 @@ test("sliceDays and rangePosition", () => {
   assert.equal(rangePosition(10, 20, 15), 0.5);
   assert.equal(rangePosition(10, 10, 10), 0.5);
   assert.equal(rangePosition(10, 20, 25), 1);
+});
+
+test("fmtRatio shows unsigned ratios and multiples", () => {
+  assert.equal(fmtRatio(0.00774), "0.77%");
+  assert.equal(fmtRatio(0.25, 1), "25.0%");
+  assert.equal(fmtRatio(null), "-");
 });

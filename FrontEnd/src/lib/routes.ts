@@ -7,5 +7,7 @@ export const HOME_PATH = "/";
 export const GALAXY_PATH = "/galaxy";
 
 export const galaxyCompanyPath = (companyId: string) => `${GALAXY_PATH}?company=${companyId}`;
+/** 기업 상세 (기업 탭 시세판에서 들어간다) */
+export const companyPath = (companyId: string) => `/companies/${companyId}`;
 export const galaxyEdgePath = (relationshipId: string) => `${GALAXY_PATH}?edge=${relationshipId}`;
 export const GALAXY_MINE_PATH = `${GALAXY_PATH}?scope=mine`;

@@ -12,6 +12,11 @@ export function fmtPct(ratio: number | null | undefined, digits = 2): string {
   return pct(ratio, digits);
 }
 
+/** 부호 없는 비율 → "0.77%" (배당수익률·ROE) */
+export function fmtRatio(ratio: number | null | undefined, digits = 2): string {
+  return pct(ratio, digits, false);
+}
+
 export function fmtPrice(won: number | null | undefined): string {
   if (won == null || Number.isNaN(won)) return "-";
   return `${Math.round(won).toLocaleString("ko-KR")}원`;

@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import type { EventNode, EventSummary, Horizon } from "@/api/types";
 import { CompanyAvatar } from "@/components/ui";
 import { fmtDate } from "@/lib/format";
-import { galaxyCompanyPath } from "@/lib/routes";
+import { companyPath, galaxyCompanyPath } from "@/lib/routes";
 import {
   AFTER_NEWS,
   afterNews,
@@ -117,8 +117,8 @@ export default function StockCard({
           <Evidence node={node} event={event} />
           <div className="row wrap invest-links">
             {node.companyId && (
-              <Link className="btn btn-g btn-xs" to={`/companies?company=${node.companyId}`}>
-                이 종목의 뉴스 이력
+              <Link className="btn btn-g btn-xs" to={companyPath(node.companyId)}>
+                종목 상세 · 뉴스 이력
               </Link>
             )}
             {node.companyId && (

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import type { CompanyComment, PricePeriod, Sentiment } from "@/api/types";
 import { CompanyAvatar, Empty, Icon, IndustryBadge, SentimentBadge, Skeleton } from "@/components/ui";
 import PriceChart, { Sparkbars } from "@/components/PriceChart";
@@ -25,7 +25,7 @@ import {
 import { useGalaxy, type PanelTab } from "@/store/galaxy";
 import { useSession } from "@/store/session";
 import { useUi } from "@/store/ui";
-import { GALAXY_MINE_PATH } from "@/lib/routes";
+import { GALAXY_MINE_PATH, companyPath } from "@/lib/routes";
 
 interface Props {
   companyId: string;
@@ -124,6 +124,10 @@ export default function CompanyPanel({ companyId, model = null, onWarp, onClose,
               <Icon.Star filled={watched} />
               {watched ? "관심 기업" : "관심 등록"}
             </button>
+            {/* 주가·지표·관계 기업 동향은 기업 상세 페이지에 모여 있다 */}
+            <Link className="chip chip-sm" to={companyPath(companyId)}>
+              종목 상세
+            </Link>
           </div>
         )}
       </div>

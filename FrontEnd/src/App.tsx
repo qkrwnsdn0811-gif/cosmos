@@ -17,6 +17,7 @@ const NewsPage = lazy(() => import("@/features/news/NewsPage"));
 // 검색 팔레트의 "관계 검색"(기업 두 곳을 이어 주는 경로) 결과 화면 — 은하 페이지와 같은 Scene 청크를 쓰므로 여기서도 지연 로드한다
 const PathGalaxyPage = lazy(() => import("@/features/galaxy/PathGalaxyPage"));
 const CompaniesPage = lazy(() => import("@/features/companies/CompaniesPage"));
+const CompanyPage = lazy(() => import("@/features/companies/CompanyPage"));
 const CommunityPage = lazy(() => import("@/features/community/CommunityPage"));
 const MePage = lazy(() => import("@/features/profile/MePage"));
 const MyItemsPage = lazy(() => import("@/features/profile/MyItemsPage"));
@@ -125,6 +126,7 @@ export default function App() {
                 {/* 뉴스 1건 3D 지도(/events)는 첫 화면에 합쳤다 — 예전 링크(?event=)는 그대로 첫 화면으로 */}
                 <Route path="/events" element={<EventsRedirect />} />
                 <Route path="/companies" element={<CompaniesPage />} />
+                <Route path="/companies/:companyId" element={<CompanyPage />} />
                 <Route path="/community" element={<CommunityPage />} />
                 <Route path="/me" element={<MePage />} />
                 {/* 관심 기업·스크랩한 뉴스 — 내 정보와 분리된 별도 화면. 지금은 분리만, 레이아웃 재설계는 다음 단계 */}

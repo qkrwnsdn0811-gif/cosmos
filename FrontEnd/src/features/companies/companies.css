@@ -316,18 +316,6 @@
   padding-left: 22px;
   border-left: 2px solid rgba(255, 255, 255, 0.1);
 }
-/* 기업 미리보기 모달 — 은하로 워프하지 않고 요약만 볼 때 사용 */
-.dialog.company-preview {
-  width: min(560px, 100%);
-  /* 투자 정보(지표·뉴스 이력)가 붙어 길어졌다 — 화면보다 길면 대화상자 안에서 스크롤해 제목이 위로 잘리지 않게 */
-  max-height: calc(100vh - 48px);
-  overflow-y: auto;
-}
-.company-preview .kpi {
-  flex: 1;
-  min-width: 130px;
-}
-
 /* 폰 폭 — 시세 표는 기업 · 현재가 · 등락만 남는다(760px 이하에서 .hide-sm, 600px 이하에서 1개월 추이도). 기업명은 두 줄, 코드·업종은 한 줄 말줄임 */
 @media (max-width: 600px) {
   .dir-table th,
@@ -550,4 +538,359 @@
   .preset-row .chip {
     flex: 0 0 auto;
   }
+}
+
+/* ── 기업 상세 (/companies/:id) ── */
+.cp-back {
+  display: inline-block;
+  margin-bottom: 10px;
+  text-decoration: none;
+}
+.cp-back:hover {
+  color: var(--text);
+}
+.cp-head {
+  padding: 20px 22px;
+}
+.cp-id {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.cp-title {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+.cp-title h1 {
+  margin: 0;
+  font-size: 22px;
+}
+.cp-price {
+  margin-top: 6px;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.cp-price b {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.cp-price .num:not(b) {
+  font-size: 15px;
+  font-weight: 700;
+}
+.cp-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.star-toggle.on {
+  color: var(--warn-fg);
+}
+.cp-ranges {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px 24px;
+}
+.rb {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-areas: "label label label" "low track high";
+  align-items: center;
+  gap: 4px 8px;
+}
+.rb-label {
+  grid-area: label;
+  font-size: 12px;
+  color: var(--text-4);
+}
+.rb-low {
+  grid-area: low;
+  font-size: 12px;
+  color: var(--fall-fg);
+}
+.rb-high {
+  grid-area: high;
+  font-size: 12px;
+  color: var(--rise-fg);
+}
+.rb-track {
+  grid-area: track;
+  position: relative;
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--fall), var(--rise));
+  opacity: 0.8;
+}
+.rb-track i {
+  position: absolute;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  margin-left: -5px;
+  border-radius: 50%;
+  background: var(--text);
+  border: 2px solid var(--panel-solid);
+  transform: translateY(-50%);
+}
+.cp-mini {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cp-mini b {
+  font-size: 16px;
+}
+.cp-grid {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+  gap: 16px;
+  align-items: start;
+}
+.cp-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.cp-card {
+  padding: 18px 20px;
+}
+.cp-h {
+  margin: 0 0 4px;
+  font-size: 17px;
+  font-weight: 700;
+}
+.cp-compare {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-3);
+  cursor: pointer;
+}
+.cp .rc {
+  margin-top: 12px;
+}
+.cp-summary {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--text-3);
+}
+.cp-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px 18px;
+}
+.cp-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.cp-stat b {
+  font-size: 15px;
+}
+.cp-metrics {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.cp-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+.cp-metric {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0 8px;
+  font-size: 13px;
+  color: var(--text-3);
+}
+.cp-metric b {
+  color: var(--text);
+  font-size: 15px;
+  text-align: right;
+}
+.cp-metric em {
+  grid-column: 1 / -1;
+  font-style: normal;
+  font-size: 11px;
+  color: var(--text-4);
+  text-align: right;
+}
+.cp-note {
+  margin: 12px 0 0;
+  font-size: 12px;
+}
+.cp-sentence {
+  margin: 6px 0 10px;
+  font-size: 14px;
+  color: var(--text-2, var(--text));
+}
+.cp-peers td,
+.cp-peers th {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+.cp-peers a {
+  color: var(--text);
+  text-decoration: none;
+}
+.cp-peers a:hover {
+  text-decoration: underline;
+}
+.cp-me td {
+  background: rgba(109, 140, 255, 0.1);
+}
+.cp-median td {
+  color: var(--primary-3);
+  font-size: 13px;
+  border-top: 1px dashed rgba(168, 186, 255, 0.35);
+  border-bottom: 1px dashed rgba(168, 186, 255, 0.35);
+}
+.cp-related-sum {
+  margin: 4px 0 8px;
+  font-size: 13px;
+  color: var(--text-3);
+}
+.cp-related-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.cp-rel {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 6px;
+  border-radius: 10px;
+  color: var(--text);
+  text-decoration: none;
+}
+.cp-rel:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+.cp-rel-name {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.cp-rel-name b {
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cp-rel-name .meta {
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cp-rel-chip {
+  display: inline-block;
+  padding: 0 6px;
+  border-radius: 6px;
+  background: rgba(198, 165, 255, 0.14);
+  color: var(--accent);
+  font-weight: 600;
+}
+.cp-rel-num {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: 12px;
+}
+.cp-rel-num b {
+  font-size: 13px;
+  white-space: nowrap;
+}
+.cp-news .invest-history {
+  margin-top: 6px;
+}
+@media (max-width: 1000px) {
+  .cp-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* 한 칸으로 쌓일 때 순서: 차트 → 관계 기업 동향 → 핵심 수치 → 투자 지표 → 업종 비교 → 뉴스 */
+  .cp-col {
+    display: contents;
+  }
+  .cp-grid {
+    display: flex;
+    flex-direction: column;
+  }
+  .cp-chart {
+    order: 1;
+  }
+  .cp-related {
+    order: 2;
+  }
+  .cp-stats {
+    order: 3;
+  }
+  .cp-main > section:nth-of-type(3) {
+    order: 4;
+  }
+  .cp-main > section:nth-of-type(4) {
+    order: 5;
+  }
+  .cp-news {
+    order: 6;
+  }
+}
+@media (max-width: 600px) {
+  .cp-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .cp-metrics {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .cp-price b {
+    font-size: 24px;
+  }
+  .cp-head,
+  .cp-card {
+    padding: 16px;
+  }
+  /* 범위 막대는 한 줄씩, 시가총액·거래대금은 나란히 */
+  .cp-ranges {
+    grid-template-columns: 1fr 1fr;
+  }
+  .cp-ranges .rb {
+    grid-column: 1 / -1;
+  }
+}
+/* '더 보기' 버튼 — 은하 화면(galaxy.css)과 같은 모양. 그 CSS 는 은하에 들어가야 불러와져서 여기서도 정한다 */
+.cp .more-btn {
+  margin-top: 12px;
+  width: 100%;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 10px;
+}
+.cp .more-btn:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.05);
 }

@@ -894,3 +894,120 @@
   color: var(--text);
   background: rgba(255, 255, 255, 0.05);
 }
+
+/* ── 주목 종목 (금색) ── */
+.watch-strip {
+  margin-top: 16px;
+  padding: 16px 18px;
+  border-radius: var(--r-card);
+  border: 1px solid rgba(245, 197, 66, 0.35);
+  background: linear-gradient(180deg, rgba(245, 197, 66, 0.07), rgba(245, 197, 66, 0.02));
+}
+.watch-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+.watch-star,
+.watch-title .num {
+  color: var(--gold-fg);
+}
+.watch-cards {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 10px;
+}
+.watch-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1.5px solid var(--gold);
+  background: var(--panel);
+  box-shadow: 0 0 0 1px rgba(245, 197, 66, 0.1), 0 6px 22px rgba(245, 197, 66, 0.08);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.watch-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 0 1px rgba(245, 197, 66, 0.3), 0 8px 26px rgba(245, 197, 66, 0.16);
+}
+.watch-name {
+  font-size: 14px;
+}
+.watch-price {
+  font-size: 13px;
+  font-weight: 700;
+}
+.watch-more {
+  justify-content: center;
+  align-items: center;
+  color: var(--gold-fg);
+  font-weight: 700;
+  border-style: dashed;
+}
+.watch-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.watch-chip {
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gold-fg);
+  background: var(--gold-soft);
+  border: 1px solid rgba(245, 197, 66, 0.35);
+  white-space: nowrap;
+}
+.watch-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 18px;
+  color: #1a1405;
+  background: var(--gold);
+  vertical-align: 2px;
+}
+/* 표의 주목 행 — 금색 왼쪽 띠와 옅은 금색 바탕 */
+.qt tr.qt-watch td {
+  background: rgba(245, 197, 66, 0.045);
+}
+.qt tr.qt-watch td:first-child {
+  box-shadow: inset 3px 0 0 var(--gold);
+}
+.qt tr.qt-watch:hover td {
+  background: rgba(245, 197, 66, 0.08);
+}
+/* 상세 머리 줄 — 금색 테두리 */
+.cp-head.cp-watch {
+  border: 1.5px solid var(--gold);
+  box-shadow: 0 0 0 1px rgba(245, 197, 66, 0.12), 0 10px 32px rgba(245, 197, 66, 0.1);
+}
+.cp-watch-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.cp-watch-row .watch-badge {
+  margin-left: 0;
+}
+@media (max-width: 600px) {
+  .watch-cards {
+    grid-auto-flow: column;
+    grid-auto-columns: 72%;
+    grid-template-columns: none;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+}

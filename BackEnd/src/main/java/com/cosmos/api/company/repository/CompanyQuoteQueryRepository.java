@@ -103,6 +103,56 @@ public class CompanyQuoteQueryRepository {
         return result;
     }
 
+    public record NewsCount(int recent, int before) {
+    }
+
+    public record YearRange(BigDecimal high, BigDecimal low) {
+    }
+
+    /**
+     * 기업 → 직접 나온(REPORTED) 기사 수: 마지막 뉴스 날(KST) 포함 최근 7일(recent)과 그 전 60일(before).
+     * 마지막 뉴스 날은 news_event 전체의 최신 dateline 이다
+     */
+    public Map<UUID, NewsCount> findNewsCounts() {
+        Map<UUID, NewsCount> result = new HashMap<>();
+        jdbcTemplate.query("""
+                WITH last AS (SELECT (max(dateline) AT TIME ZONE 'Asia/Seoul')::date AS d FROM news_event),
+                ev AS (
+                    SELECT i.company_id, (e.dateline AT TIME ZONE 'Asia/Seoul')::date AS d
+                    FROM event_company_impact i
+                    JOIN news_event e ON e.event_id = i.event_id
+                    WHERE i.basis = 'REPORTED'
+                      AND e.dateline >= (SELECT d FROM last)::timestamp AT TIME ZONE 'Asia/Seoul' - INTERVAL '67 days'
+                )
+                SELECT company_id,
+                       COUNT(*) FILTER (WHERE ev.d > last.d - 7) AS recent,
+                       COUNT(*) FILTER (WHERE ev.d <= last.d - 7 AND ev.d > last.d - 67) AS before
+                FROM ev, last
+                GROUP BY company_id
+                """, new MapSqlParameterSource(), (ResultSet rs) -> {
+            result.put(rs.getObject("company_id", UUID.class), new NewsCount(rs.getInt("recent"), rs.getInt("before")));
+        });
+        return result;
+    }
+
+    /** 기업 → 최근 days 거래일의 고가 최고·저가 최저 */
+    public Map<UUID, YearRange> findYearRanges(int days) {
+        Map<UUID, YearRange> result = new HashMap<>();
+        jdbcTemplate.query("""
+                SELECT company_id, MAX(high_price) AS hi, MIN(low_price) AS lo FROM (
+                    SELECT company_id, high_price, low_price,
+                           ROW_NUMBER() OVER (PARTITION BY company_id ORDER BY trading_at DESC) AS rn
+                    FROM stock_price_history
+                    WHERE interval_type = '1D'
+                ) recent
+                WHERE rn <= :days
+                GROUP BY company_id
+                """, new MapSqlParameterSource("days", days), (ResultSet rs) -> {
+            result.put(rs.getObject("company_id", UUID.class), new YearRange(rs.getBigDecimal("hi"), rs.getBigDecimal("lo")));
+        });
+        return result;
+    }
+
     /** 기업 → 공개 스냅샷의 window 관계에서 만나는 상대 기업 수 */
     public Map<UUID, Integer> findRelationCounts(String window) {
         Map<UUID, Integer> result = new HashMap<>();

@@ -9,6 +9,7 @@ import { companyPath } from "@/lib/routes";
 import MarketStrip from "./MarketStrip";
 import OwnershipView from "./OwnershipView";
 import QuoteTable, { type SortState } from "./QuoteTable";
+import WatchStrip from "./WatchStrip";
 import { PRESETS, SIZE_LABEL, applyPreset, fmtPct, sortQuotes, tone, type PresetKey } from "./quoteFormat";
 import "./companies.css";
 
@@ -95,6 +96,19 @@ export default function CompaniesPage() {
         <MarketStrip indices={indices.data.items} rows={all} asOf={asOf} />
       ) : (
         indices.isLoading && <Skeleton h={118} style={{ marginTop: 18, borderRadius: 18 }} />
+      )}
+
+      {all.length > 0 && (
+        <WatchStrip
+          rows={all}
+          onOpen={open}
+          onShowAll={() => {
+            setView("list");
+            setPreset("watch");
+            setSort(null);
+            requestAnimationFrame(() => document.querySelector(".dir-card")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+          }}
+        />
       )}
 
       {/* 관심 기업 — 로그인했을 때만 */}

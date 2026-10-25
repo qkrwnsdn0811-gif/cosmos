@@ -2219,7 +2219,8 @@ GET /api/events/company-history?companyId=928aa9d3-d527-4995-963f-ea928a8fc68b&s
       "per": 8.3592, "pbr": 2.1748, "dividendYield": 0.00774, "dividendPerShare": 1668.00,
       "netIncomeTtm": 150717225000000, "equity": 579309676000000,
       "fiscalBasis": "2025 사업보고서 + 2026 반기 − 2025 반기", "priceDate": "2026-10-25",
-      "relationCount": 16
+      "relationCount": 16,
+      "news7d": 33, "newsUsual7d": 3.03, "high52w": 67300.0, "low52w": 29500.0
     }
   ]
 }
@@ -2229,6 +2230,7 @@ GET /api/events/company-history?companyId=928aa9d3-d527-4995-963f-ea928a8fc68b&s
 - `spark` 는 최근 21개 종가(오래된 것부터, 모자라면 있는 만큼). 주가가 없으면 `close`·`prevClose`·`tradingDate`·`change*` 가 null, `spark` 는 빈 목록.
 - 지표 칸(`marketCap` ~ `priceDate`)은 `GET /api/companies/{companyId}/fundamental` 과 같은 값이고, 지표가 없으면 null.
 - `industry` 는 대표 업종 이름, `relationCount` 는 공개 은하 스냅샷 1년(1Y) 관계에서 만나는 상대 기업 수다.
+- `news7d` 는 마지막 뉴스 날(KST, `news_event` 최신 dateline) 포함 최근 7일 이 기업이 직접 나온(REPORTED) 기사 수, `newsUsual7d` 는 그 앞 60일의 7일 평균이다. `high52w`·`low52w` 는 최근 250거래일 고가 최고·저가 최저(주가 없으면 null). 화면의 '주목 종목'(뉴스 급증·하루 ±5%·52주 끝 5% 이내)은 이 값으로 프론트가 정한다.
 - 정렬은 시가총액 내림차순, 시가총액이 없으면 이름순으로 뒤에. `asOf` 는 종목들의 마지막 거래일.
 
 #### GET /api/companies/{companyId}/related — 관계 기업 시세

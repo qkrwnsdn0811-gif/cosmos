@@ -9,6 +9,8 @@ import java.util.UUID;
  * 기업 탭 시세판의 한 종목. 등락(change*)은 비율(0.0327 = 3.27%)이고 거래일 수로 센다: 1일 = 1거래일, 1개월 = 20거래일,
  * 3개월 = 60거래일 전 종가 대비. 거래일이 모자라면 null. spark 는 최근 21개 종가(오래된 것부터, 모자라면 있는 만큼).
  * 주가가 없으면 시세 칸이 null(spark 는 빈 목록), 지표가 없으면 지표 칸이 null. relationCount 는 공개 스냅샷 1년 관계의 상대 수.
+ * news7d 는 마지막 뉴스 날(KST) 기준 최근 7일 이 기업이 직접 나온 기사 수, newsUsual7d 는 그 전 60일의 7일 평균.
+ * high52w·low52w 는 최근 250거래일 고가 최고·저가 최저(주가 없으면 null). 시세판의 '주목 종목' 표시에 쓴다.
  */
 public record CompanyQuoteResponse(
         UUID companyId,
@@ -34,6 +36,10 @@ public record CompanyQuoteResponse(
         BigDecimal equity,
         String fiscalBasis,
         LocalDate priceDate,
-        int relationCount
+        int relationCount,
+        int news7d,
+        Double newsUsual7d,
+        BigDecimal high52w,
+        BigDecimal low52w
 ) {
 }

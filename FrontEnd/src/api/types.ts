@@ -673,6 +673,13 @@ export interface CompanyQuote {
   priceDate: string | null;
   /** 공개 은하 스냅샷 1년 관계의 상대 수 */
   relationCount: number;
+  /** 마지막 뉴스 날 기준 최근 7일 이 기업이 직접 나온 기사 수 */
+  news7d: number;
+  /** 그 전 60일의 7일 평균 기사 수 */
+  newsUsual7d: number | null;
+  /** 최근 250거래일 고가 최고·저가 최저 */
+  high52w: number | null;
+  low52w: number | null;
 }
 export interface CompanyQuotes {
   asOf: string | null;

@@ -39,6 +39,7 @@ class CompanyQuoteServiceIntegrationTest {
     private static final UUID Q4 = id(4);
     private static final UUID INDUSTRY = id(10);
     private static final UUID SNAPSHOT = id(20);
+    private static final UUID SOURCE = id(21);
 
     @Autowired
     private CompanyQuoteService quoteService;
@@ -157,6 +158,34 @@ class CompanyQuoteServiceIntegrationTest {
     }
 
     @Test
+    void quotes_news_counts_for_watch() {
+        // 마지막 뉴스 2099-03-15 기준: Q1 은 최근 7일 6건, 그 전 60일 3건 → 평소 7일 3/60×7. Q2 는 최근 1건
+        for (int i = 0; i < 6; i++) {
+            insertReported(id(100 + i), Q1, "2099-03-%02dT03:00:00Z".formatted(10 + i));
+        }
+        for (int i = 0; i < 3; i++) {
+            insertReported(id(110 + i), Q1, "2099-02-%02dT03:00:00Z".formatted(1 + i));
+        }
+        insertReported(id(120), Q2, "2099-03-15T03:00:00Z");
+
+        Map<UUID, CompanyQuoteResponse> quotes = byId();
+        assertThat(quotes.get(Q1).news7d()).isEqualTo(6);
+        assertThat(quotes.get(Q1).newsUsual7d()).isCloseTo(3.0 / 60 * 7, within(1e-9));
+        assertThat(quotes.get(Q2).news7d()).isEqualTo(1);
+        assertThat(quotes.get(Q2).newsUsual7d()).isZero();
+        assertThat(quotes.get(Q3).news7d()).isZero();
+    }
+
+    @Test
+    void quotes_52_week_range() {
+        CompanyQuoteResponse q1 = byId().get(Q1);
+
+        assertThat(q1.high52w()).isEqualByComparingTo("160");
+        assertThat(q1.low52w()).isEqualByComparingTo("100");
+        assertThat(byId().get(Q3).high52w()).isNull();
+    }
+
+    @Test
     void related_directions() {
         Map<UUID, RelatedCompanyResponse> related = relatedOf(Q1);
 
@@ -206,6 +235,24 @@ class CompanyQuoteServiceIntegrationTest {
     private Map<UUID, RelatedCompanyResponse> relatedOf(UUID companyId) {
         return quoteService.findRelated(companyId).items().stream()
                 .collect(Collectors.toMap(r -> r.quote().companyId(), Function.identity()));
+    }
+
+    private void insertReported(UUID eventId, UUID companyId, String dateline) {
+        UUID documentId = UUID.fromString(eventId.toString().replace("7f000000", "7f0000d0"));
+        jdbcTemplate.update("INSERT INTO data_source (source_id, name, source_type) VALUES (?, 'quote-test-source', 'NEWS_API') "
+                + "ON CONFLICT DO NOTHING", SOURCE);
+        jdbcTemplate.update("""
+                INSERT INTO source_document (document_id, source_id, document_type, title, original_url, published_at, status)
+                VALUES (?, ?, 'NEWS', '시세테스트 뉴스', 'https://example.com/' || ?, CAST(? AS TIMESTAMPTZ), 'ANALYZED')
+                """, documentId, SOURCE, eventId.toString(), dateline);
+        jdbcTemplate.update("""
+                INSERT INTO news_event (event_id, document_id, bigkinds_news_id, value_chain, categories, dateline, pipeline_version)
+                VALUES (?, ?, ?, 'AUTO', ARRAY['경제'], CAST(? AS TIMESTAMPTZ), 'test')
+                """, eventId, documentId, "quote-" + eventId, dateline);
+        jdbcTemplate.update("""
+                INSERT INTO event_company_impact (event_id, company_id, basis, hop, path, propagation_score, status, model_version)
+                VALUES (?, ?, 'REPORTED', 0, CAST('[]' AS JSONB), 1, 'OK', 'test')
+                """, eventId, companyId);
     }
 
     private Map<UUID, CompanyQuoteResponse> byId() {

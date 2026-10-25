@@ -10,6 +10,7 @@ import { useUi } from "@/store/ui";
 import CompanyNewsHistory from "@/features/invest/CompanyNewsHistory";
 import { josa } from "@/features/invest/investCopy";
 import RangeBar from "./RangeBar";
+import { WatchChips } from "./WatchStrip";
 import ReturnChart from "./ReturnChart";
 import {
   SIZE_LABEL,
@@ -26,6 +27,7 @@ import {
   relationLabel,
   sliceDays,
   tone,
+  watchReasons,
 } from "./quoteFormat";
 import "../invest/invest.css";
 import "./companies.css";
@@ -113,7 +115,13 @@ export default function CompanyPage() {
       </Link>
 
       {/* 머리 줄 (토스) */}
-      <section className="card cp-head" aria-label={`${q.name} 시세`}>
+      <section className={`card cp-head ${watchReasons(q).length ? "cp-watch" : ""}`} aria-label={`${q.name} 시세`}>
+        {watchReasons(q).length > 0 && (
+          <div className="cp-watch-row">
+            <span className="watch-badge">주목</span>
+            <WatchChips q={q} />
+          </div>
+        )}
         <div className="cp-id">
           <CompanyAvatar name={q.name} companyId={q.companyId} stockCode={q.stockCode} market={q.market} industry={q.industry} size={48} />
           <div className="cp-title">

@@ -20,6 +20,7 @@ import {
   sliceDays,
   sortQuotes,
   tone,
+  watchReasons,
 } from "../src/features/companies/quoteFormat.ts";
 
 const quote = (over: Partial<CompanyQuote>): CompanyQuote => ({
@@ -27,6 +28,7 @@ const quote = (over: Partial<CompanyQuote>): CompanyQuote => ({
   close: 100, prevClose: 99, tradingDate: "2026-10-23", change1d: 0.01, change1m: 0.1, change3m: 0.2, spark: [90, 100],
   marketCap: 1e12, marketCapRank: 1, sizeClass: "LARGE", per: 10, pbr: 1, dividendYield: 0.01, dividendPerShare: 100,
   netIncomeTtm: 1e11, equity: 1e12, fiscalBasis: "기준", priceDate: "2026-10-23", relationCount: 1,
+  news7d: 0, newsUsual7d: 0, high52w: 200, low52w: 50,
   ...over,
 });
 
@@ -170,4 +172,29 @@ test("percent tick labels carry enough decimals for the step", () => {
   assert.equal(pctTickDigits(0.005), 1);
   assert.equal(pctTickDigits(0.002), 1);
   assert.equal(pctTickDigits(0.0005), 2);
+});
+
+test("watch reasons: news surge, big move, 52-week extremes", () => {
+  const labels = (over: Partial<CompanyQuote>) => watchReasons(quote(over)).map((r) => r.label);
+  assert.deepEqual(labels({ news7d: 33, newsUsual7d: 3.0, change1d: 0.01 }), ["뉴스 급증 11배"]);
+  assert.deepEqual(labels({ news7d: 7, newsUsual7d: 0.1, change1d: 0.01 }), ["뉴스 급증 7건"]);
+  assert.deepEqual(labels({ news7d: 4, newsUsual7d: 0, change1d: 0.01 }), []);
+  assert.deepEqual(labels({ news7d: 6, newsUsual7d: 3.5, change1d: 0.01 }), []);
+  assert.deepEqual(labels({ change1d: 0.052 }), ["하루 +5.2%"]);
+  assert.deepEqual(labels({ change1d: -0.063 }), ["하루 −6.3%"]);
+  assert.deepEqual(labels({ change1d: 0.049 }), []);
+  assert.deepEqual(labels({ close: 98, high52w: 100, low52w: 50, change1d: 0.01 }), ["52주 신고가 근처"]);
+  assert.deepEqual(labels({ close: 104, high52w: 200, low52w: 100, change1d: 0.01 }), ["52주 신저가 근처"]);
+  assert.deepEqual(labels({ close: null, high52w: 100, low52w: 50, change1d: null }), []);
+});
+
+test("watch preset keeps notable stocks, strongest first", () => {
+  const rows = [
+    quote({ companyId: "low", close: 104, high52w: 200, low52w: 100, change1d: 0.01 }),
+    quote({ companyId: "move", change1d: -0.063 }),
+    quote({ companyId: "news", news7d: 33, newsUsual7d: 3.0, change1d: 0.01 }),
+    quote({ companyId: "plain", change1d: 0.01 }),
+  ];
+  const picked = applyPreset(rows, "watch");
+  assert.deepEqual(picked.rows.map((r) => r.companyId), ["news", "move", "low"]);
 });

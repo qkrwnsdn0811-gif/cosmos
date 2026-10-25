@@ -1,7 +1,7 @@
 import type { CompanyQuote } from "@/api/types";
 import { CompanyAvatar, Icon } from "@/components/ui";
 import Sparkline from "@/components/Sparkline";
-import { SIZE_LABEL, fmtCap, fmtPct, fmtPrice, fmtRatio, fmtSigned, perText, tone, type SortDir, type SortKey } from "./quoteFormat";
+import { SIZE_LABEL, fmtCap, fmtPct, fmtPrice, fmtRatio, fmtSigned, perText, tone, watchReasons, type SortDir, type SortKey } from "./quoteFormat";
 
 export interface SortState {
   key: SortKey;
@@ -65,8 +65,9 @@ export default function QuoteTable({
             const on = watched(q.companyId);
             const amount = q.close != null && q.prevClose != null ? q.close - q.prevClose : null;
             const t = tone(q.change1d);
+            const reasons = watchReasons(q);
             return (
-              <tr key={q.companyId} className="row-btn" tabIndex={0} onClick={() => onOpen(q.companyId)} onKeyDown={(e) => e.key === "Enter" && onOpen(q.companyId)}>
+              <tr key={q.companyId} className={`row-btn ${reasons.length ? "qt-watch" : ""}`} tabIndex={0} onClick={() => onOpen(q.companyId)} onKeyDown={(e) => e.key === "Enter" && onOpen(q.companyId)}>
                 <td className="right hide-sm num qt-rank">{i + 1}</td>
                 <td className="hide-sm qt-star">
                   <button
@@ -87,7 +88,14 @@ export default function QuoteTable({
                   <div className="co">
                     <CompanyAvatar name={q.name} companyId={q.companyId} stockCode={q.stockCode} market={q.market} industry={q.industry} size={32} />
                     <div>
-                      <b>{q.name}</b>
+                      <b>
+                        {q.name}
+                        {reasons.length > 0 && (
+                          <span className="watch-badge" title={reasons.map((r) => r.label).join(" · ")}>
+                            주목
+                          </span>
+                        )}
+                      </b>
                       <span className="meta num">{[q.stockCode, q.industry].filter(Boolean).join(" · ")}</span>
                     </div>
                   </div>

@@ -78,7 +78,45 @@ export function relationLabel(type: RelationshipType, direction: RelationDirecti
   return "관계";
 }
 
-export type SortKey = "cap" | "change1d" | "change1m" | "per" | "pbr" | "dividend" | "relations" | "name";
+export type WatchKind = "news" | "move" | "high" | "low";
+export interface WatchReason {
+  kind: WatchKind;
+  label: string;
+}
+
+/** 주목 기준 — 뉴스 급증(최근 7일 5건 이상·평소의 2배 이상), 큰 움직임(하루 ±5%), 52주 최고·최저가 5% 이내 */
+const WATCH = { newsMin: 5, newsRatio: 2, move: 0.05, near: 0.05 };
+
+/** 주목할 이유(관측값만). 없으면 빈 목록 */
+export function watchReasons(q: CompanyQuote): WatchReason[] {
+  const out: WatchReason[] = [];
+  const usual = q.newsUsual7d ?? 0;
+  if (q.news7d >= WATCH.newsMin && q.news7d >= WATCH.newsRatio * usual) {
+    // 평소 기사가 거의 없으면(0.5건 미만) 배수가 뜻이 없어 건수로 말한다
+    const ratio = q.news7d / usual;
+    out.push({ kind: "news", label: usual < 0.5 ? `뉴스 급증 ${q.news7d}건` : `뉴스 급증 ${ratio >= 10 ? Math.round(ratio) : ratio.toFixed(1)}배` });
+  }
+  if (q.change1d != null && Math.abs(q.change1d) >= WATCH.move) out.push({ kind: "move", label: `하루 ${fmtPct(q.change1d, 1)}` });
+  if (q.close != null && q.high52w != null && q.close >= q.high52w * (1 - WATCH.near)) out.push({ kind: "high", label: "52주 신고가 근처" });
+  else if (q.close != null && q.low52w != null && q.close <= q.low52w * (1 + WATCH.near)) out.push({ kind: "low", label: "52주 신저가 근처" });
+  return out;
+}
+
+/** 주목 정도 — 뉴스 배수(최대 20) + 하루 등락(%p) + 52주 끝(1). 주목 종목 줄과 '주목 종목' 칩의 순서 */
+export function watchScore(q: CompanyQuote): number | null {
+  const reasons = watchReasons(q);
+  if (!reasons.length) return null;
+  const usual = q.newsUsual7d ?? 0;
+  let score = 0;
+  for (const r of reasons) {
+    if (r.kind === "news") score += Math.min(20, usual < 0.5 ? q.news7d / 2 : q.news7d / usual);
+    else if (r.kind === "move") score += Math.abs(q.change1d ?? 0) * 100;
+    else score += 1;
+  }
+  return score;
+}
+
+export type SortKey = "cap" | "change1d" | "change1m" | "per" | "pbr" | "dividend" | "relations" | "name" | "watch";
 export type SortDir = "asc" | "desc";
 
 const SORT_VALUE: Record<Exclude<SortKey, "name">, (q: CompanyQuote) => number | null> = {
@@ -89,6 +127,7 @@ const SORT_VALUE: Record<Exclude<SortKey, "name">, (q: CompanyQuote) => number |
   pbr: (q) => q.pbr,
   dividend: (q) => q.dividendYield,
   relations: (q) => q.relationCount,
+  watch: watchScore,
 };
 
 /** 값이 없는 행은 방향과 상관없이 맨 뒤 */
@@ -106,11 +145,12 @@ export function sortQuotes(rows: CompanyQuote[], key: SortKey, dir: SortDir): Co
   });
 }
 
-export type PresetKey = "all" | "cap" | "up1m" | "down1m" | "lowPer" | "dividend" | "related";
+export type PresetKey = "all" | "watch" | "cap" | "up1m" | "down1m" | "lowPer" | "dividend" | "related";
 
 /** 골라보기 칩 (토스증권 '주식 골라보기'의 묶음을 칩 한 줄로) */
 export const PRESETS: { key: PresetKey; label: string }[] = [
   { key: "all", label: "전체" },
+  { key: "watch", label: "주목 종목" },
   { key: "cap", label: "시가총액 상위" },
   { key: "up1m", label: "1개월 상승" },
   { key: "down1m", label: "1개월 하락" },
@@ -121,6 +161,7 @@ export const PRESETS: { key: PresetKey; label: string }[] = [
 
 const PRESET_RULE: Record<PresetKey, { keep: (q: CompanyQuote) => boolean; sort: SortKey; dir: SortDir }> = {
   all: { keep: () => true, sort: "cap", dir: "desc" },
+  watch: { keep: (q) => watchReasons(q).length > 0, sort: "watch", dir: "desc" },
   cap: { keep: (q) => q.marketCap != null, sort: "cap", dir: "desc" },
   up1m: { keep: (q) => q.change1m != null && q.change1m > 0, sort: "change1m", dir: "desc" },
   down1m: { keep: (q) => q.change1m != null && q.change1m < 0, sort: "change1m", dir: "asc" },

@@ -3,14 +3,14 @@
 `https://34-158-212-210.sslip.io` 를 지금 로컬 개발판과 같게 만드는 순서다. 서버에 접속할 수 있는 사람이 한 번에 따라 하면 된다.
 
 > 2026-10-26부터 시연 서버는 새 GCP VM(`34-158-212-210.sslip.io`)이다. 예전 `34-64-222-128.sslip.io` VM은 지워졌다.
-> 코드 배포(아래 ②·④)는 이제 `NEXUS` push 때 GitHub Actions가 한다. 사람이 할 일은 DB 교체(①·③)뿐이다.
+> 코드 배포(아래 ②·④)는 이제 `main` push 때 GitHub Actions가 한다(10-26에 `NEXUS`를 `main`에 합치고 원격 `NEXUS`는 지웠다). 사람이 할 일은 DB 교체(①·③)뿐이다.
 > 서버 접속·덤프 복원 명령은 [deploy/gcp/README.md](../../deploy/gcp/README.md)에 있다.
 
 ## 1. 지금 차이
 
 | 항목 | 배포 서버 (10-25 확인) | 최신 |
 |---|---|---|
-| 코드 | 10-19 무렵. 첫 화면이 관계 은하, `/api/events` 응답에 `newsType`·`signals`·`expectedMoves` 없음 | 원격 `NEXUS` 최신 |
+| 코드 | 10-19 무렵. 첫 화면이 관계 은하, `/api/events` 응답에 `newsType`·`signals`·`expectedMoves` 없음 | 원격 `main` 최신 |
 | DB 스키마 | V11로 추정 (V12 투자자 화면 테이블이 응답에 없음) | V16 |
 | 뉴스 데이터 | 2026-10-13까지 | 2026-10-26 새벽까지, 반도체 뉴스 115,183건 (주가는 10-23 종가) |
 | 관계 은하 스냅샷 | '2026. 10. 15. 00:00 기준' | '2026. 10. 27. 00:00 기준' (10-26 새벽 분석으로 다시 게시, 기준은 마지막 기사 다음 날 0시) |
@@ -20,7 +20,7 @@
 
 ## 2. 준비물
 
-- 코드: 원격 `NEXUS` 브랜치 최신
+- 코드: 원격 `main` 브랜치 최신
 - DB 덤프: `cosmos-nexus-2026-10-26.dump` (123MB, PostgreSQL 17 custom 형식, 로컬 DB 전체). 그 전에 받은 `…-10-25.dump` 대신 이것을 쓴다
   - 개발 PC의 `C:\Codingdingding\nexus-db\` 에 있다. 저장소에는 넣지 않는다. 서버로 직접 옮긴다(scp 등).
   - 계정·커뮤니티 글·스크랩은 0건이라 개인정보는 없다. API 키는 DB가 아니라 `.env`에 있어 덤프에 없다.
@@ -44,7 +44,7 @@ docker exec "$PG" pg_dump -U cosmos -d cosmos -Fc > ~/cosmos-before-nexus-update
 **② 코드 받고 이미지 빌드** — 배포에 쓰는 저장소에서.
 
 ```bash
-git fetch origin && git checkout NEXUS && git pull --ff-only origin NEXUS
+git fetch origin && git checkout main && git pull --ff-only origin main
 TAG=nexus-$(git rev-parse --short HEAD)
 bash deploy/scripts/build-images.sh "$TAG"
 ```

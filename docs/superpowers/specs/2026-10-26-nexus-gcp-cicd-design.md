@@ -1,5 +1,8 @@
 # NEXUS GCP CI/CD — 설계 (2026-10-26)
 
+> **갱신 (2026-10-26 06:06 KST 뒤):** `NEXUS`를 `main`에 합치고 원격 `NEXUS`를 지워서 배포 기준 브랜치를 `main`으로 바꿨다(사용자 선택).
+> 아래 본문의 `NEXUS` 브랜치는 `main`으로 읽는다 — 워크플로 트리거, WIF 조건 `refs/heads/main`, VM 스크립트의 `git fetch origin main`.
+
 `NEXUS` 브랜치에 push하면 GitHub Actions가 테스트하고, 이미지를 Artifact Registry에 올린 뒤, GCP 서울 VM의 시연 서버에
 배포한다. 11-03 발표 전까지 커밋이 서버에 자동으로 반영되게 하는 것이 목표다.
 

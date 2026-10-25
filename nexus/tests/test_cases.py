@@ -21,6 +21,15 @@ KST = timezone(timedelta(hours=9))
     ("평택 공장 화재로 생산 차질", "ACCIDENT"),
     ("코스피, 외국인 순매수에 상승 마감", "MARKET_WRAP"),
     ("삼성전자 대졸 공채 시작", OTHER),
+    # '역대 최대'·'폭발'만으로는 실적·사고가 아니다 (2026-10-25: 실적 호조의 12%, 사고의 13%가 이런 오분류였다)
+    ("FIX 2026 관람객 11만7천명…역대 최대 흥행", OTHER),
+    ("삼성전자 ‘SSAFY’ 역대 최대 교육생 모집", OTHER),
+    ("한미반도체, 2분기 매출 2511억 '역대 최대'…영업이익률 51.9%", "EARNINGS_BEAT"),
+    ("삼성전자, 1분기 영업이익 사상 최대", "EARNINGS_BEAT"),
+    ("최태원 美 방송 등판에 투심 폭발…월가 \"가장 확실한 AI 대형주\"", OTHER),
+    ("AI 열풍에 낸드 수요도 폭발", OTHER),
+    ("평택 공장 폭발 사고로 생산 중단", "ACCIDENT"),
+    ("\"AI 투자 거품 붕괴 경고…글로벌 경제 충격\"", "AI_DEMAND"),
 ])
 def test_classify_title(title, code):
     assert classify_text(title, "").code == code

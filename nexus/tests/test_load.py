@@ -7,7 +7,7 @@ import pytest
 
 from nexus.ingest.normalize import to_article
 from nexus.load.postgres import (IMPACT_MODEL_VERSION, document_id, ensure_companies, event_id, load_events,
-                                 load_prices, load_relations, write_predictions)
+                                 load_prices, load_relations, write_predictions, write_sentiment_labels)
 from nexus.models import (AbnormalReturn, Company, CompanyMention, Edge, EventBundle, EvidenceSnippet, Impact,
                           PathStep)
 
@@ -54,11 +54,21 @@ def test_load_events_writes_article_sentiment(pg, synthetic_docs):
     ids = ensure_companies(pg, [A, B, C])
     doc = document_id("SYN.20261013100000001")
     load_events(pg, [bundle(synthetic_docs)], ids, sentiment={"SYN.20261013100000001": "NEGATIVE"})
-    rows = pg.execute("SELECT sentiment FROM company_document WHERE document_id = %s", (doc,)).fetchall()
-    assert rows == [("NEGATIVE",), ("NEGATIVE",)]
+    rows = pg.execute("SELECT sentiment, impact_score FROM company_document WHERE document_id = %s", (doc,)).fetchall()
+    assert rows == [("NEGATIVE", Decimal("-1")), ("NEGATIVE", Decimal("-1"))]   # COSMOS rule: impact = tone sign
     load_events(pg, [bundle(synthetic_docs)], ids)                      # not scored yet: shown as before (NULL)
-    rows = pg.execute("SELECT sentiment FROM company_document WHERE document_id = %s", (doc,)).fetchall()
-    assert rows == [(None,), (None,)]
+    rows = pg.execute("SELECT sentiment, impact_score FROM company_document WHERE document_id = %s", (doc,)).fetchall()
+    assert rows == [(None, None), (None, None)]
+
+
+def test_write_sentiment_labels_updates_loaded_documents_only(pg, synthetic_docs):
+    ids = ensure_companies(pg, [A, B, C])
+    load_events(pg, [bundle(synthetic_docs)], ids)
+    doc = document_id("SYN.20261013100000001")
+    assert write_sentiment_labels(pg, {"SYN.20261013100000001": "POSITIVE", "SYN.NOT.LOADED": "NEGATIVE"}) == 2
+    rows = pg.execute("SELECT sentiment, impact_score FROM company_document WHERE document_id = %s", (doc,)).fetchall()
+    assert rows == [("POSITIVE", Decimal("1")), ("POSITIVE", Decimal("1"))]
+    assert count(pg, "SELECT count(*) FROM company_document WHERE document_id = %s", document_id("SYN.NOT.LOADED")) == 0
 
 
 def test_reload_is_idempotent(pg, synthetic_docs):

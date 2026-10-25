@@ -315,8 +315,7 @@ def cmd_load(args) -> int:
         edges, snippets = pickle.load(f)
     with (p["analyzed"] / "prices.pkl").open("rb") as f:
         bars = pickle.load(f)
-    from .impact.sentiment import read_sentiment, sentiment_labels
-    sentiment = sentiment_labels(read_sentiment(p["analyzed"] / "sentiment.parquet"))
+    sentiment = _feed_tone(p["analyzed"] / "sentiment.parquet", bundles)
     scored = sum(b.article.news_id in sentiment for b in bundles)
     print(f"article sentiment: {scored:,} of {len(bundles):,} events scored "
           "(unscored articles show as neutral; run `sentiment`, then `load` again)", flush=True)
@@ -344,16 +343,34 @@ def _load_bundles(chain: str) -> list[EventBundle]:
         return pickle.load(f)
 
 
+def _feed_tone(path: Path, bundles: list[EventBundle]) -> dict[str, str]:
+    """Relative tone labels among the articles the news feed shows (those that mention a company), so each day's feed
+    reads about a third positive, neutral and negative."""
+    from .impact.sentiment import read_sentiment, sentiment_labels
+    frame = read_sentiment(path)
+    shown = {b.article.news_id for b in bundles if b.mentions}
+    return sentiment_labels(frame[frame.index.isin(shown)])
+
+
 def cmd_sentiment(args) -> int:
+    """Score unscored articles with KR-FinBERT; with --database-url also rewrite the news feed's tone labels in place."""
     from .impact.sentiment import load_finbert, score_articles
     out = _paths(args.chain)["analyzed"] / "sentiment.parquet"
-    articles = [b.article for b in _load_bundles(args.chain)]
+    bundles = _load_bundles(args.chain)
+    articles = [b.article for b in bundles]
     print(f"articles: {len(articles):,} → {out}", flush=True)
     started = time.monotonic()
     frame = score_articles(articles, load_finbert(args.threads), out, batch_size=args.batch_size,
                            progress=lambda done, total: print(
                                f"  scored {done:,}/{total:,} ({time.monotonic() - started:,.0f}s)", flush=True))
     print(f"sentiment rows: {len(frame):,} ({time.monotonic() - started:,.0f}s)")
+    if args.database_url:
+        import psycopg
+        from .load.postgres import write_sentiment_labels
+        labels = _feed_tone(out, bundles)
+        with psycopg.connect(args.database_url) as conn:
+            print(f"news tone labels written: {write_sentiment_labels(conn, labels):,} "
+                  f"({Counter(labels.values()).most_common()})", flush=True)
     return 0
 
 
@@ -732,6 +749,7 @@ def main(argv: list[str] | None = None) -> int:
     sentiment.add_argument("--chain", choices=sorted(CHAINS), required=True)
     sentiment.add_argument("--threads", type=int, default=8)
     sentiment.add_argument("--batch-size", type=int, default=32)
+    sentiment.add_argument("--database-url", help="also rewrite company_document.sentiment of loaded articles")
     sub.add_parser("train-impact").add_argument("--chain", choices=sorted(CHAINS), required=True)
     predict = sub.add_parser("predict-impact")
     predict.add_argument("--chain", choices=sorted(CHAINS), required=True)

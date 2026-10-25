@@ -73,10 +73,24 @@ def test_partial_save_lets_a_rerun_resume(articles, tmp_path):
     assert list(read_sentiment(out).columns) == ["p_neg", "p_neu", "p_pos"]
 
 
-def test_sentiment_labels_take_the_most_likely_class():
-    frame = pd.DataFrame({"p_neg": [0.7, 0.1, 0.2], "p_neu": [0.2, 0.3, 0.5], "p_pos": [0.1, 0.6, 0.3]},
-                         index=pd.Index(["N1", "N2", "N3"], name="news_id"))
-    assert sentiment_labels(frame) == {"N1": "NEGATIVE", "N2": "POSITIVE", "N3": "NEUTRAL"}
+def test_sentiment_labels_split_articles_into_thirds_by_relative_tone():
+    # tone = p_pos − p_neg: N1 −0.6, N2 +0.5, N3 +0.1, N4 +0.2, N5 +0.6, N6 −0.1.
+    # the most likely class would give 1 negative · 3 neutral · 2 positive; relative tone gives a third each (2026-10-25)
+    frame = pd.DataFrame({"p_neg": [0.7, 0.1, 0.2, 0.1, 0.1, 0.3], "p_neu": [0.2, 0.3, 0.5, 0.6, 0.2, 0.5],
+                          "p_pos": [0.1, 0.6, 0.3, 0.3, 0.7, 0.2]},
+                         index=pd.Index(["N1", "N2", "N3", "N4", "N5", "N6"], name="news_id"))
+    assert sentiment_labels(frame) == {"N1": "NEGATIVE", "N6": "NEGATIVE", "N3": "NEUTRAL", "N4": "NEUTRAL",
+                                       "N2": "POSITIVE", "N5": "POSITIVE"}
+
+
+def test_sentiment_labels_are_relative_within_each_day():
+    # 10-23 is gloomier than 10-22, yet each day comes out a third each (the day is in the BigKinds id)
+    ids = ["01100101.20261022090000001", "01100101.20261022100000001", "01100101.20261022110000001",
+           "01100101.20261023090000001", "01100101.20261023100000001", "01100101.20261023110000001"]
+    frame = pd.DataFrame({"p_neg": [0.1, 0.0, 0.2, 0.9, 0.6, 0.8], "p_neu": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                          "p_pos": [0.9, 1.0, 0.8, 0.1, 0.4, 0.2]}, index=pd.Index(ids, name="news_id"))
+    labels = sentiment_labels(frame)
+    assert [labels[i] for i in ids] == ["NEUTRAL", "POSITIVE", "NEGATIVE", "NEGATIVE", "POSITIVE", "NEUTRAL"]
 
 
 def test_sentiment_labels_of_nothing():

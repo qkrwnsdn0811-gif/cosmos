@@ -114,6 +114,11 @@ export const IMPACT_META: Record<ImpactDirection, ToneMeta> = {
   NEUTRAL: { label: "중립", color: "#8B95A1", fg: "#AAB3C2", bg: "rgba(255,255,255,.06)" },
 };
 export const SENTIMENTS: Sentiment[] = ["POSITIVE", "NEGATIVE", "NEUTRAL"];
+/**
+ * 긍정·중립·부정은 상대 논조다 — KR-FinBERT 점수(긍정 확률 − 부정 확률)로 같은 날 기업이 언급된 반도체 기사를 셋으로 나눴다
+ * (nexus/nexus/impact/sentiment.py sentiment_labels, 2026-10-25). 배지에 마우스를 올리면 이 설명이 뜬다
+ */
+export const SENTIMENT_HINT = "상대 논조: 같은 날 반도체 기사 중 KR-FinBERT 논조 점수 상위 3분의 1은 긍정, 하위 3분의 1은 부정, 나머지는 중립";
 // 예전엔 감성 분석이 아직 없는 기사(sentiment: null)를 SENTIMENT_PENDING("분석 전")으로 따로 표시했으나,
 // 제품 결정으로 분석 전 상태도 그냥 중립으로 보여주기로 했다 (components/ui.tsx SentimentBadge 참고).
 

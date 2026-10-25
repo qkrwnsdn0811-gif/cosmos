@@ -7,6 +7,7 @@ interrupted run resumes where it stopped.
 from __future__ import annotations
 
 import os
+import re
 from pathlib import Path
 from typing import Callable, Iterable, Sequence
 
@@ -109,10 +110,25 @@ def read_sentiment(path: Path, revision: str = MODEL_REVISION) -> pd.DataFrame:
     return frame.set_index("news_id")[PROB_COLUMNS]
 
 
+def _day(news_id: str) -> str:
+    """BigKinds ids carry the publication time after the provider code ("01100101.20261013…") → "20261013"; else ""."""
+    m = re.search(r"\.(\d{8})", news_id)
+    return m.group(1) if m else ""
+
+
 def sentiment_labels(frame: pd.DataFrame) -> dict[str, str]:
-    """news_id → the article's most likely tone, in the labels the COSMOS news feed reads (company_document.sentiment).
+    """news_id → the article's relative tone, in the labels the COSMOS news feed reads (company_document.sentiment).
+
+    The tone is p_pos − p_neg, and each day's scored articles are split into thirds by it: the lowest third NEGATIVE,
+    the middle NEUTRAL, the highest POSITIVE. The most likely class alone left half the semiconductor news neutral and
+    only 13% negative (a bull-market corpus), so the feed read as all neutral; thirds over the whole period made a
+    gloomy October almost all negative, and thirds within the month still left weekend pages mostly neutral. Thirds
+    within the day keep the model's ordering and say "more negative than most articles that day", so any page of the
+    newest-first feed shows the three about equally (2026-10-25 user request — the screen calls it 상대 논조).
     It is the tone of the whole article, so every company in one article gets the same label."""
     if frame.empty:
         return {}
-    names = dict(zip(PROB_COLUMNS, ("NEGATIVE", "NEUTRAL", "POSITIVE")))
-    return frame[PROB_COLUMNS].idxmax(axis=1).map(names).to_dict()
+    tone = frame["p_pos"] - frame["p_neg"]
+    rank = tone.groupby(frame.index.map(_day)).rank(method="first", pct=True)
+    labels = rank.map(lambda r: "NEGATIVE" if r <= 1 / 3 else "NEUTRAL" if r <= 2 / 3 else "POSITIVE")
+    return labels.to_dict()

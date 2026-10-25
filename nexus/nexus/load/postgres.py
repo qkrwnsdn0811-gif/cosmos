@@ -32,6 +32,25 @@ def document_id(news_id: str) -> UUID:
     return uuid.uuid5(NAMESPACE, "bigkinds:document:" + news_id)
 
 
+# COSMOS 규칙(AI/graph/fill_company_document_scores.py): 영향도 = 기사 논조의 부호
+TONE_SIGN = {"POSITIVE": 1, "NEGATIVE": -1, "NEUTRAL": 0}
+
+
+def write_sentiment_labels(conn, labels: dict[str, str]) -> int:
+    """news_id → label 을 이미 적재된 기사의 company_document 에만 쓴다(영향도는 그 부호). `sentiment` 뒤에 `load` 를
+    다시 돌리지 않고 뉴스 화면의 긍정·중립·부정만 고칠 때 쓴다(라벨 규칙은 `load` 와 같은 impact.sentiment.sentiment_labels)."""
+    with conn.transaction(), conn.cursor() as cur:
+        cur.execute("DROP TABLE IF EXISTS pg_temp.sentiment_in")
+        cur.execute("CREATE TEMP TABLE sentiment_in (document_id UUID PRIMARY KEY, sentiment VARCHAR(30)) ON COMMIT DROP")
+        with cur.copy("COPY sentiment_in (document_id, sentiment) FROM STDIN") as copy:
+            for news_id, label in labels.items():
+                copy.write_row((document_id(news_id), label))
+        cur.execute("UPDATE company_document cd SET sentiment = s.sentiment, "
+                    "impact_score = CASE s.sentiment WHEN 'POSITIVE' THEN 1 WHEN 'NEGATIVE' THEN -1 ELSE 0 END "
+                    "FROM sentiment_in s WHERE cd.document_id = s.document_id AND cd.model_version LIKE %s", ("nexus%",))
+        return cur.rowcount
+
+
 def event_id(news_id: str) -> UUID:
     return uuid.uuid5(NAMESPACE, "bigkinds:event:" + news_id)
 
@@ -86,10 +105,10 @@ SQL_ARTICLE = (
     "VALUES (%s, %s, %s, %s, %s) ON CONFLICT (document_id) DO UPDATE SET publisher = EXCLUDED.publisher, "
     "author = EXCLUDED.author")
 SQL_COMPANY_DOCUMENT = (
-    "INSERT INTO company_document (document_id, company_id, mention_type, relevance_score, sentiment, "
-    "model_version, is_service_visible) VALUES (%s, %s, 'REPORTED', %s, %s, %s, TRUE) "
+    "INSERT INTO company_document (document_id, company_id, mention_type, relevance_score, sentiment, impact_score, "
+    "model_version, is_service_visible) VALUES (%s, %s, 'REPORTED', %s, %s, %s, %s, TRUE) "
     "ON CONFLICT (document_id, company_id) DO UPDATE SET mention_type = EXCLUDED.mention_type, "
-    "relevance_score = EXCLUDED.relevance_score, sentiment = EXCLUDED.sentiment, "
+    "relevance_score = EXCLUDED.relevance_score, sentiment = EXCLUDED.sentiment, impact_score = EXCLUDED.impact_score, "
     "model_version = EXCLUDED.model_version, "
     "is_service_visible = TRUE, analyzed_at = CURRENT_TIMESTAMP")
 SQL_EVENT = (
@@ -129,7 +148,8 @@ def load_events(conn, bundles: list[EventBundle], company_ids: dict[str, UUID],
             documents.append((doc, source, a.title, a.content, a.link, a.dateline, PIPELINE_VERSION))
             articles.append((doc, a.provider, canonical, hashlib.sha256(canonical.encode("utf-8")).hexdigest(),
                              a.byline or None))
-            company_docs += [(doc, company_ids[m.key], round(m.salience, 6), sentiment.get(a.news_id),
+            tone = sentiment.get(a.news_id)
+            company_docs += [(doc, company_ids[m.key], round(m.salience, 6), tone, TONE_SIGN.get(tone),
                               PIPELINE_VERSION)
                              for m in b.mentions if m.key in company_ids]
             events.append((evt, doc, a.news_id, b.value_chain, list(a.categories), list(a.incidents), a.dateline,

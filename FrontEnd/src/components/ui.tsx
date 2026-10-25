@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
 import type { ImpactDirection, Market, RelationshipType, Sentiment } from "@/api/types";
-import { IMPACT_META, RELATIONSHIP_ORDER, SENTIMENT_META, UNCLASSIFIED_INDUSTRY, industryColor, relationshipMeta } from "@/lib/meta";
+import { IMPACT_META, RELATIONSHIP_ORDER, SENTIMENT_HINT, SENTIMENT_META, UNCLASSIFIED_INDUSTRY, industryColor, relationshipMeta } from "@/lib/meta";
 import { initials } from "@/lib/format";
 import { logoUrl, useCompanyLogoRef } from "@/lib/logos";
 import { ROLE_META, roleColor, type RoleKey } from "@/lib/roles";
@@ -53,7 +53,7 @@ export function CompanyAvatar({
 export function SentimentBadge({ value, compact = false }: { value: Sentiment | null | undefined; compact?: boolean }) {
   const m = (value && SENTIMENT_META[value]) ?? SENTIMENT_META.NEUTRAL;
   return (
-    <span className="badge" style={{ background: m.bg, color: m.fg }}>
+    <span className="badge" style={{ background: m.bg, color: m.fg }} title={SENTIMENT_HINT}>
       <i className="dot" style={{ background: m.color }} />
       {compact ? "" : m.label}
     </span>

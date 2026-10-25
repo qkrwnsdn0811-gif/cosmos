@@ -96,7 +96,7 @@ git diff --name-status pre-hackathon-baseline nexus --
 | 주가 | `stock_price_history` 테이블과 주가 수집기(`Crawling/prices`, 코스피·나스닥 각 100종목) | 같은 테이블에 FinanceDataReader 일봉을 새 코드로 채운다(코스닥 포함). 코스피·코스닥 지수 테이블은 신규 |
 | 공시·재무 | OpenDART·SEC 공시 수집기(`Crawling/disclosures`) | OpenDART 재무제표 API(순이익·자본총계·배당)와 KRX 상장 목록으로 지표 계산 (`company_fundamental`, 새 코드) |
 | 로고 | 기업 로고 267개 | 토스증권 종목 아이콘 45개 추가 (공식 공개 API가 아니라 시연용, 화면에 출처 표기) |
-| 모델 | KR-FinBERT 감성(고정 버전), 감성 부호로 매긴 영향 점수, 규칙 관계 분류, 자체 NER | KPF-BERT 관계 판별기(신규 학습), KR-FinBERT 감성(같은 버전, 기사 단위 새 실행), 초과수익률로 학습한 영향 모델(신규, 미사용), 뉴스 유형 키워드 규칙(신규), 예상 변동폭 통계(신규) |
+| 모델 | KR-FinBERT 감성(고정 버전), 감성 부호로 매긴 영향 점수, 규칙 관계 분류, 자체 NER | KPF-BERT 관계 판별기(신규 학습), KR-FinBERT 감성(같은 버전, 기사 단위 새 실행, 뉴스 화면 라벨은 같은 날 기사 대비 상대 논조 3등분), 초과수익률로 학습한 영향 모델(신규, 미사용), 뉴스 유형 키워드 규칙(신규), 예상 변동폭 통계(신규) |
 
 ## 6. 이 표를 갱신할 때
 

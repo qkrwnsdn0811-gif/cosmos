@@ -9,7 +9,7 @@
 |---|---|
 | 기준점 | 태그 `pre-hackathon-baseline` → 커밋 `888321d` (2026-09-28 17:55, "COSMOS: 뉴스·공시 기반 기업 관계 그래프 서비스") |
 | 원래 COSMOS | `main` 브랜치. 원격 `main`도 `888321d`로 기준점과 같다 |
-| 본선 작업 | 로컬 `nexus` 브랜치 = 원격 `NEXUS` 브랜치, 기준점 뒤 커밋 117개 (2026-10-13 ~ 10-25, 이 줄을 고친 커밋 포함) |
+| 본선 작업 | 로컬 `nexus` 브랜치(원격 `NEXUS`), 기준점 뒤 커밋 132개 (2026-10-13 ~ 10-26, 이 줄을 고친 커밋 포함) |
 | 태그 위치 | `pre-hackathon-baseline` 태그는 원격에도 있다(2026-10-25 올림). 원격 `main`도 같은 `888321d`다 |
 
 확인 명령 (이 저장소에는 `nexus` 폴더도 있어서 끝에 `--`를 붙여야 브랜치로 읽는다):
@@ -30,7 +30,8 @@ git diff --name-status pre-hackathon-baseline nexus --
 
 - 파일 250개, +18,946줄 / −471줄. 새 파일 200개, 고친 기존 파일 50개, 지운 파일 0개.
 - 1주 차(10-13 ~ 10-19, 커밋 91개): 파일 147개 +13,378 / −86. 투자자 화면(10-20 ~ 10-25, 커밋 8개): 파일 130개 +5,666 / −483.
-- 그 뒤 커밋(모두 본선 신규): `1630019` 근거 문장을 뉴스 전 기사부터 보여 주기, `73e8ef4` 예상 변동폭(V13), `c7a2d84` '영향 종목'과 '이벤트 지도'를 첫 화면 하나로 합치기, `1804bcf` 첫 화면 값 연결 바로잡기, `2c5b840` 뉴스 유형 오분류 고치기, `ed7003f`·`d8e3c6a` 뉴스 화면 감성·근거 문장, `0177ce4` '왜 이 종목?', `f75bd14` 피드 순서.
+- 그 뒤 커밋(모두 본선 신규): `1630019` 근거 문장을 뉴스 전 기사부터 보여 주기, `73e8ef4` 예상 변동폭(V13), `c7a2d84` '영향 종목'과 '이벤트 지도'를 첫 화면 하나로 합치기, `1804bcf` 첫 화면 값 연결 바로잡기, `2c5b840` 뉴스 유형 오분류 고치기, `ed7003f`·`d8e3c6a` 뉴스 화면 감성·근거 문장, `0177ce4` '왜 이 종목?', `f75bd14` 피드 순서, `34ae365`·`f1f3389` '왜 이 종목?' 문장(공급 계약의 사는 쪽·파는 쪽, 실적의 주인), `80853ee`·`e5d88cc`·`37cbb14` 기업 탭 시세 API 3개, `dc5d823` 기업 탭 시세판, `cb12fdd` 기업 상세 페이지.
+- 10-26 기업 탭 작업에서 처음으로 COSMOS 파일을 지웠다: 미리보기 창 `FrontEnd/src/features/companies/CompanyPreviewDialog.tsx`(기업 상세 페이지로 대체)와 예비 시가총액 표 `FrontEnd/src/lib/marketCapFallback.ts`(서버의 실제 시가총액으로 대체). 기업 목록 화면 `CompaniesPage.tsx`는 같은 자리에서 시세판으로 다시 썼다. 위 숫자(지운 파일 0개)는 그 전 기준이다.
 - COSMOS의 Python 코드(`AI/`, `Crawling/`)와 배포 설정(`deploy/`, `Jenkinsfile`)은 한 줄도 바뀌지 않았다. 본선 코드는 COSMOS 모듈을 복사하지 않고 그 자리에서 불러 쓴다(`nexus/nexus/cosmos_reuse.py`).
 
 ## 2. 영역별 한눈에
@@ -39,7 +40,7 @@ git diff --name-status pre-hackathon-baseline nexus --
 |---|---|---|---|
 | 수집·분석 (Python) | `AI/ner`(기업 사전 매처, NER), `AI/graph`(규칙 관계 추출, 관계 점수), `AI/gpu_news`(FinBERT), `Crawling/`(뉴스·공시·주가 수집기) | `nexus/` 79개 파일 +7,314줄 (테스트 27개 포함): 빅카인즈 클라이언트·수집, 기업 인식, 근거 관계, KPF-BERT 관계 판별기, 추정 전이, 초과수익률, 영향 모델, 뉴스 유형·반응표·딱지·적중률, 기업 지표, 적재 | 없음 |
 | DB (Flyway) | V1 ~ V9: 기업·별칭·산업, 문서·뉴스·공시, 근거 문장, 관계·관계 점수, 그래프 스냅샷, 주가, 사용자·관심 기업·스크랩, 커뮤니티 | V10 `news_event`, `event_company_impact`, `event_abnormal_return`, `relation_evidence_snippet` / V12 `case_reaction_stat`, `event_company_signal`, `signal_backtest`, `market_index_price`, `company_fundamental` / V13 `company_expected_move`, `move_backtest` / V14·V15 `news_event.feed_at`·`main_company_id`(피드 순서) | V10: `company_relationship`에 관계 출처 열(`relation_source`) 추가 / V11: 출처에 함께 언급(`COMENTION`) 허용 |
-| 백엔드 (Spring Boot) | `company`, `graph`, `news`, `user`, `community`, `global` 도메인 | `api/event` 22개 파일 +1,396줄 (테스트 +980): 이벤트 목록·지도·주가 차트·적중률·종목별 뉴스 이력 API / 기업 지표 조회(DTO·저장소) | `CompanyController`·`CompanyService`(지표 조회 +18줄), `GraphService`(은하 기본 시장을 코스피·코스닥으로), `SecurityConfig`(`/api/events/**` 공개), `TimeIdCursorCodec`(범위 밖 커서 400) |
+| 백엔드 (Spring Boot) | `company`, `graph`, `news`, `user`, `community`, `global` 도메인 | `api/event` 22개 파일 +1,396줄 (테스트 +980): 이벤트 목록·지도·주가 차트·적중률·종목별 뉴스 이력 API / 기업 지표 조회(DTO·저장소) | `CompanyController`·`CompanyService`(지표 조회 +18줄, 10-26 시세판 `/companies/quotes`·`/companies/{id}/related` 연결), `GraphService`(은하 기본 시장을 코스피·코스닥으로), `SecurityConfig`(`/api/events/**`, 10-26 `/api/market/**` 공개), `TimeIdCursorCodec`(범위 밖 커서 400) |
 | 프런트 (React) | 3D 기업 관계 은하(`three/`, `features/galaxy`), 기업·뉴스·커뮤니티·프로필·관심 목록 화면, 로고 아틀라스·로고 원판 셰이더, 기업 로고 267개 | `features/invest` 8개 파일 +1,473줄(투자자 첫 화면), `features/event` 6개 파일 +856줄(뉴스별 관계 지도, 10-25 첫 화면에 합치며 3D 지도만 남김), `store/invest.ts`, `lib/routes.ts`, `three/fit.ts`·`isolated.ts` 등, 로고 45개, 테스트 9개 | `App.tsx`·`Header`(첫 화면을 투자 피드로, 은하는 `/galaxy`), `api/*`·`lib/queries.ts`(새 API 연결), `three/` 13개 파일 +428 / −383(행성을 원형 로고 원판으로), 은하 화면(함께 언급 간선, 산업 버튼 숫자, 근거 문구) |
 | 문서 | `README.md`, `docs/api-specification.md` 등 | `docs/nexus/`(실측·실행·검증 보고서), `docs/superpowers/specs`·`plans`(설계·계획) | `docs/api-specification.md`에 이벤트 API 절 +429줄 |
 
@@ -58,14 +59,15 @@ git diff --name-status pre-hackathon-baseline nexus --
 | F5 | 영향 종목 카드 | 변경 (기존 이벤트 근거 패널 확장) | 신규 화면 (뉴스별 관련 기업 목록은 기존) | 뉴스 화면(`NewsPage`)에서 고른 기사가 직접 언급한 기업 목록과 관련도·영향 점수(감성 부호 +1/−1/0)·감성, 관계도(`RelationMap2D`) | 새 이벤트 API 위에 만든 카드: 기사 기업과 공급망 추정 기업, 딱지, 과거 사례, 영향 경로, 지표, 차트. 10-16 이벤트 근거 패널(`EventEvidencePanel`)을 10-25 종목 카드(`StockCard`)로 확장 | `ca39b5b`, `281205e` |
 | F6 | 근거 문장·원문 링크 | 기존 재사용 | 일부 기존 | 은하의 관계 근거 패널(`RelationshipPanel`), 규칙 관계 분류기(`AI/graph/extract_relations.py`), 기업 사전 매처(`AI/ner/matcher.py`) | 빅카인즈 hilight 근거 조각(`relation_evidence_snippet`), KPF-BERT 관계 판별기, 카드·지도의 근거 표시 | `1cc9598`, `2a1c8d0`, `358ddae`, `ca39b5b` |
 | F7 | 뉴스 전후 주가 차트 | 신규 | 신규 | 주가 테이블 | 시장 지수 테이블(`market_index_price`), 차트 API, `PriceChart` | `179029d`, `281205e` |
-| F8 | 기업 지표 | 신규 | 신규 | 기업 화면(`CompanyPreviewDialog`), `company` 테이블, OpenDART 공시 수집기(`Crawling/disclosures/dart`, 재무 지표 계산은 없음) | KRX 상장 목록(시가총액·규모)과 OpenDART 재무제표(순이익·자본총계·배당)로 PER·PBR·배당수익률 계산(`nexus fundamentals`, 새 코드), `company_fundamental`, `/api/companies/{id}/fundamental` | `f462c68`, `179029d` |
+| F8 | 기업 지표 | 신규 | 신규 | 기업 화면(`CompanyPreviewDialog`), `company` 테이블, OpenDART 공시 수집기(`Crawling/disclosures/dart`, 재무 지표 계산은 없음) | KRX 상장 목록(시가총액·규모)과 OpenDART 재무제표(순이익·자본총계·배당)로 PER·PBR·배당수익률 계산(`nexus fundamentals`, 새 코드), `company_fundamental`, `/api/companies/{id}/fundamental`. 10-26부터 기업 상세 페이지의 투자 지표 묶음에 표시(미리보기 창은 지움) | `f462c68`, `179029d` |
 | F9 | 투자자 유형 토글 | 신규 | 신규 | 없음 | 단기·장기 상태(`store/invest.ts`)와 피드·딱지·지표 전환 | `281205e` |
 | F10 | 첫 화면 뉴스 피드 | 변경 | 변경 | 첫 화면 = 3D 은하 | `/` = 메뉴 '이벤트 지도': 뉴스 피드 + 고른 뉴스의 3D 관계 지도 + 영향 종목 카드. 은하는 `/galaxy`로 이동, 예전 `/events`는 첫 화면으로 넘김 | `281205e`, `c7a2d84` |
 | F11 | 적중률 공개 | 신규 | 신규 | 없음 | 2026-07 이후 뉴스 검증(`signal_backtest`), `/api/events/backtest`. 10-25부터 화면에는 예상 변동폭 검증만 띄우고(`MoveCheckBanner`), 방향 적중률은 보고서에 둔다 | `46d9d23`, `179029d`, `281205e`, `1804bcf` |
 | F12 | 투자 유의 문구 | 신규 | 신규 | 없음 | 모든 카드·화면 문구, 뉴스·주가·로고 출처 표기 | `281205e`, `fbfd2e6` |
-| F13 | 종목별 뉴스 이력 | 신규 | 신규 | 기업 화면 | `/api/events/company-history`, 기업 화면의 `CompanyInvestSection` | `179029d`, `281205e` |
+| F13 | 종목별 뉴스 이력 | 신규 | 신규 | 기업 화면 | `/api/events/company-history`, 기업 상세 페이지 '최근 뉴스'(`CompanyNewsHistory`, 10-25까지는 미리보기 창의 `CompanyInvestSection`) | `179029d`, `281205e` |
 | F14 | 관심 종목 알림 | 신규 (기존 관심 목록 재사용) | 신규 (관심 목록은 기존) | 관심 기업 API `/api/users/me/watch-companies`, `user_watch_company` 테이블, 관심 목록 화면 | 관심 기업이 최근 뉴스 영향권에 들면 피드 위에 알림(`WatchAlerts`) | `281205e` |
 | 추가 | 예상 변동폭 (명세서 밖, 10-25) | - | 신규 | 없음 | 종목이 뉴스 뒤 방향과 무관하게 얼마나 움직였는지(학습 기간 초과수익률 절댓값 평균, 3등분 등급)와 시험 기간 검증. 검증을 통과한 기간(단기)만 카드에 등급 표시, 첫 화면 '예상 변동폭 검증' 띠에 검증 결과 (`company_expected_move`, `move_backtest`) | `73e8ef4`, `c7a2d84`, `1804bcf` |
+| 추가 | 기업 탭 시세판·기업 상세 (명세서 밖, 10-26) | - | 변경 (기업 목록·주가 이력 API는 기존) | 기업 목록 화면(`CompaniesPage`: 관계 수·최고 관계 점수 표, 목록·투자·지분 보기), 미리보기 창(`CompanyPreviewDialog`), 예비 시가총액 표(`marketCapFallback`), 주가 이력 API(`/api/companies/{id}/stock-prices`), `stock_price_history` | 시세 API 3개(`/api/market/indices`, `/api/companies/quotes`, `/api/companies/{id}/related`, `api/market`·`CompanyQuoteService` 새 코드), 목록을 시세판으로 다시 씀(지수 띠·골라보기 칩·정렬되는 시세 표), 기업 상세 페이지 `/companies/:id`(지수 비교 차트·1일/52주 범위·투자 지표·같은 업종 비교·관계 기업 동향). 토스증권·Google Finance 화면 구성을 참고했다(설계 `docs/superpowers/specs/2026-10-26-companies-stock-view-design.md`). '투자·지분 관계' 보기(`OwnershipView`)는 그대로 | `80853ee`, `e5d88cc`, `37cbb14`, `d92f374`, `dc5d823`, `cb12fdd` |
 
 ## 4. 명세서 목록 밖의 본선 작업 (1주 차, 10-13 ~ 10-19)
 

@@ -30,7 +30,7 @@ git diff --name-status pre-hackathon-baseline nexus --
 
 - 파일 250개, +18,946줄 / −471줄. 새 파일 200개, 고친 기존 파일 50개, 지운 파일 0개.
 - 1주 차(10-13 ~ 10-19, 커밋 91개): 파일 147개 +13,378 / −86. 투자자 화면(10-20 ~ 10-25, 커밋 8개): 파일 130개 +5,666 / −483.
-- 그 뒤 커밋(모두 본선 신규): `1630019` 근거 문장을 뉴스 전 기사부터 보여 주기, `73e8ef4` 예상 변동폭(V13), `c7a2d84` '영향 종목'과 '이벤트 지도'를 첫 화면 하나로 합치기, `1804bcf` 첫 화면 값 연결 바로잡기, `2c5b840` 뉴스 유형 오분류 고치기.
+- 그 뒤 커밋(모두 본선 신규): `1630019` 근거 문장을 뉴스 전 기사부터 보여 주기, `73e8ef4` 예상 변동폭(V13), `c7a2d84` '영향 종목'과 '이벤트 지도'를 첫 화면 하나로 합치기, `1804bcf` 첫 화면 값 연결 바로잡기, `2c5b840` 뉴스 유형 오분류 고치기, `ed7003f`·`d8e3c6a` 뉴스 화면 감성·근거 문장, `0177ce4` '왜 이 종목?', `f75bd14` 피드 순서.
 - COSMOS의 Python 코드(`AI/`, `Crawling/`)와 배포 설정(`deploy/`, `Jenkinsfile`)은 한 줄도 바뀌지 않았다. 본선 코드는 COSMOS 모듈을 복사하지 않고 그 자리에서 불러 쓴다(`nexus/nexus/cosmos_reuse.py`).
 
 ## 2. 영역별 한눈에
@@ -38,7 +38,7 @@ git diff --name-status pre-hackathon-baseline nexus --
 | 영역 | 원래 COSMOS (기준점에 있음) | 본선에서 새로 만듦 | 본선에서 고친 기존 코드 |
 |---|---|---|---|
 | 수집·분석 (Python) | `AI/ner`(기업 사전 매처, NER), `AI/graph`(규칙 관계 추출, 관계 점수), `AI/gpu_news`(FinBERT), `Crawling/`(뉴스·공시·주가 수집기) | `nexus/` 79개 파일 +7,314줄 (테스트 27개 포함): 빅카인즈 클라이언트·수집, 기업 인식, 근거 관계, KPF-BERT 관계 판별기, 추정 전이, 초과수익률, 영향 모델, 뉴스 유형·반응표·딱지·적중률, 기업 지표, 적재 | 없음 |
-| DB (Flyway) | V1 ~ V9: 기업·별칭·산업, 문서·뉴스·공시, 근거 문장, 관계·관계 점수, 그래프 스냅샷, 주가, 사용자·관심 기업·스크랩, 커뮤니티 | V10 `news_event`, `event_company_impact`, `event_abnormal_return`, `relation_evidence_snippet` / V12 `case_reaction_stat`, `event_company_signal`, `signal_backtest`, `market_index_price`, `company_fundamental` / V13 `company_expected_move`, `move_backtest` | V10: `company_relationship`에 관계 출처 열(`relation_source`) 추가 / V11: 출처에 함께 언급(`COMENTION`) 허용 |
+| DB (Flyway) | V1 ~ V9: 기업·별칭·산업, 문서·뉴스·공시, 근거 문장, 관계·관계 점수, 그래프 스냅샷, 주가, 사용자·관심 기업·스크랩, 커뮤니티 | V10 `news_event`, `event_company_impact`, `event_abnormal_return`, `relation_evidence_snippet` / V12 `case_reaction_stat`, `event_company_signal`, `signal_backtest`, `market_index_price`, `company_fundamental` / V13 `company_expected_move`, `move_backtest` / V14·V15 `news_event.feed_at`·`main_company_id`(피드 순서) | V10: `company_relationship`에 관계 출처 열(`relation_source`) 추가 / V11: 출처에 함께 언급(`COMENTION`) 허용 |
 | 백엔드 (Spring Boot) | `company`, `graph`, `news`, `user`, `community`, `global` 도메인 | `api/event` 22개 파일 +1,396줄 (테스트 +980): 이벤트 목록·지도·주가 차트·적중률·종목별 뉴스 이력 API / 기업 지표 조회(DTO·저장소) | `CompanyController`·`CompanyService`(지표 조회 +18줄), `GraphService`(은하 기본 시장을 코스피·코스닥으로), `SecurityConfig`(`/api/events/**` 공개), `TimeIdCursorCodec`(범위 밖 커서 400) |
 | 프런트 (React) | 3D 기업 관계 은하(`three/`, `features/galaxy`), 기업·뉴스·커뮤니티·프로필·관심 목록 화면, 로고 아틀라스·로고 원판 셰이더, 기업 로고 267개 | `features/invest` 8개 파일 +1,473줄(투자자 첫 화면), `features/event` 6개 파일 +856줄(뉴스별 관계 지도, 10-25 첫 화면에 합치며 3D 지도만 남김), `store/invest.ts`, `lib/routes.ts`, `three/fit.ts`·`isolated.ts` 등, 로고 45개, 테스트 9개 | `App.tsx`·`Header`(첫 화면을 투자 피드로, 은하는 `/galaxy`), `api/*`·`lib/queries.ts`(새 API 연결), `three/` 13개 파일 +428 / −383(행성을 원형 로고 원판으로), 은하 화면(함께 언급 간선, 산업 버튼 숫자, 근거 문구) |
 | 문서 | `README.md`, `docs/api-specification.md` 등 | `docs/nexus/`(실측·실행·검증 보고서), `docs/superpowers/specs`·`plans`(설계·계획) | `docs/api-specification.md`에 이벤트 API 절 +429줄 |

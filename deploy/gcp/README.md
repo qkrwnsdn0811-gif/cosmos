@@ -75,15 +75,23 @@ sudo docker restart "$(sudo docker ps -q --filter label=com.docker.compose.proje
 덤프에 Flyway 기록(V16)이 들어 있어 백엔드는 마이그레이션을 다시 돌리지 않는다. 확인은
 [deploy-update.md](../../docs/nexus/deploy-update.md) 4절과 같다.
 
-## 가입 인증 메일 켜기
+## 가입 인증 메일
 
-`app.env`의 `MAIL_USERNAME`·`MAIL_PASSWORD`는 자리표시 값이라 가입 인증 코드 요청이 500으로 끝난다(가입 외 화면은 정상).
-Gmail 2단계 인증을 켜고 만든 앱 비밀번호(16자)를 직접 넣는다. 값은 채팅·저장소에 남기지 않는다.
+가입 인증 코드는 `app.env`의 `MAIL_USERNAME`(Gmail 주소)이 `MAIL_PASSWORD`(Gmail 앱 비밀번호)로 보낸다.
+2026-10-26부터 발송 계정은 `gusals000914@gmail.com`이다. 값이 비었거나 틀리면 코드 요청이 500으로 끝난다(가입 외 화면은 정상).
+
+계정이나 앱 비밀번호를 바꿀 때는 [set-mail.sh](set-mail.sh)(VM에는 `/usr/local/sbin/cosmos-set-mail`로 설치됨)를 쓴다.
+Gmail 주소와 앱 비밀번호를 묻고(비밀번호는 화면에 보이지 않음), `app.env`의 메일 두 줄만 바꾼 뒤 지금 릴리스를 `deploy.sh`로 다시 띄운다.
+
+1. 보낼 Gmail 계정에 2단계 인증을 켜고 https://myaccount.google.com/apppasswords 에서 앱 비밀번호(영문 16자)를 만든다.
+2. 이 Mac에서 실행해 묻는 값을 넣는다. 앱 비밀번호 화면에서 복사한 띄어쓰기(특수 공백 포함)는 그대로 붙여넣어도 된다.
 
 ```bash
-sudoedit /etc/cosmos/app.env    # MAIL_USERNAME=<Gmail 주소>, MAIL_PASSWORD=<앱 비밀번호>
-sudo -u cosmos-ci bash -c 'cd /opt/cosmos/checkouts/cosmos && bash deploy/scripts/deploy.sh "$(cat /opt/cosmos/releases/current)"'
+gcloud compute ssh nexus-vm --zone asia-northeast3-a --project cosmos-nexus-1026 --tunnel-through-iap -- -t sudo /usr/local/sbin/cosmos-set-mail
 ```
+
+앱 비밀번호는 채팅·저장소·이슈에 남기지 않는다. 새 VM이라 스크립트가 없으면 체크아웃에서 설치한다:
+`sudo install -m 0755 /opt/cosmos/checkouts/cosmos/deploy/gcp/set-mail.sh /usr/local/sbin/cosmos-set-mail`
 
 ## 되돌리기
 

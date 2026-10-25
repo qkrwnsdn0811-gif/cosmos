@@ -1,10 +1,15 @@
 package com.cosmos.api.company.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.within;
 
 import com.cosmos.api.company.dto.CompanyQuoteListResponse;
 import com.cosmos.api.company.dto.CompanyQuoteResponse;
+import com.cosmos.api.company.dto.RelatedCompanyListResponse;
+import com.cosmos.api.company.dto.RelatedCompanyResponse;
+import com.cosmos.api.company.error.CompanyErrorCode;
+import com.cosmos.api.global.error.BusinessException;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -149,6 +154,58 @@ class CompanyQuoteServiceIntegrationTest {
                 .filter(List.of(Q1, Q2, Q3, Q4)::contains).toList();
         assertThat(mine).containsExactly(Q1, Q4, Q3, Q2);
         assertThat(result.asOf()).isAfterOrEqualTo(days.get(60));
+    }
+
+    @Test
+    void related_directions() {
+        Map<UUID, RelatedCompanyResponse> related = relatedOf(Q1);
+
+        assertThat(related.get(Q4).relationType()).isEqualTo("SUPPLY");
+        assertThat(related.get(Q4).direction()).isEqualTo("IN");
+        assertThat(related.get(Q2).relationType()).isEqualTo("SUPPLY");
+        assertThat(related.get(Q2).direction()).isEqualTo("OUT");
+        assertThat(related.get(Q2).quote().close()).isEqualByComparingTo("214");
+    }
+
+    @Test
+    void related_merges_same_counterpart() {
+        RelatedCompanyListResponse result = quoteService.findRelated(Q1);
+
+        assertThat(result.items()).filteredOn(r -> r.quote().companyId().equals(Q4)).hasSize(1);
+        RelatedCompanyResponse q4 = relatedOf(Q1).get(Q4);
+        assertThat(q4.score()).isCloseTo(90.0, within(1e-9));
+        assertThat(q4.otherTypes()).containsExactly("CO_MENTIONED");
+    }
+
+    @Test
+    void related_sorted_and_1y_only() {
+        RelatedCompanyListResponse result = quoteService.findRelated(Q1);
+
+        assertThat(result.companyId()).isEqualTo(Q1);
+        assertThat(result.window()).isEqualTo("1Y");
+        assertThat(result.items()).extracting(r -> r.quote().companyId()).containsExactly(Q4, Q2);
+    }
+
+    @Test
+    void related_undirected_is_none() {
+        insertRelation(id(35), Q2, Q3, "CO_MENTIONED", "1Y", "10");
+
+        RelatedCompanyResponse q3 = relatedOf(Q2).get(Q3);
+        assertThat(q3.relationType()).isEqualTo("CO_MENTIONED");
+        assertThat(q3.direction()).isEqualTo("NONE");
+        assertThat(q3.otherTypes()).isEmpty();
+    }
+
+    @Test
+    void related_unknown_company_404() {
+        assertThatThrownBy(() -> quoteService.findRelated(id(99)))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode()).isEqualTo(CompanyErrorCode.COMPANY_NOT_FOUND));
+    }
+
+    private Map<UUID, RelatedCompanyResponse> relatedOf(UUID companyId) {
+        return quoteService.findRelated(companyId).items().stream()
+                .collect(Collectors.toMap(r -> r.quote().companyId(), Function.identity()));
     }
 
     private Map<UUID, CompanyQuoteResponse> byId() {

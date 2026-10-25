@@ -2,9 +2,14 @@ package com.cosmos.api.company.service;
 
 import com.cosmos.api.company.dto.CompanyQuoteListResponse;
 import com.cosmos.api.company.dto.CompanyQuoteResponse;
+import com.cosmos.api.company.dto.RelatedCompanyListResponse;
+import com.cosmos.api.company.dto.RelatedCompanyResponse;
+import com.cosmos.api.company.error.CompanyErrorCode;
 import com.cosmos.api.company.repository.CompanyQuoteQueryRepository;
 import com.cosmos.api.company.repository.CompanyQuoteQueryRepository.CompanyRow;
 import com.cosmos.api.company.repository.CompanyQuoteQueryRepository.DailyClose;
+import com.cosmos.api.company.repository.CompanyQuoteQueryRepository.RelationRow;
+import com.cosmos.api.global.error.BusinessException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -53,6 +58,40 @@ public class CompanyQuoteService {
                     relations.getOrDefault(row.companyId(), 0)));
         }
         return result;
+    }
+
+    /** 관계 기업 시세. 상대별로 점수가 가장 높은 관계가 대표(관계 행은 점수 내림차순으로 온다) */
+    public RelatedCompanyListResponse findRelated(UUID companyId) {
+        Map<UUID, CompanyQuoteResponse> quotes = quotesById();
+        if (!quotes.containsKey(companyId)) {
+            throw new BusinessException(CompanyErrorCode.COMPANY_NOT_FOUND);
+        }
+        Map<UUID, RelationRow> best = new LinkedHashMap<>();
+        Map<UUID, List<String>> others = new LinkedHashMap<>();
+        for (RelationRow row : quoteRepository.findRelations(companyId, RELATION_WINDOW)) {
+            if (!quotes.containsKey(row.otherId())) {
+                continue;
+            }
+            RelationRow top = best.putIfAbsent(row.otherId(), row);
+            if (top != null && !top.relationType().equals(row.relationType())) {
+                List<String> rest = others.computeIfAbsent(row.otherId(), k -> new ArrayList<>());
+                if (!rest.contains(row.relationType())) {
+                    rest.add(row.relationType());
+                }
+            }
+        }
+        List<RelatedCompanyResponse> items = best.values().stream()
+                .map(r -> new RelatedCompanyResponse(r.relationType(), direction(r), r.score(),
+                        others.getOrDefault(r.otherId(), List.of()), quotes.get(r.otherId())))
+                .toList();
+        return new RelatedCompanyListResponse(companyId, RELATION_WINDOW, items);
+    }
+
+    private static String direction(RelationRow row) {
+        if (!row.directed()) {
+            return "NONE";
+        }
+        return row.outgoing() ? "OUT" : "IN";
     }
 
     /** recent 는 최근 것부터 */

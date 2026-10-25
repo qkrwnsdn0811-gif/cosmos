@@ -159,6 +159,7 @@
 | --- | --- | --- |
 | `GET` | `/api/market/indices` | 코스피·코스닥 지수 |
 | `GET` | `/api/companies/quotes` | 전 종목 시세 (경로는 companies) |
+| `GET` | `/api/companies/{companyId}/related` | 관계 기업 시세 (경로는 companies) |
 
 ### community | 커뮤니티
 
@@ -2229,6 +2230,34 @@ GET /api/events/company-history?companyId=928aa9d3-d527-4995-963f-ea928a8fc68b&s
 - 지표 칸(`marketCap` ~ `priceDate`)은 `GET /api/companies/{companyId}/fundamental` 과 같은 값이고, 지표가 없으면 null.
 - `industry` 는 대표 업종 이름, `relationCount` 는 공개 은하 스냅샷 1년(1Y) 관계에서 만나는 상대 기업 수다.
 - 정렬은 시가총액 내림차순, 시가총액이 없으면 이름순으로 뒤에. `asOf` 는 종목들의 마지막 거래일.
+
+#### GET /api/companies/{companyId}/related — 관계 기업 시세
+
+#### 목적
+기업 상세의 '관계 기업 동향'. 공개 은하 스냅샷의 1년(1Y) 관계 기업과 각 기업의 시세를 점수 순으로 돌려준다.
+#### 인증
+불필요.
+#### Response — 200 OK
+```json
+{
+  "companyId": "928aa9d3-d527-4995-963f-ea928a8fc68b",
+  "window": "1Y",
+  "items": [
+    { "relationType": "SUPPLY", "direction": "IN", "score": 82.4, "otherTypes": ["CO_MENTIONED"], "quote": { "companyId": "…", "name": "한미반도체" } },
+    { "relationType": "COMPETE", "direction": "NONE", "score": 61.0, "otherTypes": [], "quote": { "companyId": "…", "name": "삼성전자" } }
+  ]
+}
+```
+(값은 형식을 보이기 위한 예시다. `quote` 는 `GET /api/companies/quotes` 의 한 종목과 같은 객체다.)
+- `relationType` 은 `SUPPLY`·`INVEST`·`PARTNER`·`COMPETE`·`CO_MENTIONED`. `direction` 은 `OUT`(이 기업이 공급·투자하는 쪽), `IN`(상대가 이 기업에 공급·투자하는 쪽), `NONE`(방향 없는 관계).
+- 같은 상대와 관계가 여러 개면 점수가 가장 높은 관계가 대표이고, 나머지 종류는 `otherTypes`(점수 순, 중복 없음).
+- 관계가 없으면 `items` 는 빈 목록이다.
+
+#### Error
+| 상태 | code | 상황 |
+| --- | --- | --- |
+| 400 | VALIDATION_FAILED | companyId가 UUID 형식이 아님 |
+| 404 | COMPANY_NOT_FOUND | 기업이 없거나 비활성 |
 
 ### community | 커뮤니티
 

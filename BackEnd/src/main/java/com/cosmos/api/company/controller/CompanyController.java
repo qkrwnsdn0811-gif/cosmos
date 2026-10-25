@@ -7,6 +7,7 @@ import com.cosmos.api.company.dto.CompanyMetricResponse;
 import com.cosmos.api.company.dto.CompanyQuoteListResponse;
 import com.cosmos.api.company.dto.CompanySummaryResponse;
 import com.cosmos.api.company.dto.IndustryListResponse;
+import com.cosmos.api.company.dto.RelatedCompanyListResponse;
 import com.cosmos.api.company.dto.StockPriceHistoryResponse;
 import com.cosmos.api.company.repository.CompanySearchCondition;
 import com.cosmos.api.company.service.CompanyQuoteService;
@@ -59,6 +60,12 @@ public class CompanyController {
     @GetMapping("/companies/{companyId}")
     public CompanyDetailResponse findCompany(@PathVariable UUID companyId) {
         return companyService.findCompany(companyId);
+    }
+
+    /** 기업 상세의 관계 기업 동향: 공개 스냅샷 1년 관계 기업과 그 시세 */
+    @GetMapping("/companies/{companyId}/related")
+    public RelatedCompanyListResponse findRelated(@PathVariable UUID companyId) {
+        return quoteService.findRelated(companyId);
     }
 
     @GetMapping("/companies/{companyId}/metrics")

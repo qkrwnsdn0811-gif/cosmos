@@ -36,6 +36,32 @@ public class CompanyQuoteQueryRepository {
     public record DailyClose(LocalDate date, BigDecimal close) {
     }
 
+    /** companyId 쪽에서 본 관계 한 줄. directed 는 relationship_type.directionality = 'DIRECTED' */
+    public record RelationRow(UUID otherId, String relationType, boolean directed, boolean outgoing, double score) {
+    }
+
+    /** 공개 스냅샷의 window 관계 중 companyId 가 source 나 target 인 것, 점수 내림차순 */
+    public List<RelationRow> findRelations(UUID companyId, String window) {
+        return jdbcTemplate.query("""
+                WITH snap AS (%s)
+                SELECT CASE WHEN cr.source_company_id = :companyId THEN cr.target_company_id ELSE cr.source_company_id END
+                           AS other_id,
+                       rt.code, rt.directionality = 'DIRECTED' AS directed, cr.source_company_id = :companyId AS outgoing,
+                       rsc.score
+                FROM relationship_score_current rsc
+                JOIN snap ON snap.snapshot_id = rsc.snapshot_id
+                JOIN company_relationship cr ON cr.relationship_id = rsc.relationship_id
+                JOIN relationship_type rt ON rt.relationship_type_id = cr.relationship_type_id
+                WHERE rsc.window_type = :window
+                  AND (cr.source_company_id = :companyId OR cr.target_company_id = :companyId)
+                  AND cr.source_company_id <> cr.target_company_id
+                ORDER BY rsc.score DESC, rt.code
+                """.formatted(LATEST_SNAPSHOT),
+                new MapSqlParameterSource().addValue("companyId", companyId).addValue("window", window),
+                (rs, i) -> new RelationRow(rs.getObject("other_id", UUID.class), rs.getString("code"),
+                        rs.getBoolean("directed"), rs.getBoolean("outgoing"), rs.getDouble("score")));
+    }
+
     public List<CompanyRow> findActiveCompanies() {
         return jdbcTemplate.query("""
                 SELECT c.company_id, c.name, c.stock_code, c.market, ind.name AS industry,

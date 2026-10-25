@@ -145,6 +145,26 @@ export default function RelationshipPanel({ relationshipId, onClose, onPickCompa
               {meta.description}
             </div>
 
+            {/* 공시 지분(NEXUS, OpenDART 타법인 출자 현황) — 관계 점수가 곧 지분율이고, 근거는 기사 대신 공시 원문이다 */}
+            {r.ownership && (
+              <div className="ev-why mt-16">
+                <div className="kick ev-why-title">공시 지분 · OpenDART 타법인 출자 현황</div>
+                <div className="row" style={{ alignItems: "baseline", gap: 10, marginTop: 6 }}>
+                  <b className="num" style={{ fontSize: 26 }}>
+                    {Number(r.ownership.stakePct.toFixed(2))}%
+                  </b>
+                  <span className="meta">
+                    {[r.ownership.settledOn && `${r.ownership.settledOn} 기준`, r.ownership.purpose].filter(Boolean).join(" · ")}
+                  </span>
+                </div>
+                {r.ownership.sourceUrl && (
+                  <a className="meta" href={r.ownership.sourceUrl} target="_blank" rel="noreferrer noopener" style={{ display: "inline-block", marginTop: 6 }}>
+                    공시 원문 보기 (DART) ↗
+                  </a>
+                )}
+              </div>
+            )}
+
             <div className="row between mt-20">
               <span className="kick">관계 점수</span>
               <div className="seg" style={{ padding: 3 }}>
@@ -160,7 +180,7 @@ export default function RelationshipPanel({ relationshipId, onClose, onPickCompa
                 {fmtScore(r.score)}
               </div>
               <div className="grow">
-                <div className="lab">{scoreBand(r.score)} · 100점 기준</div>
+                <div className="lab">{r.ownership ? "공시 지분율 그대로" : scoreBand(r.score)} · 100점 기준</div>
                 <div className="mt-8" style={{ display: "flex" }}>
                   <ScoreBar score={r.score} color={meta.color} />
                 </div>

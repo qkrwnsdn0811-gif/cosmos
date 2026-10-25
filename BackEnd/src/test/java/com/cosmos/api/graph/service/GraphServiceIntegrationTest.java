@@ -193,6 +193,39 @@ class GraphServiceIntegrationTest {
         assertThat(result.disclosureScore()).isNull();
     }
 
+    // 공시(OpenDART 타법인 출자 현황) 지분 관계는 상세에 지분율·기준일·공시 원문 주소를 함께 준다
+    @Test
+    void investRelationshipCarriesDisclosedOwnership() {
+        UUID relationshipAc = UUID.fromString("50000000-0000-0000-0000-000000000033");
+        jdbcTemplate.update("""
+                INSERT INTO relationship_type (relationship_type_id, code, name, directionality)
+                VALUES (501, 'INVEST', '투자', 'DIRECTED') ON CONFLICT (code) DO NOTHING
+                """);
+        jdbcTemplate.update("""
+                INSERT INTO company_relationship (relationship_id, source_company_id, target_company_id, relationship_type_id, relation_source)
+                VALUES (?, ?, ?, (SELECT relationship_type_id FROM relationship_type WHERE code = 'INVEST'), 'DART')
+                """, relationshipAc, COMPANY_A, COMPANY_C);
+        jdbcTemplate.update("""
+                INSERT INTO relationship_score_current (relationship_id, window_type, snapshot_id, score, news_score,
+                    disclosure_score, confidence, evidence_count, formula_version, as_of_at)
+                VALUES (?, '30D', ?, 23.7, NULL, 23.7, NULL, 0, 'formula-v1', '2026-09-07T06:00:00Z')
+                """, relationshipAc, SNAPSHOT_ID);
+        jdbcTemplate.update("""
+                INSERT INTO company_ownership (investor_company_id, investee_company_id, stake_pct, purpose, settled_on, receipt_no)
+                VALUES (?, ?, 23.7, '경영참여', '2026-06-30', '20260814001234')
+                """, COMPANY_A, COMPANY_C);
+
+        RelationshipDetailResponse invest = graphService.findRelationship(relationshipAc, "30D");
+        RelationshipDetailResponse supply = graphService.findRelationship(RELATIONSHIP_AB, "30D");
+
+        assertThat(invest.ownership()).isNotNull();
+        assertThat(invest.ownership().stakePct()).isEqualByComparingTo("23.7");
+        assertThat(invest.ownership().purpose()).isEqualTo("경영참여");
+        assertThat(invest.ownership().settledOn()).hasToString("2026-06-30");
+        assertThat(invest.ownership().sourceUrl()).isEqualTo("https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260814001234");
+        assertThat(supply.ownership()).isNull();
+    }
+
     @Test
     void pagesNewsAndDisclosureEvidenceTogetherInNewestFirstOrder() {
         CursorPageResponse<RelationshipEvidenceResponse> first =

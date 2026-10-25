@@ -342,6 +342,17 @@ export interface RelationshipDetail {
   evidenceCount: number;
   asOfAt: ISODateTime;
   personalized: boolean;
+  /** 투자·지분 관계의 공시 지분 (OpenDART 타법인 출자 현황). 없으면 null — 예전 응답에는 칸이 없을 수 있다 */
+  ownership?: OwnershipDisclosure | null;
+}
+export interface OwnershipDisclosure {
+  /** 기말 지분율, 23.7 = 23.7% */
+  stakePct: number;
+  purpose: string | null;
+  settledOn: string | null;
+  receiptNo: string | null;
+  /** DART 공시 원문 주소 */
+  sourceUrl: string | null;
 }
 export interface RelationshipEvidence {
   newsId: UUID;

@@ -1646,11 +1646,13 @@ HDFS의 기사 본문 전체는 제공하지 않으며 사용자는 `originalUrl
   "confidence": 0.88,
   "evidenceCount": 16,
   "asOfAt": "2026-09-07T06:00:00Z",
-  "personalized": false
+  "personalized": false,
+  "ownership": null
 }
 ```
 #### Notes
 - 공시는 점수 계산에 사용하지만 응답에서 공시 문서 자체를 공개하지 않는다.
+- (NEXUS, 2026-10-26) `ownership` 은 투자·지분(INVEST) 관계에 공시 지분(V16 `company_ownership`, OpenDART 타법인 출자 현황)이 있을 때만 값이 있다: `{ "stakePct": 23.7, "purpose": "경영참여", "settledOn": "2026-06-30", "receiptNo": "20260814003699", "sourceUrl": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260814003699" }`. 이 관계는 `score`·`disclosureScore` 가 지분율이고 `newsScore` 는 null, 근거 기사는 없다. 그 밖의 관계는 `null`.
 - `newsScore`와 `disclosureScore` 중 한쪽이 `null`이면 프론트엔드는 존재하는 점수를 그대로 사용한다.
 - 프론트엔드는 API의 `30D`를 화면에서 `1M`으로 표시하고, 요청 값은 `30D`를 사용한다.
 #### Errors

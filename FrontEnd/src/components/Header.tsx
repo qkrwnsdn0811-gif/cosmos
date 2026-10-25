@@ -11,8 +11,8 @@ import { cycleTabFocus, Icon, useClickOutside } from "./ui";
 import { GALAXY_MINE_PATH, GALAXY_PATH } from "@/lib/routes";
 
 const NAV = [
-  { to: "/", label: "이벤트 지도", end: true },
   { to: GALAXY_PATH, label: "관계 은하" },
+  { to: "/", label: "이벤트", end: true },
   { to: "/news", label: "뉴스" },
   { to: "/companies", label: "기업" },
   { to: "/community", label: "커뮤니티" },
@@ -60,7 +60,7 @@ export default function Header() {
 
   return (
     <header className={narrow ? "hd hd-narrow" : "hd"}>
-      {/* 로고는 첫 화면(이벤트 지도: 뉴스 → 관계 지도 · 영향 종목)으로 간다. 은하의 기업 중심 뷰(focusId 있음)에 머물던 상태는 같이 풀어 둔다 —
+      {/* 로고는 첫 화면(이벤트: 뉴스 → 관계 지도 · 영향 종목)으로 간다. 은하의 기업 중심 뷰(focusId 있음)에 머물던 상태는 같이 풀어 둔다 —
           다음에 관계 은하 탭을 열면 전체 은하부터 보이게 (기존 "은하로 돌아가기" 버튼과 같은 backToGalaxy) */}
       <NavLink
         to="/"

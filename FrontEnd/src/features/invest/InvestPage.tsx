@@ -15,7 +15,7 @@ import "./invest.css";
 const EventGalaxy = lazy(() => import("@/features/event/EventGalaxy"));
 
 /**
- * 첫 화면 '이벤트 지도'(F10) — 반도체 뉴스를 고르면 그 뉴스의 3D 관계 지도와 영향 받을 종목 카드를 함께 보여 준다.
+ * 첫 화면 '이벤트'(F10) — 반도체 뉴스를 고르면 그 뉴스의 3D 관계 지도와 영향 받을 종목 카드를 함께 보여 준다.
  * 왼쪽은 최근 뉴스와 뉴스별 딱지 요약, 오른쪽은 고른 뉴스의 관계 지도와 종목 카드(F5). 단기·장기 토글(F9)이 모두 바꾼다.
  * 예전 /events(뉴스 1건 3D 지도 + 근거 패널)를 여기에 합쳤다 (2026-10-25). 3D 기업 관계 은하는 탐색 화면(/galaxy)이다.
  */
@@ -47,7 +47,7 @@ export default function InvestPage() {
     <div className="page invest-page">
       <div className="invest-top">
         <div>
-          <div className="kick">이벤트 지도 · 반도체 뉴스 → 영향 종목</div>
+          <div className="kick">이벤트 · 반도체 뉴스 → 영향 종목</div>
           <h1 className="invest-h1">이 뉴스, 내 종목에는 어떤 일이 있었을까?</h1>
           <p className="meta">기사에 나온 기업과 공급망으로 이어진 기업을, 과거 비슷한 뉴스 뒤 실제 주가 반응과 함께 보여 줍니다.</p>
         </div>

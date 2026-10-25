@@ -9,7 +9,7 @@ import InvestPage from "@/features/invest/InvestPage";
 import { GALAXY_PATH } from "@/lib/routes";
 import { useSession } from "@/store/session";
 
-// 이벤트 지도(/: 뉴스 → 관계 지도 · 영향 종목)가 첫 화면이다 (2026-10-25, 명세서 F10) — 나머지 탭은 들어갈 때 받는다. 전부 정적으로 묶으면 첫 로드 번들에
+// 이벤트(/: 뉴스 → 관계 지도 · 영향 종목)가 첫 화면이다 (2026-10-25, 명세서 F10) — 나머지 탭은 들어갈 때 받는다. 전부 정적으로 묶으면 첫 로드 번들에
 // 뉴스·기업·커뮤니티·내 페이지·실험실 코드와 그 CSS 가 함께 실려 Lighthouse 가 "미사용 JS/CSS" 로 잡았다 (2026-09-18).
 // 3D 은하는 탐색 화면(/galaxy)으로 옮기면서 지연 로드한다 — three.js 청크가 첫 화면 전송량에서 빠진다
 const GalaxyPage = lazy(() => import("@/features/galaxy/GalaxyPage"));

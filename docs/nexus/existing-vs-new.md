@@ -30,6 +30,7 @@ git diff --name-status pre-hackathon-baseline nexus --
 
 - 파일 250개, +18,946줄 / −471줄. 새 파일 200개, 고친 기존 파일 50개, 지운 파일 0개.
 - 1주 차(10-13 ~ 10-19, 커밋 91개): 파일 147개 +13,378 / −86. 투자자 화면(10-20 ~ 10-25, 커밋 8개): 파일 130개 +5,666 / −483.
+- 그 뒤 커밋(모두 본선 신규): `1630019` 근거 문장을 뉴스 전 기사부터 보여 주기, `73e8ef4` 예상 변동폭(V13), `c7a2d84` '영향 종목'과 '이벤트 지도'를 첫 화면 하나로 합치기.
 - COSMOS의 Python 코드(`AI/`, `Crawling/`)와 배포 설정(`deploy/`, `Jenkinsfile`)은 한 줄도 바뀌지 않았다. 본선 코드는 COSMOS 모듈을 복사하지 않고 그 자리에서 불러 쓴다(`nexus/nexus/cosmos_reuse.py`).
 
 ## 2. 영역별 한눈에
@@ -37,9 +38,9 @@ git diff --name-status pre-hackathon-baseline nexus --
 | 영역 | 원래 COSMOS (기준점에 있음) | 본선에서 새로 만듦 | 본선에서 고친 기존 코드 |
 |---|---|---|---|
 | 수집·분석 (Python) | `AI/ner`(기업 사전 매처, NER), `AI/graph`(규칙 관계 추출, 관계 점수), `AI/gpu_news`(FinBERT), `Crawling/`(뉴스·공시·주가 수집기) | `nexus/` 79개 파일 +7,314줄 (테스트 27개 포함): 빅카인즈 클라이언트·수집, 기업 인식, 근거 관계, KPF-BERT 관계 판별기, 추정 전이, 초과수익률, 영향 모델, 뉴스 유형·반응표·딱지·적중률, 기업 지표, 적재 | 없음 |
-| DB (Flyway) | V1 ~ V9: 기업·별칭·산업, 문서·뉴스·공시, 근거 문장, 관계·관계 점수, 그래프 스냅샷, 주가, 사용자·관심 기업·스크랩, 커뮤니티 | V10 `news_event`, `event_company_impact`, `event_abnormal_return`, `relation_evidence_snippet` / V12 `case_reaction_stat`, `event_company_signal`, `signal_backtest`, `market_index_price`, `company_fundamental` | V10: `company_relationship`에 관계 출처 열(`relation_source`) 추가 / V11: 출처에 함께 언급(`COMENTION`) 허용 |
+| DB (Flyway) | V1 ~ V9: 기업·별칭·산업, 문서·뉴스·공시, 근거 문장, 관계·관계 점수, 그래프 스냅샷, 주가, 사용자·관심 기업·스크랩, 커뮤니티 | V10 `news_event`, `event_company_impact`, `event_abnormal_return`, `relation_evidence_snippet` / V12 `case_reaction_stat`, `event_company_signal`, `signal_backtest`, `market_index_price`, `company_fundamental` / V13 `company_expected_move`, `move_backtest` | V10: `company_relationship`에 관계 출처 열(`relation_source`) 추가 / V11: 출처에 함께 언급(`COMENTION`) 허용 |
 | 백엔드 (Spring Boot) | `company`, `graph`, `news`, `user`, `community`, `global` 도메인 | `api/event` 22개 파일 +1,396줄 (테스트 +980): 이벤트 목록·지도·주가 차트·적중률·종목별 뉴스 이력 API / 기업 지표 조회(DTO·저장소) | `CompanyController`·`CompanyService`(지표 조회 +18줄), `GraphService`(은하 기본 시장을 코스피·코스닥으로), `SecurityConfig`(`/api/events/**` 공개), `TimeIdCursorCodec`(범위 밖 커서 400) |
-| 프런트 (React) | 3D 기업 관계 은하(`three/`, `features/galaxy`), 기업·뉴스·커뮤니티·프로필·관심 목록 화면, 로고 아틀라스·로고 원판 셰이더, 기업 로고 267개 | `features/invest` 8개 파일 +1,473줄(투자자 첫 화면), `features/event` 6개 파일 +856줄(뉴스별 관계 지도), `store/invest.ts`, `lib/routes.ts`, `three/fit.ts`·`isolated.ts` 등, 로고 45개, 테스트 9개 | `App.tsx`·`Header`(첫 화면을 투자 피드로, 은하는 `/galaxy`), `api/*`·`lib/queries.ts`(새 API 연결), `three/` 13개 파일 +428 / −383(행성을 원형 로고 원판으로), 은하 화면(함께 언급 간선, 산업 버튼 숫자, 근거 문구) |
+| 프런트 (React) | 3D 기업 관계 은하(`three/`, `features/galaxy`), 기업·뉴스·커뮤니티·프로필·관심 목록 화면, 로고 아틀라스·로고 원판 셰이더, 기업 로고 267개 | `features/invest` 8개 파일 +1,473줄(투자자 첫 화면), `features/event` 6개 파일 +856줄(뉴스별 관계 지도, 10-25 첫 화면에 합치며 3D 지도만 남김), `store/invest.ts`, `lib/routes.ts`, `three/fit.ts`·`isolated.ts` 등, 로고 45개, 테스트 9개 | `App.tsx`·`Header`(첫 화면을 투자 피드로, 은하는 `/galaxy`), `api/*`·`lib/queries.ts`(새 API 연결), `three/` 13개 파일 +428 / −383(행성을 원형 로고 원판으로), 은하 화면(함께 언급 간선, 산업 버튼 숫자, 근거 문구) |
 | 문서 | `README.md`, `docs/api-specification.md` 등 | `docs/nexus/`(실측·실행·검증 보고서), `docs/superpowers/specs`·`plans`(설계·계획) | `docs/api-specification.md`에 이벤트 API 절 +429줄 |
 
 ## 3. 기능 단위 (명세서 F1 ~ F14)
@@ -59,11 +60,12 @@ git diff --name-status pre-hackathon-baseline nexus --
 | F7 | 뉴스 전후 주가 차트 | 신규 | 신규 | 주가 테이블 | 시장 지수 테이블(`market_index_price`), 차트 API, `PriceChart` | `179029d`, `281205e` |
 | F8 | 기업 지표 | 신규 | 신규 | 기업 화면(`CompanyPreviewDialog`), `company` 테이블, OpenDART 공시 수집기(`Crawling/disclosures/dart`, 재무 지표 계산은 없음) | KRX 상장 목록(시가총액·규모)과 OpenDART 재무제표(순이익·자본총계·배당)로 PER·PBR·배당수익률 계산(`nexus fundamentals`, 새 코드), `company_fundamental`, `/api/companies/{id}/fundamental` | `f462c68`, `179029d` |
 | F9 | 투자자 유형 토글 | 신규 | 신규 | 없음 | 단기·장기 상태(`store/invest.ts`)와 피드·딱지·지표 전환 | `281205e` |
-| F10 | 첫 화면 뉴스 피드 | 변경 | 변경 | 첫 화면 = 3D 은하 | `/` = 뉴스 → 영향 종목 피드, 은하는 `/galaxy`로 이동 | `281205e` |
+| F10 | 첫 화면 뉴스 피드 | 변경 | 변경 | 첫 화면 = 3D 은하 | `/` = 메뉴 '이벤트 지도': 뉴스 피드 + 고른 뉴스의 3D 관계 지도 + 영향 종목 카드. 은하는 `/galaxy`로 이동, 예전 `/events`는 첫 화면으로 넘김 | `281205e`, `c7a2d84` |
 | F11 | 적중률 공개 | 신규 | 신규 | 없음 | 2026-07 이후 뉴스 검증(`signal_backtest`), `/api/events/backtest`, `AccuracyBanner` | `46d9d23`, `179029d`, `281205e` |
 | F12 | 투자 유의 문구 | 신규 | 신규 | 없음 | 모든 카드·화면 문구, 뉴스·주가·로고 출처 표기 | `281205e`, `fbfd2e6` |
 | F13 | 종목별 뉴스 이력 | 신규 | 신규 | 기업 화면 | `/api/events/company-history`, 기업 화면의 `CompanyInvestSection` | `179029d`, `281205e` |
 | F14 | 관심 종목 알림 | 신규 (기존 관심 목록 재사용) | 신규 (관심 목록은 기존) | 관심 기업 API `/api/users/me/watch-companies`, `user_watch_company` 테이블, 관심 목록 화면 | 관심 기업이 최근 뉴스 영향권에 들면 피드 위에 알림(`WatchAlerts`) | `281205e` |
+| 추가 | 예상 변동폭 (명세서 밖, 10-25) | - | 신규 | 없음 | 종목이 뉴스 뒤 방향과 무관하게 얼마나 움직였는지(학습 기간 초과수익률 절댓값 평균, 3등분 등급)와 시험 기간 검증. 검증을 통과한 기간(단기)만 카드에 등급 표시, 적중률 공개 띠에 검증 결과 (`company_expected_move`, `move_backtest`) | `73e8ef4`, `c7a2d84` |
 
 ## 4. 명세서 목록 밖의 본선 작업 (1주 차, 10-13 ~ 10-19)
 
@@ -81,7 +83,7 @@ git diff --name-status pre-hackathon-baseline nexus --
 | 기사 감성 (KR-FinBERT) | 모델은 COSMOS와 같은 고정 버전, 실행 코드는 신규 | `impact/sentiment.py` | `58bbc73`, `bf0c602` |
 | 영향 모델 (다음 날 방향) | 신규. COSMOS의 영향 점수는 기사 감성의 부호였고 주가로 학습한 모델은 없었다. 시험 정확도 50.0%로 '항상 변동 없음'(49.9%)과 같아 딱지에 쓰지 않는다 (`impact-model-report.md`) | `impact/model.py` | `bb17555`, `494c1eb` |
 | 이벤트 API | 신규 `/api/events/*` | `BackEnd/.../api/event` | `2ba5577`, `9d1d835`, `6b67492` |
-| 뉴스별 관계 지도 (원형 2겹 → 3D 태양계) | 신규 화면. COSMOS 3D 장면 컴포넌트(`three/`)를 재사용 | `FrontEnd/src/features/event` | `dd8bb30`, `ca39b5b`, `6bcb351` |
+| 뉴스별 관계 지도 (원형 2겹 → 3D 태양계 → 첫 화면에 합침) | 신규 화면. COSMOS 3D 장면 컴포넌트(`three/`)를 재사용. 10-25에 근거 패널·옛 영향 모델 표시를 지우고 첫 화면 뉴스 상세 안으로 옮겼다 | `FrontEnd/src/features/event` | `dd8bb30`, `ca39b5b`, `6bcb351`, `c7a2d84` |
 | 빅카인즈 관계 은하 발행 | 빅카인즈 관계를 COSMOS 은하 테이블(`graph_snapshot`, `company_relationship`, `relationship_score_*`)에 발행. 은하 화면은 COSMOS 것 | `nexus/nexus/galaxy`, `load/galaxy.py` | `f6d78b8`, `5c7ef70`, `e7366f0` |
 
 ## 5. 데이터와 모델
@@ -94,7 +96,7 @@ git diff --name-status pre-hackathon-baseline nexus --
 | 주가 | `stock_price_history` 테이블과 주가 수집기(`Crawling/prices`, 코스피·나스닥 각 100종목) | 같은 테이블에 FinanceDataReader 일봉을 새 코드로 채운다(코스닥 포함). 코스피·코스닥 지수 테이블은 신규 |
 | 공시·재무 | OpenDART·SEC 공시 수집기(`Crawling/disclosures`) | OpenDART 재무제표 API(순이익·자본총계·배당)와 KRX 상장 목록으로 지표 계산 (`company_fundamental`, 새 코드) |
 | 로고 | 기업 로고 267개 | 토스증권 종목 아이콘 45개 추가 (공식 공개 API가 아니라 시연용, 화면에 출처 표기) |
-| 모델 | KR-FinBERT 감성(고정 버전), 감성 부호로 매긴 영향 점수, 규칙 관계 분류, 자체 NER | KPF-BERT 관계 판별기(신규 학습), KR-FinBERT 감성(같은 버전, 기사 단위 새 실행), 초과수익률로 학습한 영향 모델(신규, 미사용), 뉴스 유형 키워드 규칙(신규) |
+| 모델 | KR-FinBERT 감성(고정 버전), 감성 부호로 매긴 영향 점수, 규칙 관계 분류, 자체 NER | KPF-BERT 관계 판별기(신규 학습), KR-FinBERT 감성(같은 버전, 기사 단위 새 실행), 초과수익률로 학습한 영향 모델(신규, 미사용), 뉴스 유형 키워드 규칙(신규), 예상 변동폭 통계(신규) |
 
 ## 6. 이 표를 갱신할 때
 

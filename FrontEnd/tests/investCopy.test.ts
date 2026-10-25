@@ -133,6 +133,6 @@ test("move badge and line speak about size, not direction", () => {
   assert.equal(moveBadge(move, true), "변동 큼 ±6.2%");
   assert.equal(moveBadge(move, false), "변동폭 ±6.2%");
   assert.equal(moveBadge(null, true), null);
-  assert.equal(moveLine(move, true), "예상 변동폭: 이 종목은 과거 뉴스 312번 뒤 3거래일 동안 시장 대비 평균 ±6.2% 움직였습니다(오르든 내리든)");
+  assert.equal(moveLine(move, true), "예상 변동폭: 이 종목은 뉴스가 있던 312거래일 동안 3거래일 기준 시장 대비 평균 ±6.2% 움직였습니다(오르든 내리든, 평소 변동폭에 가까움)");
   assert.match(moveLine(move, false) ?? "", /참고치로만/);
 });

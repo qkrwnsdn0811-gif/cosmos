@@ -169,6 +169,8 @@ class MoveBook:
     moved a lot after past news keeps doing so. The news type is left out on purpose — per company and type did not
     rank the test period better than per company alone (2026-10-25 check). Each (day, company) counts once, since
     the abnormal return only depends on the company and the day. Grades split the companies into thirds.
+    Semiconductor companies have news on almost every trading day, so this is close to the stock's usual volatility
+    rather than a news effect; the screen words it that way.
     """
 
     def __init__(self, cases: pd.DataFrame, train_end: date = TRAIN_END, *, min_cases: int = MIN_CASES):

@@ -157,10 +157,13 @@ export function moveBadge(move: ExpectedMove | null, graded: boolean): string | 
   return graded ? `${MOVE_GRADE_LABEL[move.grade]} ${size}` : `변동폭 ${size}`;
 }
 
-/** 카드 본문 한 줄 — 방향과 무관한 크기라는 것, 몇 번의 뉴스로 잰 것인지, 검증되지 않았으면 참고치라는 것 */
+/**
+ * 카드 본문 한 줄 — 방향과 무관한 크기라는 것, 며칠로 잰 것인지, 검증되지 않았으면 참고치라는 것.
+ * 반도체 종목은 거의 매 거래일 관련 뉴스가 있어 이 값은 사실상 종목의 평소 변동폭이다 — 뉴스 고유의 효과처럼 말하지 않는다
+ */
 export function moveLine(move: ExpectedMove | null, graded: boolean): string | null {
   if (!move) return null;
-  const base = `예상 변동폭: 이 종목은 과거 뉴스 ${move.caseCount.toLocaleString("ko-KR")}번 뒤 ${move.windowDays}거래일 동안 시장 대비 평균 ±${fmtPct(move.expectedMove, 1, false)} 움직였습니다(오르든 내리든)`;
+  const base = `예상 변동폭: 이 종목은 뉴스가 있던 ${move.caseCount.toLocaleString("ko-KR")}거래일 동안 ${move.windowDays}거래일 기준 시장 대비 평균 ±${fmtPct(move.expectedMove, 1, false)} 움직였습니다(오르든 내리든, 평소 변동폭에 가까움)`;
   return graded ? base : `${base}. 이 기간 등급은 검증에서 맞지 않아 참고치로만 보여 줍니다`;
 }
 

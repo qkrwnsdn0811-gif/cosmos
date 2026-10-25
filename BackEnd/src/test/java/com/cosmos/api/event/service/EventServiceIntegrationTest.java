@@ -15,6 +15,8 @@ import com.cosmos.api.event.dto.EventMapResponse;
 import com.cosmos.api.event.dto.EventNodeResponse;
 import com.cosmos.api.event.dto.EventSummaryResponse;
 import com.cosmos.api.event.dto.EvidenceSnippetResponse;
+import com.cosmos.api.event.dto.ExpectedMoveResponse;
+import com.cosmos.api.event.dto.MoveBacktestRowResponse;
 import com.cosmos.api.event.dto.SignalCountsResponse.HorizonCount;
 import com.cosmos.api.event.error.EventErrorCode;
 import com.cosmos.api.event.repository.EventQueryRepository;
@@ -519,10 +521,48 @@ class EventServiceIntegrationTest {
     }
 
     @Test
+    void expectedMovesAttachedPerHorizon() {
+        insertExpectedMove(C1, "LONG", "0.085", 40, "MID");
+        insertExpectedMove(C1, "SHORT", "0.031", 40, "LARGE");
+
+        EventMapResponse map = eventService.findEventMap(E1);
+
+        assertThat(node(map, C1).expectedMoves()).extracting(ExpectedMoveResponse::horizon).containsExactly("SHORT", "LONG");
+        ExpectedMoveResponse shortMove = node(map, C1).expectedMoves().getFirst();
+        assertThat(shortMove.windowDays()).isEqualTo(3);
+        assertThat(shortMove.expectedMove()).isEqualByComparingTo("0.031");
+        assertThat(shortMove.caseCount()).isEqualTo(40);
+        assertThat(shortMove.grade()).isEqualTo("LARGE");
+        assertThat(node(map, C2).expectedMoves()).isEmpty();
+    }
+
+    @Test
+    void backtestCarriesMoveRowsByHorizonThenGrade() {
+        insertBacktest("SHORT", null, 100, 40, 24, 30, 10, "0.45");
+        insertMoveBacktest("LONG", "LARGE", 30, "0.12", "0.13");
+        insertMoveBacktest("SHORT", "LARGE", 30, "0.065", "0.071");
+        insertMoveBacktest("SHORT", "SMALL", 30, "0.029", "0.030");
+        insertMoveBacktest("SHORT", "MID", 30, "0.045", "0.048");
+
+        BacktestResponse backtest = eventService.findBacktest("AUTO");
+
+        assertThat(backtest.moveRows()).extracting(MoveBacktestRowResponse::horizon)
+                .containsExactly("SHORT", "SHORT", "SHORT", "LONG");
+        assertThat(backtest.moveRows()).extracting(MoveBacktestRowResponse::grade)
+                .containsExactly("SMALL", "MID", "LARGE", "LARGE");
+        MoveBacktestRowResponse large = backtest.moveRows().get(2);
+        assertThat(large.windowDays()).isEqualTo(3);
+        assertThat(large.caseCount()).isEqualTo(30);
+        assertThat(large.predictedMove()).isEqualByComparingTo("0.065");
+        assertThat(large.realizedMove()).isEqualByComparingTo("0.071");
+    }
+
+    @Test
     void backtestIsEmptyBeforeComputedAndRequiresValueChain() {
         BacktestResponse empty = eventService.findBacktest("AUTO");
 
         assertThat(empty.rows()).isEmpty();
+        assertThat(empty.moveRows()).isEmpty();
         assertThat(empty.trainEnd()).isNull();
         assertThat(empty.testStart()).isNull();
         assertThat(empty.testEnd()).isNull();
@@ -634,6 +674,23 @@ class EventServiceIntegrationTest {
                 VALUES ('AUTO', ?, ?, ?, ?, ?, ?, ?, CAST(? AS NUMERIC), DATE '2026-06-30', DATE '2026-07-01',
                         DATE '2026-10-14')
                 """, horizon, newsType, caseCount, labeled, hits, up, down, baseDownShare);
+    }
+
+    private void insertExpectedMove(UUID companyId, String horizon, String move, int caseCount, String grade) {
+        jdbcTemplate.update("""
+                INSERT INTO company_expected_move (value_chain, company_id, horizon, expected_move, case_count, grade,
+                                                   period_end)
+                VALUES ('AUTO', ?, ?, CAST(? AS NUMERIC), ?, ?, DATE '2026-06-30')
+                """, companyId, horizon, move, caseCount, grade);
+    }
+
+    private void insertMoveBacktest(String horizon, String grade, int caseCount, String predicted, String realized) {
+        jdbcTemplate.update("""
+                INSERT INTO move_backtest (value_chain, horizon, grade, case_count, predicted_move, realized_move,
+                                           train_end, test_start, test_end)
+                VALUES ('AUTO', ?, ?, ?, CAST(? AS NUMERIC), CAST(? AS NUMERIC), DATE '2026-06-30', DATE '2026-07-01',
+                        DATE '2026-10-14')
+                """, horizon, grade, caseCount, predicted, realized);
     }
 
     private static void assertErrorCode(Runnable action, Object errorCode) {

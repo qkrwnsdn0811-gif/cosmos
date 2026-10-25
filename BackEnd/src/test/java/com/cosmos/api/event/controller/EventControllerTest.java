@@ -20,6 +20,8 @@ import com.cosmos.api.event.dto.EventCompanyRefResponse;
 import com.cosmos.api.event.dto.EventMapResponse;
 import com.cosmos.api.event.dto.EventNodeResponse;
 import com.cosmos.api.event.dto.EventSummaryResponse;
+import com.cosmos.api.event.dto.ExpectedMoveResponse;
+import com.cosmos.api.event.dto.MoveBacktestRowResponse;
 import com.cosmos.api.event.dto.SignalCountsResponse;
 import com.cosmos.api.event.dto.SignalCountsResponse.HorizonCount;
 import com.cosmos.api.event.service.EventService;
@@ -121,10 +123,11 @@ class EventControllerTest {
                 new BigDecimal("1.0"), "OK", null, null, null, null, null, List.of(),
                 List.of(new AbnormalReturnResponse(20, "KOSDAQ", new BigDecimal("0.1"), new BigDecimal("0.03"),
                         new BigDecimal("0.07"))),
-                "REPORTED", "기사에 나온 기업", List.of(signal()), fundamental);
+                "REPORTED", "기사에 나온 기업", List.of(signal()),
+                List.of(new ExpectedMoveResponse("SHORT", 3, new BigDecimal("0.031"), 40, "LARGE")), fundamental);
         EventNodeResponse bare = new EventNodeResponse(COMPANY_ID, "기업2", "990002", "KOSDAQ", "INFERRED", 1,
                 new BigDecimal("0.4"), "OK", null, null, null, null, null, List.of(), List.of(), null, null, List.of(),
-                null);
+                List.of(), null);
         when(eventService.findEventMap(EVENT_ID)).thenReturn(new EventMapResponse(summary(), List.of(node, bare)));
 
         mockMvc.perform(get("/api/events/{eventId}", EVENT_ID))
@@ -140,10 +143,14 @@ class EventControllerTest {
                 .andExpect(jsonPath("$.nodes[0].signals[0].windowDays").value(3))
                 .andExpect(jsonPath("$.nodes[0].signals[0].caseScope").value("POSITION"))
                 .andExpect(jsonPath("$.nodes[0].signals[0].sameShare").value(0.714286))
+                .andExpect(jsonPath("$.nodes[0].expectedMoves[0].windowDays").value(3))
+                .andExpect(jsonPath("$.nodes[0].expectedMoves[0].expectedMove").value(0.031))
+                .andExpect(jsonPath("$.nodes[0].expectedMoves[0].grade").value("LARGE"))
                 .andExpect(jsonPath("$.nodes[0].fundamental.sizeClass").value("MID"))
                 .andExpect(jsonPath("$.nodes[0].fundamental.priceDate").value("2026-10-16"))
                 .andExpect(jsonPath("$.nodes[1].position").isEmpty())
                 .andExpect(jsonPath("$.nodes[1].signals").isEmpty())
+                .andExpect(jsonPath("$.nodes[1].expectedMoves").isEmpty())
                 .andExpect(jsonPath("$.nodes[1].fundamental").isEmpty());
     }
 
@@ -177,7 +184,9 @@ class EventControllerTest {
         when(eventService.findBacktest("SEMICONDUCTOR")).thenReturn(new BacktestResponse("SEMICONDUCTOR",
                 LocalDate.of(2026, 6, 30), LocalDate.of(2026, 7, 1), LocalDate.of(2026, 10, 14), List.of(
                         new BacktestRowResponse("SHORT", null, null, 100, 40, 24, new BigDecimal("0.600000"), 30, 10,
-                                new BigDecimal("0.45"), new BigDecimal("0.55")))));
+                                new BigDecimal("0.45"), new BigDecimal("0.55"))),
+                List.of(new MoveBacktestRowResponse("SHORT", 3, "LARGE", 30, new BigDecimal("0.065"),
+                        new BigDecimal("0.071")))));
 
         mockMvc.perform(get("/api/events/backtest").param("valueChain", "SEMICONDUCTOR"))
                 .andExpect(status().isOk())
@@ -186,7 +195,9 @@ class EventControllerTest {
                 .andExpect(jsonPath("$.rows[0].horizon").value("SHORT"))
                 .andExpect(jsonPath("$.rows[0].newsType").isEmpty())
                 .andExpect(jsonPath("$.rows[0].hitRate").value(0.6))
-                .andExpect(jsonPath("$.rows[0].baselineRate").value(0.55));
+                .andExpect(jsonPath("$.rows[0].baselineRate").value(0.55))
+                .andExpect(jsonPath("$.moveRows[0].grade").value("LARGE"))
+                .andExpect(jsonPath("$.moveRows[0].realizedMove").value(0.071));
         verify(eventService).findBacktest("SEMICONDUCTOR");
     }
 

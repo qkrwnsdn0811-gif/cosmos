@@ -4,8 +4,9 @@ import pandas as pd
 import pytest
 
 from nexus.cases.newstype import OTHER, classify_text
-from nexus.cases.reaction import (HOLD_FEW, HOLD_NO_TYPE, HOLD_SMALL, HOLD_SPLIT, HOLD_WEAK_LINK, SignalBook,
-                                  backtest, case_frame, position_of, reaction_stats, unique_cases)
+from nexus.cases.reaction import (HOLD_FEW, HOLD_NO_TYPE, HOLD_SMALL, HOLD_SPLIT, HOLD_WEAK_LINK, MoveBook,
+                                  SignalBook, backtest, case_frame, move_backtest, position_of, reaction_stats,
+                                  unique_cases)
 from nexus.models import Article, CompanyMention, EventBundle, Impact, PathStep
 
 KST = timezone(timedelta(hours=9))
@@ -123,3 +124,35 @@ def test_backtest_counts_hits_after_training():
     short = result[(result.horizon == "SHORT") & result.news_type.isna()].iloc[0]
     assert (short.case_count, short.labeled_count, short.hit_count, short.down_labels) == (3, 3, 2, 3)
     assert short.base_down_share == pytest.approx(2 / 3)
+
+def test_move_book_uses_size_per_company_and_grades_in_thirds():
+    cases = pd.concat([_cases([0.01, -0.01] * 5, company="A"), _cases([0.05, -0.05] * 5, company="B"),
+                       _cases([0.03, -0.03] * 5, company="C"), _cases([0.2] * 9, company="D"),
+                       # same day as A's first case with another type: counted once
+                       _cases([0.4], company="A", news_type="SUPPLY_DEAL")])
+    book = MoveBook(cases)
+    a = book.move("A", "SHORT")
+    assert (a.expected, a.case_count, a.grade) == (pytest.approx(0.01), 10, "SMALL")
+    assert book.move("C", "SHORT").grade == "MID" and book.move("B", "LONG").grade == "LARGE"
+    assert book.move("D", "SHORT") is None                  # 9 days < MIN_CASES
+
+
+def test_move_backtest_compares_grades_after_training():
+    train = pd.concat([_cases([0.01, -0.01] * 5, company="A"), _cases([0.03, -0.03] * 5, company="C"),
+                       _cases([0.05, -0.05] * 5, company="B")])
+    test = pd.concat([_cases([0.02, -0.04], company="A", day=date(2026, 8, 1)),
+                      _cases([-0.08], company="B", day=date(2026, 8, 1))])
+    result = move_backtest(pd.concat([train, test]), MoveBook(train))
+    short = result[result.horizon == "SHORT"].set_index("grade")
+    assert short.loc["SMALL", "case_count"] == 2 and short.loc["SMALL", "realized_move"] == pytest.approx(0.03)
+    assert short.loc["LARGE", "predicted_move"] == pytest.approx(0.05)
+    assert short.loc["LARGE", "realized_move"] == pytest.approx(0.08)
+    assert short.loc["MID", "case_count"] == 0
+
+def test_grades_hold_only_when_realized_moves_grow_with_grade():
+    from nexus.cases.report import grades_hold
+    rows = pd.DataFrame([("SHORT", "SMALL", 1, 0.03, 0.04), ("SHORT", "MID", 1, 0.05, 0.06), ("SHORT", "LARGE", 1, 0.06, 0.07),
+                         ("LONG", "SMALL", 1, 0.08, 0.09), ("LONG", "MID", 1, 0.12, 0.16), ("LONG", "LARGE", 1, 0.18, 0.14)],
+                        columns=["horizon", "grade", "case_count", "predicted_move", "realized_move"])
+    assert grades_hold(rows, "SHORT") is True
+    assert grades_hold(rows, "LONG") is False

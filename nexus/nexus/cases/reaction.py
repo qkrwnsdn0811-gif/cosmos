@@ -1,4 +1,4 @@
-"""Past-case reactions (F3), direction labels (F4) and their hit rate (F11).
+"""Past-case reactions (F3), direction labels (F4), their hit rate (F11) and the expected move size.
 
 A case is one (trading day, company, news type, position) after an event: articles about the same company on
 the same day with the same type count once (the abnormal return only depends on the company and the day).
@@ -150,6 +150,65 @@ class SignalBook:
         if up > down and mean > 0:
             return Signal("UP", None, **base)
         return Signal("HOLD", HOLD_SPLIT, **base)
+
+
+MOVE_GRADES = ("SMALL", "MID", "LARGE")
+
+
+@dataclass(frozen=True)
+class Move:
+    expected: float     # mean |abnormal return| over the company's training-period news days
+    case_count: int
+    grade: str          # SMALL | MID | LARGE — the company's third among companies with a move for this horizon
+
+
+class MoveBook:
+    """Expected move size: how far the company usually moved after its news, whichever way.
+
+    Direction is not predictable from these cases (hit rate below the majority baseline), size is: a company that
+    moved a lot after past news keeps doing so. The news type is left out on purpose — per company and type did not
+    rank the test period better than per company alone (2026-10-25 check). Each (day, company) counts once, since
+    the abnormal return only depends on the company and the day. Grades split the companies into thirds.
+    """
+
+    def __init__(self, cases: pd.DataFrame, train_end: date = TRAIN_END, *, min_cases: int = MIN_CASES):
+        days = cases[cases["trading_date"] <= train_end].drop_duplicates(["trading_date", "company_key"])
+        self._by: dict[tuple[str, str], Move] = {}
+        for horizon, window in HORIZONS.items():
+            sizes = {}
+            for key, group in days.groupby("company_key", sort=True):
+                moves = group[f"ar_{window}"].dropna().abs()
+                if len(moves) >= min_cases:
+                    sizes[key] = (float(moves.mean()), int(len(moves)))
+            ranked = sorted(sizes, key=lambda k: sizes[k][0])
+            for rank, key in enumerate(ranked):
+                grade = MOVE_GRADES[min(rank * len(MOVE_GRADES) // len(ranked), len(MOVE_GRADES) - 1)]
+                self._by[(key, horizon)] = Move(round(sizes[key][0], 8), sizes[key][1], grade)
+
+    def move(self, company_key: str, horizon: str) -> Move | None:
+        return self._by.get((company_key, horizon))
+
+    def items(self):
+        return self._by.items()
+
+
+MOVE_BACKTEST_COLUMNS = ["horizon", "grade", "case_count", "predicted_move", "realized_move"]
+
+
+def move_backtest(cases: pd.DataFrame, book: MoveBook, train_end: date = TRAIN_END) -> pd.DataFrame:
+    """Per grade, the expected move against the realized |abnormal return| of news days after train_end."""
+    test = cases[cases["trading_date"] > train_end].drop_duplicates(["trading_date", "company_key"])
+    rows = []
+    for horizon, window in HORIZONS.items():
+        col = f"ar_{window}"
+        scored = [(m.grade, m.expected, abs(r)) for key, r in zip(test["company_key"], test[col])
+                  if not pd.isna(r) and (m := book.move(key, horizon)) is not None]
+        frame = pd.DataFrame(scored, columns=["grade", "predicted", "realized"])
+        for grade in MOVE_GRADES:
+            group = frame[frame["grade"] == grade]
+            rows.append((horizon, grade, int(len(group)), float(group["predicted"].mean()) if len(group) else float("nan"),
+                         float(group["realized"].mean()) if len(group) else float("nan")))
+    return pd.DataFrame(rows, columns=MOVE_BACKTEST_COLUMNS)
 
 
 BACKTEST_COLUMNS = ["horizon", "news_type", "case_count", "labeled_count", "hit_count", "up_labels", "down_labels",

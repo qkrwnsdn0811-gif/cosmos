@@ -302,6 +302,34 @@ public class EventQueryRepository {
                 rs.getObject("test_start", LocalDate.class), rs.getObject("test_end", LocalDate.class)));
     }
 
+    /** 예상 변동폭 검증 표. SHORT 먼저, 기간 안에서 SMALL · MID · LARGE 순. */
+    public List<MoveBacktestRow> findMoveBacktest(String valueChain) {
+        return jdbcTemplate.query("""
+                SELECT horizon, grade, case_count, predicted_move, realized_move
+                FROM move_backtest
+                WHERE value_chain = :valueChain
+                ORDER BY CASE horizon WHEN 'SHORT' THEN 0 ELSE 1 END,
+                         CASE grade WHEN 'SMALL' THEN 0 WHEN 'MID' THEN 1 ELSE 2 END
+                """, new MapSqlParameterSource("valueChain", valueChain), (rs, rowNum) -> new MoveBacktestRow(
+                rs.getString("horizon"), rs.getString("grade"), rs.getInt("case_count"),
+                rs.getBigDecimal("predicted_move"), rs.getBigDecimal("realized_move")));
+    }
+
+    /** 기업들의 예상 변동폭. 기업마다 SHORT, LONG 순이다. */
+    public List<ExpectedMoveRow> findExpectedMoves(String valueChain, Collection<UUID> companyIds) {
+        if (companyIds.isEmpty()) {
+            return List.of();
+        }
+        return jdbcTemplate.query("""
+                SELECT company_id, horizon, expected_move, case_count, grade
+                FROM company_expected_move
+                WHERE value_chain = :valueChain AND company_id IN (:companyIds)
+                ORDER BY company_id, CASE horizon WHEN 'SHORT' THEN 0 ELSE 1 END
+                """, new MapSqlParameterSource().addValue("valueChain", valueChain).addValue("companyIds", companyIds),
+                (rs, rowNum) -> new ExpectedMoveRow(rs.getObject("company_id", UUID.class), rs.getString("horizon"),
+                        rs.getBigDecimal("expected_move"), rs.getInt("case_count"), rs.getString("grade")));
+    }
+
     /** 파이프라인 경로의 기업 key("MARKET:TICKER") → 기업. 마스터에 없는 key는 결과에 없다. */
     public Map<String, CompanyKeyRow> findCompaniesByKeys(Collection<String> keys) {
         Map<String, CompanyKeyRow> result = new LinkedHashMap<>();
@@ -467,5 +495,12 @@ public class EventQueryRepository {
             LocalDate testStart,
             LocalDate testEnd
     ) {
+    }
+
+    public record ExpectedMoveRow(UUID companyId, String horizon, BigDecimal expectedMove, int caseCount, String grade) {
+    }
+
+    public record MoveBacktestRow(String horizon, String grade, int caseCount, BigDecimal predictedMove,
+            BigDecimal realizedMove) {
     }
 }

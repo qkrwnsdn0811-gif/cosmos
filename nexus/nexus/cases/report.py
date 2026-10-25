@@ -52,8 +52,33 @@ def _backtest_table(backtest: pd.DataFrame) -> list[str]:
     return lines
 
 
-def write_report(path: Path, *, types: Counter, stats: pd.DataFrame, backtest: pd.DataFrame, cases: int,
-                 train_end: date, test_end: date | None, now: datetime) -> None:
+GRADE_KO = {"SMALL": "변동 작음", "MID": "변동 보통", "LARGE": "변동 큼"}
+
+
+def grades_hold(moves: pd.DataFrame, horizon: str) -> bool:
+    """Did the grades order the test period: realized moves grow from SMALL to MID to LARGE? The screen shows a
+    grade only for horizons where this held (FrontEnd investCopy.gradesHold is the same rule)."""
+    realized = moves[moves["horizon"] == horizon].set_index("grade")["realized_move"].reindex(list(GRADE_KO))
+    return bool(realized.notna().all() and realized.is_monotonic_increasing and realized.is_unique)
+
+
+def _move_verdict(moves: pd.DataFrame) -> list[str]:
+    return [f"- {HORIZON_KO[h]}: " + ("등급 순서가 시험 기간 실제 변동폭과 맞았다. 화면에 등급(작음 · 보통 · 큼)을 붙인다."
+                                      if grades_hold(moves, h) else
+                                      "등급 순서가 시험 기간 실제 변동폭과 맞지 않았다. 화면에는 숫자만 참고치로 보여 준다.")
+            for h in HORIZONS]
+
+
+def _move_table(moves: pd.DataFrame) -> list[str]:
+    lines = ["| 기간 | 등급 | 시험 뉴스일 | 예상 변동폭 평균 | 실제 변동폭 평균 |", "|---|---|---:|---:|---:|"]
+    for r in moves.itertuples(index=False):
+        lines.append(f"| {HORIZON_KO[r.horizon]} | {GRADE_KO[r.grade]} | {r.case_count:,} | ±{_pct(r.predicted_move)} | "
+                     f"±{_pct(r.realized_move)} |")
+    return lines
+
+
+def write_report(path: Path, *, types: Counter, stats: pd.DataFrame, backtest: pd.DataFrame, moves: pd.DataFrame,
+                 cases: int, train_end: date, test_end: date | None, now: datetime) -> None:
     total = sum(types.values())
     overall = backtest[backtest["news_type"].isna()]
     verdict = []
@@ -103,6 +128,18 @@ def write_report(path: Path, *, types: Counter, stats: pd.DataFrame, backtest: p
         "그래서 딱지는 대부분 '상승 우세'이고, 유형별 차이보다 시장 흐름을 더 많이 담는다.",
         "- 실적 부진처럼 평균이 음수인 유형도 있지만 사례가 적다. 유형 × 위치 단위 딱지가 새 뉴스의 방향을 맞힌다는 근거는 아직 없다.",
         "- 그래서 서비스는 딱지를 '과거 사례 경향'으로만 쓰고, 화면에 이 적중률과 기준선을 함께 보여 준다. 예측이 아니다.",
+        "",
+        "## 예상 변동폭 (방향과 무관한 크기)",
+        "",
+        "- 예상 변동폭: 그 종목의 통계 기간 뉴스일(같은 날은 1번) 뒤 |초과수익률| 평균. 뉴스 유형은 쓰지 않는다 "
+        "(유형별로 나눠도 시험 기간 순위가 나아지지 않았다).",
+        "- 등급: 예상 변동폭이 있는 종목을 셋으로 나눈다(작음 · 보통 · 큼).",
+        "- 아래는 통계 기간 뒤 뉴스일에서, 등급별 예상과 실제 |초과수익률| 평균이다. 큼으로 표시한 종목이 실제로도 크게 "
+        "움직였는지를 본다.",
+        "",
+        *_move_table(moves),
+        "",
+        *_move_verdict(moves),
         "",
     ]
     path.parent.mkdir(parents=True, exist_ok=True)

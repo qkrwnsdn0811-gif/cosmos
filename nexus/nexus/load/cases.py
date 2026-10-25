@@ -1,5 +1,6 @@
-"""Write the investor view (V12 tables): news types, abnormal returns for every window, past-case statistics,
-per-event direction labels, their hit rate and the market index closes the price chart compares against.
+"""Write the investor view (V12·V13 tables): news types, abnormal returns for every window, past-case statistics,
+per-event direction labels, their hit rate, expected move sizes and their check, and the market index closes the
+price chart compares against.
 
 Every writer replaces one value chain's rows, so `nexus cases` can be rerun. Run it after `load`: `load` rewrites
 each event's abnormal returns with its own windows (1, 3) and would drop the 5 and 20 trading-day rows.
@@ -107,6 +108,32 @@ def write_backtest(conn, value_chain: str, frame: pd.DataFrame, *, train_end: da
                 "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
                 (value_chain, r.horizon, news_type, int(r.case_count), int(r.labeled_count), int(r.hit_count),
                  int(r.up_labels), int(r.down_labels), _num(r.base_down_share, 6), train_end, test_start, test_end))
+    return len(frame)
+
+
+def write_moves(conn, value_chain: str, book, company_ids: dict[str, UUID], *, period_end: date) -> int:
+    """book: reaction.MoveBook. Replaces this value chain's expected moves."""
+    rows = [(value_chain, company_ids[key], horizon, m.expected, m.case_count, m.grade, period_end)
+            for (key, horizon), m in book.items() if key in company_ids]
+    with conn.transaction(), conn.cursor() as cur:
+        cur.execute("DELETE FROM company_expected_move WHERE value_chain = %s", (value_chain,))
+        with cur.copy("COPY company_expected_move (value_chain, company_id, horizon, expected_move, case_count, grade, "
+                      "period_end) FROM STDIN") as copy:
+            for row in rows:
+                copy.write_row(row)
+    return len(rows)
+
+
+def write_move_backtest(conn, value_chain: str, frame: pd.DataFrame, *, train_end: date, test_start: date,
+                        test_end: date) -> int:
+    with conn.transaction(), conn.cursor() as cur:
+        cur.execute("DELETE FROM move_backtest WHERE value_chain = %s", (value_chain,))
+        for r in frame.itertuples(index=False):
+            cur.execute(
+                "INSERT INTO move_backtest (value_chain, horizon, grade, case_count, predicted_move, realized_move, "
+                "train_end, test_start, test_end) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                (value_chain, r.horizon, r.grade, int(r.case_count), _num(r.predicted_move, 8), _num(r.realized_move, 8),
+                 train_end, test_start, test_end))
     return len(frame)
 
 

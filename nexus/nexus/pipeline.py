@@ -442,11 +442,11 @@ def cmd_cases(args) -> int:
     """News types, past-case reactions, direction labels and their hit rate (investor view, V12 tables)."""
     import psycopg
     from .cases.newstype import classify
-    from .cases.reaction import (HORIZONS, TRAIN_END, WINDOWS, SignalBook, backtest, case_frame, position_of,
-                                 reaction_stats, unique_cases)
+    from .cases.reaction import (HORIZONS, TRAIN_END, WINDOWS, MoveBook, SignalBook, backtest, case_frame,
+                                 move_backtest, position_of, reaction_stats, unique_cases)
     from .cases.report import write_report
-    from .load.cases import (write_abnormal_returns, write_backtest, write_index_prices, write_news_types,
-                             write_signals, write_stats)
+    from .load.cases import (write_abnormal_returns, write_backtest, write_index_prices, write_move_backtest,
+                             write_moves, write_news_types, write_signals, write_stats)
     from .load.postgres import ensure_companies
     p = _paths(args.chain)
     value_chain = CHAINS[args.chain]["value_chain"]
@@ -480,14 +480,20 @@ def cmd_cases(args) -> int:
     stats = reaction_stats(cases)
     book = SignalBook(stats)
     tested = backtest(cases, book)
+    moves = MoveBook(cases)
+    moves_tested = move_backtest(cases, moves)
     test_days = [d for d in days if d > TRAIN_END]
     print(f"cases: {len(cases):,}, stats rows: {len(stats):,} ({time.monotonic() - started:,.0f}s)", flush=True)
     for r in tested[tested["news_type"].isna()].itertuples(index=False):
         hit = r.hit_count / r.labeled_count if r.labeled_count else float("nan")
         print(f"  {r.horizon}: labeled {r.labeled_count:,}/{r.case_count:,}, hit {hit:.3f}, "
               f"base down share {r.base_down_share:.3f}", flush=True)
+    for r in moves_tested.itertuples(index=False):
+        print(f"  move {r.horizon} {r.grade}: {r.case_count:,} days, predicted {r.predicted_move:.3f}, "
+              f"realized {r.realized_move:.3f}", flush=True)
     write_report(CASE_REPORT, types=Counter(t.code for t in types.values()), stats=stats, backtest=tested,
-                 cases=len(cases), train_end=TRAIN_END, test_end=max(test_days, default=None), now=datetime.now(KST))
+                 moves=moves_tested, cases=len(cases), train_end=TRAIN_END, test_end=max(test_days, default=None),
+                 now=datetime.now(KST))
 
     with psycopg.connect(args.database_url) as conn:
         ids = ensure_companies(conn, list(companies.values()))
@@ -512,6 +518,9 @@ def cmd_cases(args) -> int:
               flush=True)
         write_backtest(conn, value_chain, tested, train_end=TRAIN_END,
                        test_start=min(test_days, default=TRAIN_END), test_end=max(test_days, default=TRAIN_END))
+        print(f"expected moves written: {write_moves(conn, value_chain, moves, ids, period_end=TRAIN_END)}", flush=True)
+        write_move_backtest(conn, value_chain, moves_tested, train_end=TRAIN_END,
+                            test_start=min(test_days, default=TRAIN_END), test_end=max(test_days, default=TRAIN_END))
         print(f"index closes written: {write_index_prices(conn, index_closes)}", flush=True)
     print(f"report: {CASE_REPORT} ({time.monotonic() - started:,.0f}s)")
     return 0

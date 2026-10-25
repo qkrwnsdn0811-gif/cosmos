@@ -13,6 +13,8 @@ import com.cosmos.api.event.dto.EventCompanyRefResponse;
 import com.cosmos.api.event.dto.EventMapResponse;
 import com.cosmos.api.event.dto.EventNodeResponse;
 import com.cosmos.api.event.dto.EventSummaryResponse;
+import com.cosmos.api.event.dto.ExpectedMoveResponse;
+import com.cosmos.api.event.dto.MoveBacktestRowResponse;
 import com.cosmos.api.event.dto.PathStepResponse;
 import com.cosmos.api.event.dto.SignalCountsResponse;
 import com.cosmos.api.event.error.EventErrorCode;
@@ -22,6 +24,7 @@ import com.cosmos.api.event.repository.EventQueryRepository.BacktestRow;
 import com.cosmos.api.event.repository.EventQueryRepository.CompanyEventRow;
 import com.cosmos.api.event.repository.EventQueryRepository.CompanyKeyRow;
 import com.cosmos.api.event.repository.EventQueryRepository.EventRow;
+import com.cosmos.api.event.repository.EventQueryRepository.ExpectedMoveRow;
 import com.cosmos.api.event.repository.EventQueryRepository.ImpactCompanyRow;
 import com.cosmos.api.event.repository.EventQueryRepository.ImpactRow;
 import com.cosmos.api.event.repository.EventQueryRepository.IndexCloseRow;
@@ -132,8 +135,12 @@ public class EventService {
         List<SignalRow> signalRows = eventRepository.findSignals(eventId);
         Map<UUID, List<SignalRow>> signals = signalRows.stream()
                 .collect(Collectors.groupingBy(SignalRow::companyId, LinkedHashMap::new, Collectors.toList()));
-        Map<UUID, CompanyFundamentalResponse> fundamentals = fundamentalRepository.findByCompanyIds(
-                impacts.stream().map(ImpactRow::companyId).toList());
+        List<UUID> companyIds = impacts.stream().map(ImpactRow::companyId).toList();
+        Map<UUID, CompanyFundamentalResponse> fundamentals = fundamentalRepository.findByCompanyIds(companyIds);
+        Map<UUID, List<ExpectedMoveResponse>> moves = eventRepository.findExpectedMoves(event.valueChain(), companyIds)
+                .stream()
+                .collect(Collectors.groupingBy(ExpectedMoveRow::companyId, LinkedHashMap::new,
+                        Collectors.mapping(EventService::expectedMove, Collectors.toList())));
 
         Map<UUID, List<RawStep>> paths = new LinkedHashMap<>();
         impacts.forEach(i -> paths.put(i.companyId(), pathParser.parse(i.pathJson())));
@@ -155,6 +162,7 @@ public class EventService {
                     returns.getOrDefault(i.companyId(), List.of()),
                     position, CompanyPosition.labelOf(position),
                     own.stream().map(EventService::signal).toList(),
+                    moves.getOrDefault(i.companyId(), List.of()),
                     fundamentals.get(i.companyId()));
         }).toList();
         List<EventCompanyRefResponse> reportedCompanies = impacts.stream()
@@ -206,12 +214,18 @@ public class EventService {
         return new EventChartResponse(eventId, companyId, tradingDate, benchmark, points);
     }
 
-    /** 방향 딱지 적중률(F11). 파이프라인이 학습 기간 뒤 뉴스로 잰 값을 그대로 돌려주고 비율만 계산한다. */
+    /**
+     * 방향 딱지 적중률(F11)과 예상 변동폭 검증. 파이프라인이 학습 기간 뒤 뉴스로 잰 값을 그대로 돌려주고 비율만 계산한다.
+     */
     public BacktestResponse findBacktest(String valueChain) {
         validateValueChain(valueChain);
         List<BacktestRow> rows = eventRepository.findBacktest(valueChain);
+        List<MoveBacktestRowResponse> moveRows = eventRepository.findMoveBacktest(valueChain).stream()
+                .map(r -> new MoveBacktestRowResponse(r.horizon(), HORIZON_DAYS.getOrDefault(r.horizon(), 0),
+                        r.grade(), r.caseCount(), r.predictedMove(), r.realizedMove()))
+                .toList();
         if (rows.isEmpty()) {
-            return new BacktestResponse(valueChain, null, null, null, List.of());
+            return new BacktestResponse(valueChain, null, null, null, List.of(), moveRows);
         }
         BacktestRow first = rows.getFirst();
         List<BacktestRowResponse> items = rows.stream().map(r -> new BacktestRowResponse(
@@ -222,7 +236,7 @@ public class EventService {
                 r.upLabels(), r.downLabels(), r.baseDownShare(),
                 r.baseDownShare() == null ? null : r.baseDownShare().max(BigDecimal.ONE.subtract(r.baseDownShare()))))
                 .toList();
-        return new BacktestResponse(valueChain, first.trainEnd(), first.testStart(), first.testEnd(), items);
+        return new BacktestResponse(valueChain, first.trainEnd(), first.testStart(), first.testEnd(), items, moveRows);
     }
 
     /** 기업 한 곳의 과거 뉴스와 그때 주가 반응(F13). 이 기업이 OK 영향으로 들어간 이벤트만, 최신순. */
@@ -296,6 +310,11 @@ public class EventService {
     private static CompanySignalResponse signal(SignalRow s) {
         return new CompanySignalResponse(s.horizon(), HORIZON_DAYS.getOrDefault(s.horizon(), 0), s.label(),
                 s.holdReason(), s.caseScope(), s.caseCount(), s.sameShare(), s.meanAr(), s.downShare());
+    }
+
+    private static ExpectedMoveResponse expectedMove(ExpectedMoveRow m) {
+        return new ExpectedMoveResponse(m.horizon(), HORIZON_DAYS.getOrDefault(m.horizon(), 0), m.expectedMove(),
+                m.caseCount(), m.grade());
     }
 
     private static AbnormalReturnResponse abnormalReturn(AbnormalReturnRow r) {

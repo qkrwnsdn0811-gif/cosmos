@@ -1952,6 +1952,7 @@ GET /api/events?valueChain=SEMICONDUCTOR&newsType=EXPORT_CONTROL&hasInferred=tru
 - `abnormalReturns`는 1·3·5·20거래일 초과수익률이다(1 = 이벤트 거래일 당일). 아직 그 기간이 지나지 않았거나 주가가 없으면 해당 기간이 빠진다.
 - `position`·`signals`는 방향 딱지가 계산된 노드만 값이 있고, 없으면 `null`·`[]`다. 딱지는 과거 사례 통계이며 예측이 아니다(위 공통 코드 참고).
 - `fundamental`은 `GET /api/companies/{companyId}/fundamental`과 같은 객체이고, 기업 지표가 아직 없으면 `null`이다.
+- `expectedMoves`는 이 종목의 예상 변동폭(SHORT, LONG 순)이다. 각 항목은 `{ horizon, windowDays, expectedMove, caseCount, grade }`이고, `expectedMove`는 학습 기간 이 종목 뉴스일 뒤 windowDays 거래일 |초과수익률| 평균(방향과 무관), `grade`는 같은 밸류체인 종목을 셋으로 나눈 `SMALL`·`MID`·`LARGE`다. 뉴스 유형과 무관하게 종목마다 하나이며, 아직 없으면 `[]`다. 검증은 `GET /api/events/backtest`의 `moveRows`에 있다.
 
 #### Error
 | 상태 | code | 상황 |
@@ -2022,9 +2023,15 @@ GET /api/events/backtest?valueChain=SEMICONDUCTOR
     { "horizon": "SHORT", "newsType": "MARKET_WRAP", "newsTypeLabel": "증시 시황", "caseCount": 1860, "labeledCount": 189, "hitCount": 90, "hitRate": 0.476190, "upLabels": 176, "downLabels": 13, "baseDownShare": 0.491935, "baselineRate": 0.508065 },
     { "horizon": "SHORT", "newsType": "CAPEX", "newsTypeLabel": "증설·투자", "caseCount": 860, "labeledCount": 0, "hitCount": 0, "hitRate": null, "upLabels": 0, "downLabels": 0, "baseDownShare": 0.470930, "baselineRate": 0.529070 },
     { "horizon": "LONG", "newsType": null, "newsTypeLabel": null, "caseCount": 8787, "labeledCount": 2752, "hitCount": 1393, "hitRate": 0.506177, "upLabels": 2268, "downLabels": 484, "baseDownShare": 0.414931, "baselineRate": 0.585069 }
+  ],
+  "moveRows": [
+    { "horizon": "SHORT", "windowDays": 3, "grade": "SMALL", "caseCount": 789, "predictedMove": 0.03655162, "realizedMove": 0.03849395 },
+    { "horizon": "SHORT", "windowDays": 3, "grade": "MID", "caseCount": 821, "predictedMove": 0.05058233, "realizedMove": 0.05880367 },
+    { "horizon": "SHORT", "windowDays": 3, "grade": "LARGE", "caseCount": 841, "predictedMove": 0.06265098, "realizedMove": 0.06907246 }
   ]
 }
 ```
+- `moveRows`는 예상 변동폭(방향과 무관한 크기) 검증이다. 같은 채점 기간 뉴스일(같은 날·같은 기업은 1번)에서, 등급(`SMALL`·`MID`·`LARGE`, 종목을 셋으로 나눔)별 예상 변동폭 평균(`predictedMove`)과 실제 |초과수익률| 평균(`realizedMove`)이다. SHORT 먼저, 기간 안에서 SMALL · MID · LARGE 순이다. 화면은 실제 변동폭이 등급 순서대로 커진 기간에만 등급을 붙인다.
 - 딱지는 `trainEnd`(2026-06-30)까지의 과거 사례로만 만들고, `testStart` ~ `testEnd`(2026-06-30 이후) 뉴스에서 채점한다. 채점 기간의 정답은 딱지를 만들 때 쓰지 않았다.
 - `rows`는 SHORT 먼저, 각 기간 안에서 전체 유형 줄(`newsType` null)이 먼저이고 그다음 `labeledCount` 내림차순이다.
 - `caseCount`는 채점 대상 사례 수(HOLD 포함), `labeledCount`는 그중 `UP`·`DOWN` 딱지가 붙은 수, `hitCount`는 딱지 방향과 실제 초과수익률 부호가 맞은 수다.

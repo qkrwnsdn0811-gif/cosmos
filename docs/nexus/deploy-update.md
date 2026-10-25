@@ -1,6 +1,10 @@
 # 배포 서버를 최신으로 올리기 (2026-10-25)
 
-`https://34-64-222-128.sslip.io` 를 지금 로컬 개발판과 같게 만드는 순서다. 서버에 접속할 수 있는 사람이 한 번에 따라 하면 된다.
+`https://34-158-212-210.sslip.io` 를 지금 로컬 개발판과 같게 만드는 순서다. 서버에 접속할 수 있는 사람이 한 번에 따라 하면 된다.
+
+> 2026-10-26부터 시연 서버는 새 GCP VM(`34-158-212-210.sslip.io`)이다. 예전 `34-64-222-128.sslip.io` VM은 지워졌다.
+> 코드 배포(아래 ②·④)는 이제 `NEXUS` push 때 GitHub Actions가 한다. 사람이 할 일은 DB 교체(①·③)뿐이다.
+> 서버 접속·덤프 복원 명령은 [deploy/gcp/README.md](../../deploy/gcp/README.md)에 있다.
 
 ## 1. 지금 차이
 
@@ -65,7 +69,7 @@ Compose를 직접 띄웠다면 이미지 태그만 `$TAG` 로 바꿔 `docker com
 ## 4. 확인
 
 ```bash
-curl -s "https://34-64-222-128.sslip.io/api/events?valueChain=SEMICONDUCTOR&size=1"
+curl -s "https://34-158-212-210.sslip.io/api/events?valueChain=SEMICONDUCTOR&size=1"
 ```
 
 - 응답 항목에 `newsType`, `signalCounts` 가 있고, 첫 뉴스 날짜가 10-26(UTC 로는 10-25 18시)이다.

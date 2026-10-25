@@ -3,6 +3,7 @@ import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClie
 import { api } from "@/api";
 import type * as T from "@/api/types";
 import { weightedEdges, weightedRelationship } from "@/lib/score";
+import { holdsWatchState } from "@/lib/watchKeys";
 import { useSession } from "@/store/session";
 import { useNewsWeight } from "@/store/weight";
 
@@ -315,8 +316,7 @@ export function useToggleWatch() {
       return !watched;
     },
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ["company"] });
-      void qc.invalidateQueries({ queryKey: ["companies"] });
+      void qc.invalidateQueries({ predicate: (q) => holdsWatchState(q.queryKey) });
       void qc.invalidateQueries({ queryKey: ["me", "watchlist"] });
     },
   });

@@ -23,6 +23,8 @@ const remember = <R>(res: R, pick: (r: R) => readonly { companyId: string; marke
   return res;
 };
 
+/** 로고 기억용 — 시세 행의 시장·코드 (시장이 없으면 KOSPI 로 둔다: 로고 조회 키일 뿐) */
+const quoteRef = (q: T.CompanyQuote) => ({ companyId: q.companyId, market: (q.market ?? "KOSPI") as T.Market, stockCode: q.stockCode });
 const normSummary = (c: T.CompanySummary): T.CompanySummary => ({
   ...c,
   nameEn: nz(c.nameEn),
@@ -94,6 +96,11 @@ export const liveApi: CosmosApi = {
       const res = await request<{ items: T.Industry[] }>("/industries");
       return { items: res.items.map(normIndustry) };
     },
+    quotes: async () => remember(await request<T.CompanyQuotes>("/companies/quotes"), (r) => r.items.map(quoteRef)),
+    related: async (id) => remember(await request<T.RelatedCompanies>(`/companies/${id}/related`), (r) => r.items.map((i) => quoteRef(i.quote))),
+  },
+  market: {
+    indices: (period) => request(`/market/indices${qs({ period })}`),
   },
   news: {
     list: (p) => request(`/news${qs(p)}`),

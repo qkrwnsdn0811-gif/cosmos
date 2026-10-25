@@ -626,3 +626,69 @@ export interface CompanyHistoryParams {
   cursor?: string;
   size?: number;
 }
+
+/* ── 기업 탭 시세 (GET /market/indices, /companies/quotes, /companies/{id}/related) ──
+   등락은 비율(0.0327 = 3.27%)이고 거래일 수로 센다: 1일 · 1개월 = 20거래일 · 3개월 = 60거래일. 날짜는 YYYY-MM-DD */
+export interface IndexPoint {
+  date: string;
+  close: number;
+}
+export interface MarketIndex {
+  indexCode: "KOSPI" | "KOSDAQ";
+  close: number;
+  change1d: number | null;
+  change1m: number | null;
+  /** 오래된 것부터, 기간 거래일 수 + 1개 */
+  points: IndexPoint[];
+}
+export interface MarketIndices {
+  asOf: string | null;
+  items: MarketIndex[];
+}
+export interface CompanyQuote {
+  companyId: UUID;
+  name: string;
+  stockCode: string | null;
+  market: Market | null;
+  /** 대표 업종 (예: 반도체 장비) */
+  industry: string | null;
+  close: number | null;
+  prevClose: number | null;
+  tradingDate: string | null;
+  change1d: number | null;
+  change1m: number | null;
+  change3m: number | null;
+  /** 최근 21개 종가, 오래된 것부터 (주가 없으면 빈 목록) */
+  spark: number[];
+  marketCap: number | null;
+  marketCapRank: number | null;
+  sizeClass: "LARGE" | "MID" | "SMALL" | null;
+  per: number | null;
+  pbr: number | null;
+  dividendYield: number | null;
+  dividendPerShare: number | null;
+  netIncomeTtm: number | null;
+  equity: number | null;
+  fiscalBasis: string | null;
+  priceDate: string | null;
+  /** 공개 은하 스냅샷 1년 관계의 상대 수 */
+  relationCount: number;
+}
+export interface CompanyQuotes {
+  asOf: string | null;
+  items: CompanyQuote[];
+}
+/** OUT = 이 기업이 공급·투자하는 쪽, IN = 상대가 이 기업에 공급·투자하는 쪽, NONE = 방향 없는 관계 */
+export type RelationDirection = "OUT" | "IN" | "NONE";
+export interface RelatedCompany {
+  relationType: RelationshipType;
+  direction: RelationDirection;
+  score: number;
+  otherTypes: RelationshipType[];
+  quote: CompanyQuote;
+}
+export interface RelatedCompanies {
+  companyId: UUID;
+  window: string;
+  items: RelatedCompany[];
+}

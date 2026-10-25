@@ -223,6 +223,31 @@ export function useCompanyHistory(companyId: string | null) {
     enabled: Boolean(companyId),
   });
 }
+/** 기업 탭 시세판 — 전 종목 시세 (61종목이라 한 번에 받는다) */
+export function useCompanyQuotes() {
+  return useQuery({
+    queryKey: ["companies", "quotes"],
+    queryFn: () => api.companies.quotes(),
+    staleTime: 5 * 60_000,
+  });
+}
+/** 기업 상세 — 공개 은하 스냅샷 1년 관계 기업과 그 시세 */
+export function useRelatedCompanies(companyId: string | null) {
+  return useQuery({
+    queryKey: ["companies", "related", companyId],
+    queryFn: () => api.companies.related(companyId!),
+    enabled: Boolean(companyId),
+    staleTime: 5 * 60_000,
+  });
+}
+/** 코스피·코스닥 지수 (기업 탭 시장 띠·상세 차트) */
+export function useMarketIndices(period: T.PricePeriod) {
+  return useQuery({
+    queryKey: ["market", "indices", period],
+    queryFn: () => api.market.indices(period),
+    staleTime: 5 * 60_000,
+  });
+}
 /** 기업 지표 (F8) */
 export function useCompanyFundamental(companyId: string | null) {
   return useQuery({

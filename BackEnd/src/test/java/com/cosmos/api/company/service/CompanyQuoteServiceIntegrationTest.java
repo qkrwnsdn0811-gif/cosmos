@@ -148,6 +148,18 @@ class CompanyQuoteServiceIntegrationTest {
     }
 
     @Test
+    void relation_count_skips_inactive_counterparts() {
+        // 상세의 관계 기업 목록(활성 기업만)과 같은 기준이어야 한다
+        UUID inactive = id(5);
+        jdbcTemplate.update("INSERT INTO company (company_id, name, stock_code, market, status) VALUES (?, '시세테스트5', '980005', 'KOSDAQ', 'INACTIVE')",
+                inactive);
+        insertRelation(id(36), Q1, inactive, "SUPPLY", "1Y", "50");
+
+        assertThat(byId().get(Q1).relationCount()).isEqualTo(2);
+        assertThat(quoteService.findRelated(Q1).items()).extracting(r -> r.quote().companyId()).doesNotContain(inactive);
+    }
+
+    @Test
     void quotes_sorted_by_market_cap() {
         CompanyQuoteListResponse result = quoteService.findQuotes();
 

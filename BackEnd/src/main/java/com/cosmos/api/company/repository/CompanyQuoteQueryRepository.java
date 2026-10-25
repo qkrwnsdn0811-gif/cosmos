@@ -153,7 +153,7 @@ public class CompanyQuoteQueryRepository {
         return result;
     }
 
-    /** 기업 → 공개 스냅샷의 window 관계에서 만나는 상대 기업 수 */
+    /** 기업 → 공개 스냅샷의 window 관계에서 만나는 활성 상대 기업 수 (상세의 관계 기업 목록과 같은 기준) */
     public Map<UUID, Integer> findRelationCounts(String window) {
         Map<UUID, Integer> result = new HashMap<>();
         jdbcTemplate.query("""
@@ -170,7 +170,9 @@ public class CompanyQuoteQueryRepository {
                     UNION ALL
                     SELECT target_company_id, source_company_id FROM edges
                 )
-                SELECT company_id, COUNT(DISTINCT other) AS n FROM pairs GROUP BY company_id
+                SELECT p.company_id, COUNT(DISTINCT p.other) AS n
+                FROM pairs p JOIN company c ON c.company_id = p.other AND c.status = 'ACTIVE'
+                GROUP BY p.company_id
                 """.formatted(LATEST_SNAPSHOT), new MapSqlParameterSource("window", window), (ResultSet rs) -> {
             result.put(rs.getObject("company_id", UUID.class), rs.getInt("n"));
         });

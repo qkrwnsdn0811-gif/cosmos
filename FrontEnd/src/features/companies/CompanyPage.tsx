@@ -131,10 +131,16 @@ export default function CompanyPage() {
             </div>
             <div className="cp-price">
               <b className="num">{fmtPrice(q.close)}</b>
-              <span className={`num tone-${t}`}>
-                {fmtSigned(amount)} ({fmtPct(q.change1d)})
-              </span>
-              <span className="meta">{dayLabel(q.tradingDate)} 종가</span>
+              {q.close != null ? (
+                <>
+                  <span className={`num tone-${t}`}>
+                    {fmtSigned(amount)} ({fmtPct(q.change1d)})
+                  </span>
+                  <span className="meta">{dayLabel(q.tradingDate)} 종가</span>
+                </>
+              ) : (
+                <span className="meta">주가 데이터가 없습니다</span>
+              )}
             </div>
           </div>
           <div className="cp-actions">
@@ -179,9 +185,11 @@ export default function CompanyPage() {
                   </button>
                 ))}
               </div>
-              <label className="cp-compare">
-                <input type="checkbox" checked={compare} onChange={(e) => setCompare(e.target.checked)} /> {benchName}와 비교
-              </label>
+              {q.close != null && (
+                <label className="cp-compare">
+                  <input type="checkbox" checked={compare} onChange={(e) => setCompare(e.target.checked)} /> {benchName}와 비교
+                </label>
+              )}
             </div>
             {pricesLoading || (compare && indices.isLoading) ? (
               <Skeleton h={240} style={{ borderRadius: 12, marginTop: 12 }} />

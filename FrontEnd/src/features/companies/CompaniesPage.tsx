@@ -92,10 +92,11 @@ export default function CompaniesPage() {
         </span>
       </div>
 
-      {indices.data && indices.data.items.length > 0 ? (
-        <MarketStrip indices={indices.data.items} rows={all} asOf={asOf} />
+      {/* 지수를 못 받으면 지수 카드만 빠지고 반도체 등락 카드는 남는다 */}
+      {all.length > 0 && !indices.isLoading ? (
+        <MarketStrip indices={indices.data?.items ?? []} rows={all} asOf={asOf} />
       ) : (
-        indices.isLoading && <Skeleton h={118} style={{ marginTop: 18, borderRadius: 18 }} />
+        (indices.isLoading || quotes.isLoading) && <Skeleton h={118} style={{ marginTop: 18, borderRadius: 18 }} />
       )}
 
       {all.length > 0 && (

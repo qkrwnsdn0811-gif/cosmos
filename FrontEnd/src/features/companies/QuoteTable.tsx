@@ -1,6 +1,8 @@
+import { Link } from "react-router-dom";
 import type { CompanyQuote } from "@/api/types";
 import { CompanyAvatar, Icon } from "@/components/ui";
 import Sparkline from "@/components/Sparkline";
+import { companyPath } from "@/lib/routes";
 import { SIZE_LABEL, fmtCap, fmtPct, fmtPrice, fmtRatio, fmtSigned, perText, tone, watchReasons, type SortDir, type SortKey } from "./quoteFormat";
 
 export interface SortState {
@@ -51,11 +53,17 @@ export default function QuoteTable({
               <th
                 key={i}
                 className={[c.right && "right", c.small && "hide-sm", c.sort && "sortable", c.sort && sort.key === c.sort && "on"].filter(Boolean).join(" ")}
-                onClick={c.sort ? () => clickHead(c.sort!, c.first) : undefined}
                 aria-sort={c.sort && sort.key === c.sort ? (sort.dir === "asc" ? "ascending" : "descending") : undefined}
               >
-                {c.label}
-                {c.sort && <span className="sort-arrow">{sort.key === c.sort ? (sort.dir === "desc" ? "▼" : "▲") : "▲▼"}</span>}
+                {/* 정렬 열은 버튼으로 — 키보드(Tab·Enter)로도 정렬할 수 있게 */}
+                {c.sort ? (
+                  <button type="button" className="th-sort" onClick={() => clickHead(c.sort!, c.first)}>
+                    {c.label}
+                    <span className="sort-arrow">{sort.key === c.sort ? (sort.dir === "desc" ? "▼" : "▲") : "▲▼"}</span>
+                  </button>
+                ) : (
+                  c.label
+                )}
               </th>
             ))}
           </tr>
@@ -89,7 +97,10 @@ export default function QuoteTable({
                     <CompanyAvatar name={q.name} companyId={q.companyId} stockCode={q.stockCode} market={q.market} industry={q.industry} size={32} />
                     <div>
                       <b>
-                        {q.name}
+                        {/* 이름은 진짜 링크 — 가운데 클릭·새 탭으로도 열린다. 행 클릭과 겹치지 않게 전파를 막는다 */}
+                        <Link to={companyPath(q.companyId)} className="qt-name" onClick={(e) => e.stopPropagation()}>
+                          {q.name}
+                        </Link>
                         {reasons.length > 0 && (
                           <span className="watch-badge" title={reasons.map((r) => r.label).join(" · ")}>
                             주목

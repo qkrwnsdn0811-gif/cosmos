@@ -104,3 +104,16 @@ def test_stale_comention_relationships_are_removed(pg, synthetic_docs):
     publish_galaxy(pg, AS_OF, edges(), ids, ROLES)
     publish_galaxy(pg, AS_OF, edges(with_comention=False), ids, ROLES)
     assert q(pg, "SELECT count(*) FROM company_relationship WHERE relation_source = 'COMENTION'") == [(0,)]
+
+
+def test_dart_ownership_edges_are_disclosure_backed(pg, synthetic_docs):
+    ids, _ = seed(pg, synthetic_docs)
+    dart = [GalaxyEdge(A.key, C.key, "INVEST", "DART", w, 23.7, None, ()) for w in ("30D", "1Y", "10Y")]
+    publish_galaxy(pg, AS_OF, edges() + dart, ids, ROLES)
+    assert q(pg, """SELECT cr.relation_source FROM company_relationship cr JOIN relationship_type rt
+                    USING (relationship_type_id) WHERE rt.code = 'INVEST'""") == [("DART",)]
+    rows = q(pg, """SELECT rsc.window_type, rsc.score, rsc.news_score, rsc.disclosure_score, rsc.evidence_count
+                    FROM relationship_score_current rsc JOIN company_relationship cr USING (relationship_id)
+                    JOIN relationship_type rt USING (relationship_type_id) WHERE rt.code = 'INVEST' ORDER BY 1""")
+    assert [(w, float(s), n, float(d), c) for w, s, n, d, c in rows] == [
+        ("10Y", 23.7, None, 23.7, 0), ("1Y", 23.7, None, 23.7, 0), ("30D", 23.7, None, 23.7, 0)]

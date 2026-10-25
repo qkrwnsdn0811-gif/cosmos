@@ -43,7 +43,7 @@ class GalaxyEdge:
     src: str
     dst: str
     rel: str            # SUPPLY | PARTNER | COMPETE | CO_MENTIONED
-    source: str         # NEWS | COMENTION
+    source: str         # NEWS | COMENTION | DART (공시 지분, fundamentals/ownership.py)
     window: str
     score: float
     confidence: float | None

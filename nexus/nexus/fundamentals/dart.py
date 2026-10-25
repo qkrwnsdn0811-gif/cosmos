@@ -154,5 +154,11 @@ class DartClient:
         payload = self._get("fnlttSinglAcnt.json", corp_code=corp_code, bsns_year=str(year), reprt_code=report).json()
         return parse_statement(payload, year, report)
 
+    def investments(self, corp_code: str, year: int, report: str):
+        """타법인 출자 현황 (ownership.py parses it)."""
+        from .ownership import parse_investments
+        return parse_investments(self._get("otrCprInvstmntSttus.json", corp_code=corp_code, bsns_year=str(year),
+                                           reprt_code=report).json())
+
     def dividend(self, corp_code: str, year: int) -> int | None:
         return parse_dividend(self._get("alotMatter.json", corp_code=corp_code, bsns_year=str(year), reprt_code=ANNUAL).json())

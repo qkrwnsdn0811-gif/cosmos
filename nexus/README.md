@@ -33,6 +33,8 @@ DB 적재 테스트는 `TEST_DATABASE_URL`(예: `postgresql://cosmos:cosmos1234@
 ```bash
 nexus/.venv/Scripts/python -I -X utf8 -m nexus cases --chain semis --database-url postgresql://cosmos:cosmos1234@localhost:5432/cosmos
 nexus/.venv/Scripts/python -I -X utf8 -m nexus fundamentals --chain semis --database-url postgresql://cosmos:cosmos1234@localhost:5432/cosmos
+# 공시 지분 관계 (OpenDART 타법인 출자 현황, V16 company_ownership) — 다음 publish-graph 때 은하의 투자 관계선으로 들어간다
+nexus/.venv/Scripts/python -I -X utf8 -m nexus ownership --chain semis --database-url postgresql://cosmos:cosmos1234@localhost:5432/cosmos
 ```
 
 - `cases`: 뉴스 유형 분류, 1·3·5·20거래일 초과수익률, 과거 사례 반응표(2026-06까지), 단기·장기 방향 딱지, 2026-07 이후 적중률. 보고서는 `docs/nexus/case-reaction-report.md`.

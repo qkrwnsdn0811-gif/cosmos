@@ -17,7 +17,7 @@ FORMULA_VERSION = "nexus-bigkinds-v1"
 GRAPH_MODEL_VERSION = "nexus-graph-v1"
 
 
-def _relationship_id(cur, src: UUID, dst: UUID, type_id: int, rel: str) -> UUID:
+def _relationship_id(cur, src: UUID, dst: UUID, type_id: int, rel: str, source: str = "NEWS") -> UUID:
     """Reuse the row in either orientation for undirected types; otherwise insert it."""
     row = cur.execute("SELECT relationship_id FROM company_relationship WHERE source_company_id = %s "
                       "AND target_company_id = %s AND relationship_type_id = %s", (src, dst, type_id)).fetchone()
@@ -26,7 +26,7 @@ def _relationship_id(cur, src: UUID, dst: UUID, type_id: int, rel: str) -> UUID:
                           "AND target_company_id = %s AND relationship_type_id = %s", (dst, src, type_id)).fetchone()
     if row:
         return row[0]
-    source = "COMENTION" if rel == "CO_MENTIONED" else "NEWS"
+    source = "COMENTION" if rel == "CO_MENTIONED" else source
     return cur.execute("INSERT INTO company_relationship (source_company_id, target_company_id, relationship_type_id, "
                        "relation_source) VALUES (%s, %s, %s, %s) RETURNING relationship_id",
                        (src, dst, type_id, source)).fetchone()[0]
@@ -101,7 +101,7 @@ def publish_galaxy(conn, as_of: datetime, edges: list[GalaxyEdge], company_ids: 
         for e in edges:
             if (e.src, e.dst, e.rel) not in rel_ids:
                 rel_ids[(e.src, e.dst, e.rel)] = _relationship_id(cur, company_ids[e.src], company_ids[e.dst],
-                                                                  type_ids[e.rel], e.rel)
+                                                                  type_ids[e.rel], e.rel, e.source)
         comention_ids = [rid for (_, _, rel), rid in rel_ids.items() if rel == "CO_MENTIONED"]
         cur.execute("DELETE FROM company_relationship WHERE relation_source = 'COMENTION' "
                     "AND NOT (relationship_id = ANY(%s::uuid[]))", (comention_ids,))
@@ -111,8 +111,10 @@ def publish_galaxy(conn, as_of: datetime, edges: list[GalaxyEdge], company_ids: 
         cur.executemany(
             "INSERT INTO relationship_score_current (relationship_id, window_type, snapshot_id, score, news_score, "
             "disclosure_score, impact_direction, confidence, evidence_count, formula_version, as_of_at) "
-            "VALUES (%s, %s, %s, %s, %s, NULL, NULL, %s, %s, %s, %s)",
-            [(rel_ids[(e.src, e.dst, e.rel)], e.window, snapshot_id, e.score, e.score,
+            "VALUES (%s, %s, %s, %s, %s, %s, NULL, %s, %s, %s, %s)",
+            # 공시(DART) 지분 관계는 뉴스 점수가 아니라 공시 점수(지분율)로 둔다
+            [(rel_ids[(e.src, e.dst, e.rel)], e.window, snapshot_id, e.score,
+              None if e.source == "DART" else e.score, e.score if e.source == "DART" else None,
               None if e.confidence is None else round(e.confidence, 6), len(e.docs), FORMULA_VERSION, as_of)
              for e in edges])
 

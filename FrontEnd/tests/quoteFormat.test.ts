@@ -13,6 +13,7 @@ import {
   fmtRatio,
   fmtSigned,
   median,
+  ownLabel,
   perShare,
   perText,
   rangePosition,
@@ -197,4 +198,11 @@ test("watch preset keeps notable stocks, strongest first", () => {
   ];
   const picked = applyPreset(rows, "watch");
   assert.deepEqual(picked.rows.map((r) => r.companyId), ["news", "move", "low"]);
+});
+
+test("ownership numbers: disclosed stakes in %, news-only relations as scores", () => {
+  assert.equal(ownLabel(23.7, true), "23.7%");
+  assert.equal(ownLabel(42.63, true), "42.63%");
+  assert.equal(ownLabel(33, true), "33%");
+  assert.equal(ownLabel(80.4, false), "80");
 });

@@ -157,7 +157,7 @@ export default function CompaniesPage() {
             <p className="meta mt-8" style={{ fontSize: 13 }}>
               {view === "list"
                 ? "등락은 거래일 기준(1개월 = 20거래일)입니다. 관계는 공개 은하 스냅샷의 1년 관계 수입니다."
-                : "스냅샷의 투자·지분 유형 관계를 지배 방향(보유 → 피보유)으로 표시합니다. 숫자는 관계 점수입니다."}
+                : "OpenDART 타법인 출자 현황(공시)의 지분율과 뉴스에서 확인된 지분 관계를 보유 → 피보유 방향으로 표시합니다."}
             </p>
           </div>
           <div className="row" style={{ gap: 12 }}>

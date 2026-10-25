@@ -632,11 +632,55 @@ def galaxy_chains() -> list[str]:
     return [chain for chain in CHAINS if (_paths(chain)["analyzed"] / "relations.pkl").is_file()]
 
 
+def cmd_ownership(args) -> int:
+    """Disclosed stakes among the listed peers: OpenDART 타법인 출자 현황 from each company's latest periodic report."""
+    import psycopg
+    from .config import dart_key
+    from .fundamentals.dart import ANNUAL, DartClient, DartError, interim_candidates
+    from .fundamentals.ownership import match_ownerships, name_index
+    from .load.ownership import write_ownership
+    from .load.postgres import ensure_companies
+    companies, _ = _load_master(args.chain)
+    index = name_index({key: c.name for key, c in companies.items()}, _read_csv(_paths(args.chain)["aliases_csv"]))
+    try:
+        dart = DartClient(dart_key())
+        corp = dart.corp_codes()
+    except (DartError, OSError, ValueError) as e:
+        sys.exit(f"OpenDART unavailable: {e}")
+    today = datetime.now(KST).date()
+    reports = interim_candidates(today) + [(today.year - 1, ANNUAL)]
+    owned, reported = [], 0
+    for key, c in companies.items():
+        code = corp.get(c.ticker)
+        if not code:
+            continue
+        for year, report in reports:
+            try:
+                investments = dart.investments(code, year, report)
+            except (OSError, ValueError) as e:
+                print(f"  {c.name}: OpenDART failed ({e})", flush=True)
+                break
+            if investments:
+                reported += 1
+                owned += match_ownerships(key, investments, index)
+                break
+    with psycopg.connect(args.database_url) as conn:
+        ids = ensure_companies(conn, list(companies.values()))
+        written = write_ownership(conn, owned, ids)
+        conn.commit()
+    print(f"ownership: {written} stakes among peers (reports from {reported} of {len(companies)} companies)")
+    for o in owned:
+        print(f"  {companies[o.investor].name} → {companies[o.investee].name} {o.stake:g}% ({o.purpose})")
+    return 0
+
+
 def cmd_publish_graph(args) -> int:
     # relations.pkl is written by `analyze` into the git-ignored local nexus/data directory (see cmd_load).
     import psycopg
+    from .fundamentals.ownership import merge_ownership, ownership_edges
     from .galaxy.build import WINDOWS, build_galaxy
     from .load.galaxy import publish_galaxy
+    from .load.ownership import read_ownership
     from .load.postgres import ensure_companies
     chains = galaxy_chains()
     if not chains:
@@ -657,11 +701,15 @@ def cmd_publish_graph(args) -> int:
     as_of, galaxy = build_galaxy(inputs)
     with psycopg.connect(args.database_url) as conn:
         ids = ensure_companies(conn, list(companies_all.values()))
+        # 공시 지분 관계(nexus ownership)를 모든 기간의 투자 관계선으로 — 같은 방향 뉴스 지분 관계는 공시가 대신한다
+        owned = read_ownership(conn, {company_id: key for key, company_id in ids.items()})
+        galaxy = merge_ownership(galaxy, ownership_edges(owned, WINDOWS))
         result = publish_galaxy(conn, as_of, galaxy, ids, roles)
         conn.commit()
     print(f"as_of {as_of.date()} ({', '.join(chains)})")
     for window in WINDOWS:
-        kinds = Counter("함께 언급" if e.rel == "CO_MENTIONED" else "근거 관계" for e in galaxy if e.window == window)
+        kinds = Counter("함께 언급" if e.rel == "CO_MENTIONED" else "공시 지분" if e.source == "DART" else "근거 관계"
+                        for e in galaxy if e.window == window)
         print(f"  {window}: {dict(kinds)}")
     print(f"evidence rows: {result['evidence_rows']:,} ({time.monotonic() - started:,.0f}s)")
     return 0
@@ -786,7 +834,7 @@ def main(argv: list[str] | None = None) -> int:
     predict.add_argument("--chain", choices=sorted(CHAINS), required=True)
     predict.add_argument("--database-url", required=True)
     sub.add_parser("publish-graph").add_argument("--database-url", required=True)
-    for name in ("cases", "fundamentals", "evidence"):
+    for name in ("cases", "fundamentals", "evidence", "ownership"):
         cmd = sub.add_parser(name)
         cmd.add_argument("--chain", choices=sorted(CHAINS), required=True)
         cmd.add_argument("--database-url", required=True)
@@ -797,6 +845,7 @@ def main(argv: list[str] | None = None) -> int:
                "migrate": cmd_migrate, "load": cmd_load, "sentiment": cmd_sentiment,
                "train-impact": cmd_train_impact, "predict-impact": cmd_predict_impact,
                "publish-graph": cmd_publish_graph, "cases": cmd_cases, "fundamentals": cmd_fundamentals, "evidence": cmd_evidence,
+               "ownership": cmd_ownership,
                "relation-fragments": cmd_relation_fragments,
                "train-relations": cmd_train_relations}[args.command]
     return handler(args)

@@ -68,6 +68,11 @@ export function perShare(q: Pick<CompanyQuote, "marketCap" | "close" | "netIncom
   };
 }
 
+/** 지분 관계 숫자 — 공시(OpenDART) 지분율이면 "23.7%", 뉴스로만 확인된 관계면 관계 점수 "80" */
+export function ownLabel(score: number, disclosed: boolean): string {
+  return disclosed ? `${Number(score.toFixed(2))}%` : `${Math.round(score)}`;
+}
+
 /** 관계 종류를 이 기업 쪽에서 읽은 말 (IN = 상대가 나에게 공급·투자) */
 export function relationLabel(type: RelationshipType, direction: RelationDirection): string {
   if (type === "SUPPLY") return direction === "IN" ? "공급사" : direction === "OUT" ? "고객사" : "공급 관계";

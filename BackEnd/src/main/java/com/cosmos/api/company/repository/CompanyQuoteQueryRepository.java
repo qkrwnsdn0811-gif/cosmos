@@ -109,6 +109,23 @@ public class CompanyQuoteQueryRepository {
     public record YearRange(BigDecimal high, BigDecimal low) {
     }
 
+    public record ExpectedMove(double move, String grade) {
+    }
+
+    /** 기업 → 투자 기간(SHORT·LONG) → 예상 변동폭과 등급. valueChain 의 값만 */
+    public Map<UUID, Map<String, ExpectedMove>> findExpectedMoves(String valueChain) {
+        Map<UUID, Map<String, ExpectedMove>> result = new HashMap<>();
+        jdbcTemplate.query("""
+                SELECT company_id, horizon, expected_move, grade
+                FROM company_expected_move
+                WHERE value_chain = :valueChain
+                """, new MapSqlParameterSource("valueChain", valueChain), (ResultSet rs) -> {
+            result.computeIfAbsent(rs.getObject("company_id", UUID.class), k -> new HashMap<>())
+                    .put(rs.getString("horizon"), new ExpectedMove(rs.getDouble("expected_move"), rs.getString("grade")));
+        });
+        return result;
+    }
+
     /**
      * 기업 → 직접 나온(REPORTED) 기사 수: 마지막 뉴스 날(KST) 포함 최근 7일(recent)과 그 전 60일(before).
      * 마지막 뉴스 날은 news_event 전체의 최신 dateline 이다

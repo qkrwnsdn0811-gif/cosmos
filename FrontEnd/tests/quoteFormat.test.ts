@@ -31,6 +31,7 @@ const quote = (over: Partial<CompanyQuote>): CompanyQuote => ({
   marketCap: 1e12, marketCapRank: 1, sizeClass: "LARGE", per: 10, pbr: 1, dividendYield: 0.01, dividendPerShare: 100,
   netIncomeTtm: 1e11, equity: 1e12, fiscalBasis: "기준", priceDate: "2026-10-23", relationCount: 1,
   news7d: 0, newsUsual7d: 0, high52w: 200, low52w: 50,
+  expectedMoveShort: null, moveGradeShort: null, expectedMoveLong: null, moveGradeLong: null,
   ...over,
 });
 

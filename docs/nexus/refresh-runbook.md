@@ -1,7 +1,7 @@
 # 마감 전 데이터 최신화 순서 (10-29 ~ 10-30에 한 번)
 
 시연과 배포 서버를 마지막 뉴스·주가로 맞춘다. 개발 PC(로컬 `cosmos-postgres`)에서 아래 순서대로 한 번 돌리고, 끝나면 문서 숫자와
-배포용 덤프를 다시 만든다. 전부 1시간 20분 안팎이다(대부분 `analyze`).
+배포용 덤프를 다시 만든다. 전부 1시간 안팎이다(2026-10-26 새벽에 이 순서로 한 번 돌려 검증했다: 54분, 그중 `analyze` 44분).
 
 앞부분은 모두 같다: 저장소 루트에서 `nexus/.venv/Scripts/python -I -X utf8 -m nexus …`. DB 주소는
 `postgresql://cosmos:cosmos1234@localhost:5432/cosmos` (아래 `$DB`).
@@ -14,17 +14,17 @@
 
 ## 1. 순서
 
-| # | 명령 | 걸리는 시간 (10-25 기준) | 하는 일 |
+| # | 명령 | 걸리는 시간 (10-26 실측) | 하는 일 |
 |---|---|---|---|
-| 1 | `collect --chain semis --start 2026-10-01 --end <내일 날짜>` | 2분 | 빅카인즈 기사 수집. 겹치는 날은 캐시와 합친다 |
-| 2 | `analyze --chain semis` | 46분 | 기업 인식·관계·이벤트·전파 (`nexus/data/analyzed/semis/*.pkl`) |
-| 3 | `sentiment --chain semis` (**GPU 환경**: `nexus/.venv-rocm/Scripts/python -I -X utf8 -m nexus sentiment --chain semis`) | 수 분 | 새 기사만 KR-FinBERT 점수 |
-| 4 | `load --chain semis --database-url $DB` | 5분 | 이벤트·영향·초과수익률(1·3거래일)·주가·뉴스 근거 문장 적재 |
-| 5 | `cases --chain semis --database-url $DB` | 3분 | 뉴스 유형, 5·20거래일 초과수익률, 과거 사례, 방향 표시, 적중률, 예상 변동폭, 피드 순서. **4 다음에 반드시** (load 가 5·20거래일 행을 지운다) |
-| 6 | `sentiment --chain semis --database-url $DB` (GPU 환경) | 1분 | 뉴스 화면 라벨(같은 날 상대 논조 3등분)을 다시 쓴다 |
-| 7 | `fundamentals --chain semis --database-url $DB` | 3분 | 시가총액·규모(KRX), PER·PBR·배당(OpenDART) |
-| 8 | `ownership --chain semis --database-url $DB` | 1분 | 공시 지분 관계(OpenDART 타법인 출자 현황, 1% 이상) |
-| 9 | `publish-graph --database-url $DB` | 1분 | 관계 은하 스냅샷(뉴스 관계 + 공시 지분) |
+| 1 | `collect --chain semis --start 2026-10-01 --end <내일 날짜>` | 43초 | 빅카인즈 기사 수집. 겹치는 날은 캐시와 합친다 |
+| 2 | `analyze --chain semis` | 44분 | 기업 인식·관계·이벤트·전파 (`nexus/data/analyzed/semis/*.pkl`) |
+| 3 | `sentiment --chain semis` (**GPU 환경**: `nexus/.venv-rocm/Scripts/python -I -X utf8 -m nexus sentiment --chain semis`) | 44초 | 새 기사만 KR-FinBERT 점수 |
+| 4 | `load --chain semis --database-url $DB` | 3분 24초 | 이벤트·영향·초과수익률(1·3거래일)·주가·뉴스 근거 문장 적재 |
+| 5 | `cases --chain semis --database-url $DB` | 3분 11초 | 뉴스 유형, 5·20거래일 초과수익률, 과거 사례, 방향 표시, 적중률, 예상 변동폭, 피드 순서. **4 다음에 반드시** (load 가 5·20거래일 행을 지운다) |
+| 6 | `sentiment --chain semis --database-url $DB` (GPU 환경) | 22초 | 뉴스 화면 라벨(같은 날 상대 논조 3등분)을 다시 쓴다 |
+| 7 | `fundamentals --chain semis --database-url $DB` | 37초 | 시가총액·규모(KRX), PER·PBR·배당(OpenDART) |
+| 8 | `ownership --chain semis --database-url $DB` | 14초 | 공시 지분 관계(OpenDART 타법인 출자 현황, 1% 이상) |
+| 9 | `publish-graph --database-url $DB` | 46초 | 관계 은하 스냅샷(뉴스 관계 + 공시 지분) |
 
 실패하면 그 단계만 다시 돌린다. 모든 단계는 같은 결과를 다시 써도 되게 만들어져 있다.
 

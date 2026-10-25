@@ -27,6 +27,10 @@ class Recognizer:
     def aliases_of(self, key: str) -> list[str]:
         return sorted(self._aliases.get(key, []), key=lambda a: (-len(a), a))
 
+    def keys_in(self, text: str) -> set[str]:
+        """Company keys whose aliases appear in one piece of text (a sentence of the news screen's evidence)."""
+        return self._text_hits(text, None)
+
     def _text_hits(self, title: str | None, body: str | None) -> set[str]:
         result = self._matcher.match(title, body)
         return {m.ticker for m in result.mentions if m.ticker and m.confidence >= MIN_CONFIDENCE}

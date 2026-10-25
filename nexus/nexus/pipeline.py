@@ -308,7 +308,7 @@ def cmd_load(args) -> int:
     from .load.postgres import (ensure_companies, ensure_relationship_types, load_events, load_prices,
                                 load_relations, prune_events)
     p = _paths(args.chain)
-    companies, _ = _load_master(args.chain)
+    companies, recognizer = _load_master(args.chain)
     with (p["analyzed"] / "events.pkl").open("rb") as f:
         bundles = pickle.load(f)
     with (p["analyzed"] / "relations.pkl").open("rb") as f:
@@ -334,6 +334,33 @@ def cmd_load(args) -> int:
         print(f"stale events removed: {pruned}", flush=True)
         print(f"price rows written: {load_prices(conn, ids, bars)}")
         conn.commit()
+        # load replaced the article-company rows, and their sentences went with them (FK cascade)
+        _write_news_evidence(conn, bundles, recognizer, ids)
+    return 0
+
+
+def _write_news_evidence(conn, bundles: list[EventBundle], recognizer: Recognizer, ids: dict) -> None:
+    """News screen evidence sentences (대표 근거 문장) and confidence (분석 신뢰도) for every loaded article."""
+    from .entities.sentences import news_evidence
+    from .load.postgres import write_news_evidence
+    rows, confidence = [], {}
+    for b in bundles:
+        found, conf = news_evidence(b, recognizer.keys_in)
+        rows += found
+        confidence.update({(b.article.news_id, k): v for k, v in conf.items()})
+    print(f"news evidence sentences written: {write_news_evidence(conn, rows, confidence, ids):,} "
+          f"(articles with a sentence: {len({r.news_id for r in rows}):,} of {len(bundles):,})", flush=True)
+
+
+def cmd_evidence(args) -> int:
+    """Rewrite the news screen's evidence sentences and confidence without reloading events."""
+    import psycopg
+    from .load.postgres import ensure_companies
+    companies, recognizer = _load_master(args.chain)
+    bundles = _load_bundles(args.chain)
+    with psycopg.connect(args.database_url) as conn:
+        ids = ensure_companies(conn, list(companies.values()))
+        _write_news_evidence(conn, bundles, recognizer, ids)
     return 0
 
 
@@ -755,7 +782,7 @@ def main(argv: list[str] | None = None) -> int:
     predict.add_argument("--chain", choices=sorted(CHAINS), required=True)
     predict.add_argument("--database-url", required=True)
     sub.add_parser("publish-graph").add_argument("--database-url", required=True)
-    for name in ("cases", "fundamentals"):
+    for name in ("cases", "fundamentals", "evidence"):
         cmd = sub.add_parser(name)
         cmd.add_argument("--chain", choices=sorted(CHAINS), required=True)
         cmd.add_argument("--database-url", required=True)
@@ -765,6 +792,7 @@ def main(argv: list[str] | None = None) -> int:
     handler = {"build-master": cmd_build_master, "collect": cmd_collect, "analyze": cmd_analyze,
                "migrate": cmd_migrate, "load": cmd_load, "sentiment": cmd_sentiment,
                "train-impact": cmd_train_impact, "predict-impact": cmd_predict_impact,
-               "publish-graph": cmd_publish_graph, "cases": cmd_cases, "fundamentals": cmd_fundamentals, "relation-fragments": cmd_relation_fragments,
+               "publish-graph": cmd_publish_graph, "cases": cmd_cases, "fundamentals": cmd_fundamentals, "evidence": cmd_evidence,
+               "relation-fragments": cmd_relation_fragments,
                "train-relations": cmd_train_relations}[args.command]
     return handler(args)

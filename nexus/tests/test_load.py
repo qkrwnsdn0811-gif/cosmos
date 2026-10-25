@@ -5,9 +5,11 @@ import pandas as pd
 import psycopg
 import pytest
 
+from nexus.entities.sentences import NewsEvidence
 from nexus.ingest.normalize import to_article
 from nexus.load.postgres import (IMPACT_MODEL_VERSION, document_id, ensure_companies, event_id, load_events,
-                                 load_prices, load_relations, write_predictions, write_sentiment_labels)
+                                 load_prices, load_relations, write_news_evidence, write_predictions,
+                                 write_sentiment_labels)
 from nexus.models import (AbnormalReturn, Company, CompanyMention, Edge, EventBundle, EvidenceSnippet, Impact,
                           PathStep)
 
@@ -69,6 +71,28 @@ def test_write_sentiment_labels_updates_loaded_documents_only(pg, synthetic_docs
     rows = pg.execute("SELECT sentiment, impact_score FROM company_document WHERE document_id = %s", (doc,)).fetchall()
     assert rows == [("POSITIVE", Decimal("1")), ("POSITIVE", Decimal("1"))]
     assert count(pg, "SELECT count(*) FROM company_document WHERE document_id = %s", document_id("SYN.NOT.LOADED")) == 0
+
+
+def test_write_news_evidence_replaces_sentences_and_confidence(pg, synthetic_docs):
+    ids = ensure_companies(pg, [A, B, C])
+    load_events(pg, [bundle(synthetic_docs)], ids)
+    news_id = "SYN.20261013100000001"
+    doc = document_id(news_id)
+    rows = [NewsEvidence(news_id, A.key, 0, "가상전자 제목 문장", 0.7), NewsEvidence(news_id, B.key, 1, "하늘반도체 문장", 0.55),
+            NewsEvidence(news_id, C.key, 2, "바다소재는 기사 기업이 아니라 버린다", 0.55),
+            NewsEvidence("SYN.NOT.LOADED", A.key, 0, "적재 안 된 기사", 0.55)]
+    confidence = {(news_id, A.key): 0.7, (news_id, B.key): 0.55}
+    assert write_news_evidence(pg, rows, confidence, ids) == 2
+    got = pg.execute("SELECT sentence_text, sentence_order, confidence FROM document_evidence WHERE document_id = %s "
+                     "ORDER BY sentence_order", (doc,)).fetchall()
+    assert got == [("가상전자 제목 문장", 0, Decimal("0.700000")), ("하늘반도체 문장", 1, Decimal("0.550000"))]
+    conf = dict(pg.execute("SELECT company_id, confidence FROM company_document WHERE document_id = %s", (doc,)).fetchall())
+    assert conf == {ids[A.key]: Decimal("0.700000"), ids[B.key]: Decimal("0.550000")}
+    # a rerun replaces, it does not pile up; a company that lost its sentences loses its confidence too
+    assert write_news_evidence(pg, rows[:1], {(news_id, A.key): 0.55}, ids) == 1
+    assert count(pg, "SELECT count(*) FROM document_evidence WHERE document_id = %s", doc) == 1
+    assert pg.execute("SELECT confidence FROM company_document WHERE document_id = %s AND company_id = %s",
+                      (doc, ids[B.key])).fetchone()[0] is None
 
 
 def test_reload_is_idempotent(pg, synthetic_docs):

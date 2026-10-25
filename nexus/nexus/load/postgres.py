@@ -51,6 +51,44 @@ def write_sentiment_labels(conn, labels: dict[str, str]) -> int:
         return cur.rowcount
 
 
+NEWS_EVIDENCE_VERSION = "nexus-news-v1"
+
+
+def write_news_evidence(conn, rows: list, confidence: dict[tuple[str, str], float], company_ids: dict[str, UUID]) -> int:
+    """뉴스 화면의 대표 근거 문장(document_evidence)과 분석 신뢰도(company_document.confidence)를 바꿔 쓴다.
+    rows: entities.sentences.NewsEvidence, confidence: (news_id, company key) → 값. 이 버전의 문장은 모두 지우고 다시 넣고,
+    이미 적재된 기사-기업 행에만 단다(적재 안 된 기사·기사 기업이 아닌 회사의 문장은 버린다). `load` 가 기사-기업 행을
+    지우면 문장도 함께 지워지므로(FK ON DELETE CASCADE) `load` 뒤에 다시 부른다."""
+    with conn.transaction(), conn.cursor() as cur:
+        cur.execute("DELETE FROM document_evidence WHERE model_version = %s", (NEWS_EVIDENCE_VERSION,))
+        cur.execute("DROP TABLE IF EXISTS pg_temp.evidence_in")
+        cur.execute("CREATE TEMP TABLE evidence_in (document_id UUID, company_id UUID, sentence_text TEXT, "
+                    "sentence_order INTEGER, confidence NUMERIC(7, 6)) ON COMMIT DROP")
+        with cur.copy("COPY evidence_in FROM STDIN") as copy:
+            for r in rows:
+                if r.company_key in company_ids:
+                    copy.write_row((document_id(r.news_id), company_ids[r.company_key], r.sentence, r.order,
+                                    round(r.confidence, 6)))
+        cur.execute("INSERT INTO document_evidence (document_id, company_id, sentence_text, sentence_order, confidence, "
+                    "model_version) SELECT e.document_id, e.company_id, e.sentence_text, e.sentence_order, e.confidence, %s "
+                    "FROM evidence_in e JOIN company_document cd ON cd.document_id = e.document_id "
+                    "AND cd.company_id = e.company_id AND cd.model_version LIKE %s", (NEWS_EVIDENCE_VERSION, "nexus%"))
+        written = cur.rowcount
+        cur.execute("DROP TABLE IF EXISTS pg_temp.confidence_in")
+        cur.execute("CREATE TEMP TABLE confidence_in (document_id UUID, company_id UUID, confidence NUMERIC(7, 6)) "
+                    "ON COMMIT DROP")
+        with cur.copy("COPY confidence_in FROM STDIN") as copy:
+            for (news_id, key), value in confidence.items():
+                if key in company_ids:
+                    copy.write_row((document_id(news_id), company_ids[key], round(value, 6)))
+        cur.execute("UPDATE company_document SET confidence = NULL WHERE model_version LIKE %s AND confidence IS NOT NULL",
+                    ("nexus%",))
+        cur.execute("UPDATE company_document cd SET confidence = c.confidence FROM confidence_in c "
+                    "WHERE cd.document_id = c.document_id AND cd.company_id = c.company_id AND cd.model_version LIKE %s",
+                    ("nexus%",))
+        return written
+
+
 def event_id(news_id: str) -> UUID:
     return uuid.uuid5(NAMESPACE, "bigkinds:event:" + news_id)
 

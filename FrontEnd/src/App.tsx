@@ -6,6 +6,7 @@ import Header from "@/components/Header";
 import Toasts from "@/components/Toasts";
 import AuthDialog from "@/features/auth/AuthDialog";
 import InvestPage from "@/features/invest/InvestPage";
+import MatchLauncher from "@/features/match/MatchLauncher";
 import { GALAXY_PATH } from "@/lib/routes";
 import { useSession } from "@/store/session";
 
@@ -138,6 +139,8 @@ export default function App() {
             </Suspense>
           </LazyBoundary>
         </div>
+        {/* 오른쪽 아래 '투자 성향 맞춤' — 로그인 창(AuthDialog)이 그 위에 뜨도록 앞에 둔다 */}
+        <MatchLauncher />
         <AuthDialog />
         <Toasts />
       </BrowserRouter>

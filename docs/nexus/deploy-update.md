@@ -59,7 +59,7 @@ bash deploy/scripts/deploy.sh "$TAG"
 ```
 
 `deploy.sh` 는 `/etc/cosmos/app.env` 가 없으면 실행 중인 백엔드 컨테이너에서 환경값을 되살린다. 그래서 ③에서 백엔드를 멈추지 않는다.
-다만 되살린 파일에는 `MAIL_USERNAME`·`MAIL_PASSWORD` 가 빠져 있어 `compose.yml` 검사에서 멈춘다. 환경 파일에 두 값을 직접 넣어 둔다(6절).
+다만 되살린 파일에는 `MAIL_USERNAME`·`MAIL_PASSWORD` 가 빠져 있어 `compose.yml` 검사에서 멈춘다. 환경 파일에 두 값을 직접 넣어 둔다(7절).
 Compose를 직접 띄웠다면 이미지 태그만 `$TAG` 로 바꿔 `docker compose up -d` 한다.
 
 ## 4. 확인
@@ -73,12 +73,22 @@ curl -s "https://34-64-222-128.sslip.io/api/events?valueChain=SEMICONDUCTOR&size
 - 관계 은하(`/galaxy`)가 '2026. 10. 26. 00:00 기준'이다.
 - 시연 뉴스가 열린다: `/?event=b8b8e847-3d08-5f69-a04a-9fde01ca1edd` (케이씨텍 공급계약, [시연 시나리오](demo-scenario.md) ①).
 
-## 5. 되돌리기
+## 5. 리허설 기록 (2026-10-26, 개발 PC)
+
+이 문서 3절 순서를 개발 PC 의 별도 컨테이너로 그대로 해 봤다(코드 `25ccfec`, 위 덤프).
+
+- `build-images.sh` 로 두 이미지 빌드: 성공(백엔드 549MB, 프론트 103MB).
+- ③ DB 교체: `DROP/CREATE` 뒤 `pg_restore` 20초, 오류 없음. 뉴스 115,116건, Flyway V16.
+- ④ 운영 설정(prod 프로필)으로 백엔드 실행: 5초 만에 시작, Flyway "Successfully validated 16 migrations … Schema is up to date. No migration necessary."
+- 호스트 nginx 와 같은 라우팅(`/api` → 백엔드, 나머지 → 프론트 컨테이너)으로 확인: `/healthz` UP, 첫 화면·기업 탭·종목 상세 정상, `/api/events` 최신 10-25, 지수·시세 10-23, 공시 지분 23.7%와 DART 링크, 은하 61개 기업·관계선 135개.
+- 메일 계정을 가짜 값으로 두면 인증 코드 요청이 500, 로그는 `535-5.7.8 Username and Password not accepted` — 7절 표의 첫 줄과 같다.
+
+## 6. 되돌리기
 
 ③의 명령에서 덤프 파일만 `~/cosmos-before-nexus-update.dump` 로 바꿔 복원하고, 이전 이미지 태그로 `deploy.sh` 를 다시 돌린다.
 이전 태그는 `/opt/cosmos/releases/current` 에 남아 있다(`deploy.sh` 로 배포했을 때).
 
-## 6. 회원가입이 안 될 때 (인증 메일)
+## 7. 회원가입이 안 될 때 (인증 메일)
 
 가입은 이메일 인증 코드를 받아야 끝나고, 코드는 서버의 Gmail 계정으로 보낸다. 10-25 배포 서버는 코드 요청
 (`POST /api/auth/email/send-code`)이 500 "서버 내부 오류"로 끝났다. 가입 API·DB는 정상이다(중복 확인 응답 200).
@@ -86,7 +96,7 @@ curl -s "https://34-64-222-128.sslip.io/api/events?valueChain=SEMICONDUCTOR&size
 원인은 백엔드 로그에 나온다.
 
 ```bash
-docker logs --since 1h $(docker ps -q --filter label=com.docker.compose.service=backend) 2>&1 | grep -E "Mail|Redis" | tail -5
+docker logs --since 1h $(docker ps -q --filter label=com.docker.compose.service=backend) 2>&1 | grep -E "AuthenticationFailed|MailAuthentication|MailSend|RedisConnection|NOAUTH|Couldn't connect|no password" | tail -3
 ```
 
 | 로그 | 뜻 | 고치는 법 |

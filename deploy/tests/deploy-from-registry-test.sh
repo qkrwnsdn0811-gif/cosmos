@@ -22,7 +22,7 @@ cat > "$fixture/bin/git" <<'GIT'
 #!/usr/bin/env bash
 set -eu
 printf 'git %s\n' "$*" >> "$FAKE_CALLS"
-if [[ "$1" == merge-base && "$FAKE_SCENARIO" == not-on-nexus ]]; then
+if [[ "$1" == merge-base && "$FAKE_SCENARIO" == not-on-main ]]; then
     exit 1
 fi
 GIT
@@ -78,7 +78,7 @@ run_case() {
 
 run_case success success "$sha" "$registry"
 [[ "$status" == 0 ]] || fail "successful hand-off returned $status: $(cat "$fixture/success/output")"
-expected="git fetch --quiet origin NEXUS
+expected="git fetch --quiet origin main
 git merge-base --is-ancestor $sha FETCH_HEAD
 git checkout --quiet --detach $sha
 docker login -u oauth2accesstoken --password-stdin $host
@@ -112,10 +112,10 @@ for bad in docker.io/library/cosmos "$registry/extra" "asia-northeast3-docker.pk
 done
 echo 'PASS: registry outside Artifact Registry is rejected before any command'
 
-run_case not-on-nexus not-on-nexus "$sha" "$registry"
-[[ "$status" == 1 ]] || fail "commit outside NEXUS returned $status"
-! grep -Eq '^git checkout|^docker |^deploy.sh' "$FAKE_CALLS" || fail 'commit outside NEXUS was checked out or deployed'
-echo 'PASS: commit that is not on remote NEXUS is never deployed'
+run_case not-on-main not-on-main "$sha" "$registry"
+[[ "$status" == 1 ]] || fail "commit outside main returned $status"
+! grep -Eq '^git checkout|^docker |^deploy.sh' "$FAKE_CALLS" || fail 'commit outside main was checked out or deployed'
+echo 'PASS: commit that is not on remote main is never deployed'
 
 run_case pull-failure pull-failure "$sha" "$registry"
 [[ "$status" == 1 ]] || fail "failed pull returned $status"

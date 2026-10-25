@@ -9,6 +9,7 @@ billing_account="${BILLING_ACCOUNT:-01AE03-48E726-85FD06}"
 region="${REGION:-asia-northeast3}"
 zone="${ZONE:-asia-northeast3-a}"
 github_repository="${GITHUB_REPOSITORY:-qkrwnsdn0811-gif/cosmos}"
+deploy_branch="${DEPLOY_BRANCH:-main}"
 export CLOUDSDK_CORE_DISABLE_PROMPTS=1 CLOUDSDK_CORE_PROJECT="$project"
 
 vm_sa="nexus-vm@$project.iam.gserviceaccount.com"
@@ -60,14 +61,20 @@ done
 retry gcloud iam service-accounts add-iam-policy-binding "$vm_sa" \
     --member="serviceAccount:$deployer_sa" --role=roles/iam.serviceAccountUser
 
-# Only this repository's NEXUS branch may exchange a GitHub OIDC token for the deployer.
+# Only this repository's deploy branch may exchange a GitHub OIDC token for the deployer.
+# The condition is reapplied on every run so a changed DEPLOY_BRANCH reaches an existing provider.
+wif_condition="assertion.repository == '$github_repository' && assertion.ref == 'refs/heads/$deploy_branch'"
 exists gcloud iam workload-identity-pools describe github --location=global ||
     gcloud iam workload-identity-pools create github --location=global --display-name='GitHub Actions'
-exists gcloud iam workload-identity-pools providers describe cosmos-nexus --workload-identity-pool=github --location=global ||
+if exists gcloud iam workload-identity-pools providers describe cosmos-nexus --workload-identity-pool=github --location=global; then
+    gcloud iam workload-identity-pools providers update-oidc cosmos-nexus --workload-identity-pool=github \
+        --location=global --attribute-condition="$wif_condition"
+else
     gcloud iam workload-identity-pools providers create-oidc cosmos-nexus --workload-identity-pool=github \
         --location=global --issuer-uri=https://token.actions.githubusercontent.com \
         --attribute-mapping='google.subject=assertion.sub,attribute.repository=assertion.repository,attribute.ref=assertion.ref' \
-        --attribute-condition="assertion.repository == '$github_repository' && assertion.ref == 'refs/heads/NEXUS'"
+        --attribute-condition="$wif_condition"
+fi
 retry gcloud iam service-accounts add-iam-policy-binding "$deployer_sa" --role=roles/iam.workloadIdentityUser \
     --member="principalSet://iam.googleapis.com/projects/$project_number/locations/global/workloadIdentityPools/github/attribute.repository/$github_repository"
 

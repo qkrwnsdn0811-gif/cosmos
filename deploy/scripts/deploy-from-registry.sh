@@ -27,9 +27,9 @@ main() {
     public_url="$(sed -n 's/^PUBLIC_URL=//p' "$secrets")"
     [[ -n "$public_url" ]] || { echo "PUBLIC_URL is missing from $secrets" >&2; exit 1; }
 
-    # A re-run of an old workflow must not roll the demo back to a commit that has left NEXUS.
-    git fetch --quiet origin NEXUS
-    git merge-base --is-ancestor "$sha" FETCH_HEAD || { echo "Commit $sha is not on origin/NEXUS" >&2; exit 1; }
+    # A re-run of an old workflow must not roll the demo back to a commit that has left main.
+    git fetch --quiet origin main
+    git merge-base --is-ancestor "$sha" FETCH_HEAD || { echo "Commit $sha is not on origin/main" >&2; exit 1; }
     git checkout --quiet --detach "$sha"
 
     token="$(curl --fail --silent --show-error --max-time 10 --header 'Metadata-Flavor: Google' "$token_url" |

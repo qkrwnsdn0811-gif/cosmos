@@ -16,6 +16,7 @@ import {
   ownLabel,
   perShare,
   perText,
+  periodLabel,
   rangePosition,
   relationLabel,
   sliceDays,
@@ -205,4 +206,12 @@ test("ownership numbers: disclosed stakes in %, news-only relations as scores", 
   assert.equal(ownLabel(42.63, true), "42.63%");
   assert.equal(ownLabel(33, true), "33%");
   assert.equal(ownLabel(80.4, false), "80");
+});
+
+test("periodLabel says the real start when the history is shorter than the period", () => {
+  const days = (n: number) => Array.from({ length: n }, (_, i) => ({ date: `2026-10-${String(i + 1).padStart(2, "0")}` }));
+  assert.equal(periodLabel(days(61), "3M"), "3개월");
+  assert.equal(periodLabel(days(21), "1M"), "1개월");
+  assert.equal(periodLabel(days(15), "3M"), "10월 1일 이후");
+  assert.equal(periodLabel([], "1Y"), "1년");
 });

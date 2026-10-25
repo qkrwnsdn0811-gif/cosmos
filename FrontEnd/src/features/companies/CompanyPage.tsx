@@ -24,6 +24,7 @@ import {
   median,
   perShare,
   perText,
+  periodLabel,
   relationLabel,
   sliceDays,
   tone,
@@ -201,7 +202,7 @@ export default function CompanyPage() {
                 <ReturnChart points={chartPoints} mode={series.mode} name={q.name} benchName={benchName} />
                 {lastPoint && (
                   <p className="cp-summary num">
-                    {PERIOD_LABEL[period]} <b className={`tone-${tone(lastPoint.stockReturn)}`}>{fmtPct(lastPoint.stockReturn, 1)}</b>
+                    {periodLabel(chartPoints, period)} <b className={`tone-${tone(lastPoint.stockReturn)}`}>{fmtPct(lastPoint.stockReturn, 1)}</b>
                     {series.mode === "compare" && (
                       <>
                         {" · "}

@@ -183,6 +183,15 @@ export function applyPreset(rows: CompanyQuote[], preset: PresetKey): { rows: Co
 
 const PERIOD_DAYS: Record<PricePeriod, number> = { "1M": 20, "3M": 60, "6M": 120, "1Y": 250 };
 
+const PERIOD_NAME: Record<PricePeriod, string> = { "1M": "1개월", "3M": "3개월", "6M": "6개월", "1Y": "1년" };
+
+/** 차트 요약의 기간 이름 — 일봉이 기간보다 짧으면(최근 상장 등) 실제 시작일 "10월 1일 이후" */
+export function periodLabel(points: { date: string }[], period: PricePeriod): string {
+  if (!points.length || points.length >= PERIOD_DAYS[period] + 1) return PERIOD_NAME[period];
+  const first = points[0].date;
+  return `${Number(first.slice(5, 7))}월 ${Number(first.slice(8, 10))}일 이후`;
+}
+
 /** 기간의 마지막 N+1개 (기준점 하나 포함) */
 export function sliceDays<T>(points: T[], period: PricePeriod): T[] {
   return points.slice(-(PERIOD_DAYS[period] + 1));

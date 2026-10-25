@@ -8,6 +8,7 @@ import com.cosmos.api.company.error.CompanyErrorCode;
 import com.cosmos.api.company.repository.CompanyQuoteQueryRepository;
 import com.cosmos.api.company.repository.CompanyQuoteQueryRepository.CompanyRow;
 import com.cosmos.api.company.repository.CompanyQuoteQueryRepository.DailyClose;
+import com.cosmos.api.company.repository.CompanyQuoteQueryRepository.ExpectedMove;
 import com.cosmos.api.company.repository.CompanyQuoteQueryRepository.NewsCount;
 import com.cosmos.api.company.repository.CompanyQuoteQueryRepository.YearRange;
 import com.cosmos.api.company.repository.CompanyQuoteQueryRepository.RelationRow;
@@ -37,6 +38,8 @@ public class CompanyQuoteService {
     static final int YEAR_DAYS = 250;
     /** 평소 뉴스: 최근 7일 앞의 60일을 7일 단위로 */
     static final double USUAL_WEEKS = 60.0 / 7;
+    /** 예상 변동폭은 시세판과 같은 반도체 기준 */
+    static final String VALUE_CHAIN = "SEMICONDUCTOR";
 
     private final CompanyQuoteQueryRepository quoteRepository;
 
@@ -59,11 +62,12 @@ public class CompanyQuoteService {
         Map<UUID, Integer> relations = quoteRepository.findRelationCounts(RELATION_WINDOW);
         Map<UUID, NewsCount> news = quoteRepository.findNewsCounts();
         Map<UUID, YearRange> ranges = quoteRepository.findYearRanges(YEAR_DAYS);
+        Map<UUID, Map<String, ExpectedMove>> moves = quoteRepository.findExpectedMoves(VALUE_CHAIN);
         Map<UUID, CompanyQuoteResponse> result = new LinkedHashMap<>();
         for (CompanyRow row : quoteRepository.findActiveCompanies()) {
             result.put(row.companyId(), quote(row, closes.getOrDefault(row.companyId(), List.of()),
                     relations.getOrDefault(row.companyId(), 0), news.getOrDefault(row.companyId(), new NewsCount(0, 0)),
-                    ranges.get(row.companyId())));
+                    ranges.get(row.companyId()), moves.getOrDefault(row.companyId(), Map.of())));
         }
         return result;
     }
@@ -104,7 +108,9 @@ public class CompanyQuoteService {
 
     /** recent 는 최근 것부터 */
     private static CompanyQuoteResponse quote(CompanyRow row, List<DailyClose> recent, int relationCount, NewsCount news,
-                                              YearRange range) {
+                                              YearRange range, Map<String, ExpectedMove> moves) {
+        ExpectedMove shortMove = moves.get("SHORT");
+        ExpectedMove longMove = moves.get("LONG");
         BigDecimal close = recent.isEmpty() ? null : recent.get(0).close();
         BigDecimal prevClose = recent.size() > 1 ? recent.get(1).close() : null;
         LocalDate tradingDate = recent.isEmpty() ? null : recent.get(0).date();
@@ -117,7 +123,9 @@ public class CompanyQuoteService {
                 spark, row.marketCap(), row.marketCapRank(), row.sizeClass(), row.per(), row.pbr(), row.dividendYield(),
                 row.dividendPerShare(), row.netIncomeTtm(), row.equity(), row.fiscalBasis(), row.priceDate(),
                 relationCount, news.recent(), news.before() / USUAL_WEEKS, range == null ? null : range.high(),
-                range == null ? null : range.low());
+                range == null ? null : range.low(), shortMove == null ? null : shortMove.move(),
+                shortMove == null ? null : shortMove.grade(), longMove == null ? null : longMove.move(),
+                longMove == null ? null : longMove.grade());
     }
 
     /** back 거래일 전 종가 대비 비율, 모자라면 null */

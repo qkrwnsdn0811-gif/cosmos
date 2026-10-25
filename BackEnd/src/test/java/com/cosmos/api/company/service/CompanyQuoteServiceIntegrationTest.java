@@ -198,6 +198,23 @@ class CompanyQuoteServiceIntegrationTest {
     }
 
     @Test
+    void quotes_expected_moves_semiconductor_only() {
+        insertMove("SEMICONDUCTOR", Q1, "SHORT", "0.038", "SMALL");
+        insertMove("SEMICONDUCTOR", Q1, "LONG", "0.133", "LARGE");
+        insertMove("BATTERY", Q2, "SHORT", "0.09", "LARGE");
+
+        Map<UUID, CompanyQuoteResponse> quotes = byId();
+        CompanyQuoteResponse q1 = quotes.get(Q1);
+        assertThat(q1.expectedMoveShort()).isCloseTo(0.038, within(1e-9));
+        assertThat(q1.moveGradeShort()).isEqualTo("SMALL");
+        assertThat(q1.expectedMoveLong()).isCloseTo(0.133, within(1e-9));
+        assertThat(q1.moveGradeLong()).isEqualTo("LARGE");
+        assertThat(quotes.get(Q2).expectedMoveShort()).isNull();
+        assertThat(quotes.get(Q2).moveGradeShort()).isNull();
+        assertThat(quotes.get(Q3).moveGradeLong()).isNull();
+    }
+
+    @Test
     void related_directions() {
         Map<UUID, RelatedCompanyResponse> related = relatedOf(Q1);
 
@@ -293,6 +310,13 @@ class CompanyQuoteServiceIntegrationTest {
                 VALUES (?, CAST(? AS NUMERIC), ?, ?, CAST(? AS NUMERIC), 1.5, 0.01, CAST(? AS NUMERIC), 3000000000000, 1000,
                         160, '2026-09-22', '테스트 기준', 'test')
                 """, companyId, marketCap, rank, size, per, netIncome);
+    }
+
+    private void insertMove(String valueChain, UUID companyId, String horizon, String move, String grade) {
+        jdbcTemplate.update("""
+                INSERT INTO company_expected_move (value_chain, company_id, horizon, expected_move, case_count, grade, period_end)
+                VALUES (?, ?, ?, CAST(? AS NUMERIC), 30, ?, '2026-06-30')
+                """, valueChain, companyId, horizon, move, grade);
     }
 
     private void insertRelation(UUID relationshipId, UUID source, UUID target, String type, String window, String score) {

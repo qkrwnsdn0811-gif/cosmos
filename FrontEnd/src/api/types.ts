@@ -691,6 +691,11 @@ export interface CompanyQuote {
   /** 최근 250거래일 고가 최고·저가 최저 */
   high52w: number | null;
   low52w: number | null;
+  /** 반도체 기준 예상 변동폭(비율)과 등급 — 단기 3거래일 · 장기 20거래일, 없으면 null */
+  expectedMoveShort: number | null;
+  moveGradeShort: MoveGrade | null;
+  expectedMoveLong: number | null;
+  moveGradeLong: MoveGrade | null;
 }
 export interface CompanyQuotes {
   asOf: string | null;

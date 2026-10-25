@@ -225,7 +225,8 @@ export default function CompanyPage() {
         </div>
 
         <div className="cp-col cp-side">
-          <RelatedTrend loading={related.isLoading} error={related.isError} items={related.data?.items ?? []} />
+          {/* 종목이 바뀌면 '모두 보기' 펼침을 처음 상태로 */}
+          <RelatedTrend key={q.companyId} loading={related.isLoading} error={related.isError} items={related.data?.items ?? []} />
           <section className="card cp-card cp-news" aria-label="최근 뉴스">
             <h2 className="cp-h">최근 뉴스</h2>
             <CompanyNewsHistory companyId={q.companyId} />

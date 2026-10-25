@@ -119,13 +119,13 @@ class EventControllerTest {
         CompanyFundamentalResponse fundamental = new CompanyFundamentalResponse(new BigDecimal("1500000000000"), 3,
                 "MID", new BigDecimal("15.0"), new BigDecimal("2.0"), new BigDecimal("0.016667"), null, null, null,
                 new BigDecimal("30000"), LocalDate.of(2026, 10, 16), "TTM");
-        EventNodeResponse node = new EventNodeResponse(COMPANY_ID, "기업", "990001", "KOSDAQ", "REPORTED", 0,
+        EventNodeResponse node = new EventNodeResponse(COMPANY_ID, "기업", "990001", "KOSDAQ", "반도체 장비", "REPORTED", 0,
                 new BigDecimal("1.0"), "OK", null, null, null, null, null, List.of(),
                 List.of(new AbnormalReturnResponse(20, "KOSDAQ", new BigDecimal("0.1"), new BigDecimal("0.03"),
                         new BigDecimal("0.07"))),
                 "REPORTED", "기사에 나온 기업", List.of(signal()),
                 List.of(new ExpectedMoveResponse("SHORT", 3, new BigDecimal("0.031"), 40, "LARGE")), fundamental);
-        EventNodeResponse bare = new EventNodeResponse(COMPANY_ID, "기업2", "990002", "KOSDAQ", "INFERRED", 1,
+        EventNodeResponse bare = new EventNodeResponse(COMPANY_ID, "기업2", "990002", "KOSDAQ", null, "INFERRED", 1,
                 new BigDecimal("0.4"), "OK", null, null, null, null, null, List.of(), List.of(), null, null, List.of(),
                 List.of(), null);
         when(eventService.findEventMap(EVENT_ID)).thenReturn(new EventMapResponse(summary(), List.of(node, bare)));
@@ -135,6 +135,7 @@ class EventControllerTest {
                 .andExpect(jsonPath("$.event.tradingDate").value("2026-10-13"))
                 .andExpect(jsonPath("$.event.signalCounts.LONG.down").value(5))
                 .andExpect(jsonPath("$.nodes[0].basis").value("REPORTED"))
+                .andExpect(jsonPath("$.nodes[0].industry").value("반도체 장비"))
                 .andExpect(jsonPath("$.nodes[0].companyId").value(COMPANY_ID.toString()))
                 .andExpect(jsonPath("$.nodes[0].abnormalReturns[0].windowDays").value(20))
                 .andExpect(jsonPath("$.nodes[0].position").value("REPORTED"))

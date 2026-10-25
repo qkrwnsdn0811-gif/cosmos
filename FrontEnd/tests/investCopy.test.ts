@@ -7,6 +7,7 @@ import {
   fmtPct,
   fmtWon,
   gradesHold,
+  josa,
   metricsText,
   moveBadge,
   moveCheckText,
@@ -14,6 +15,7 @@ import {
   pastLine,
   pathText,
   signalText,
+  whyText,
 } from "../src/features/invest/investCopy.ts";
 
 const signal = (over: Partial<EventSignal> = {}): EventSignal => ({
@@ -132,4 +134,41 @@ test("move badge and line speak about size, not direction", () => {
   assert.equal(moveBadge(null, true), null);
   assert.equal(moveLine(move, true), "예상 변동폭: 이 종목은 뉴스가 있던 312거래일 동안 3거래일 기준 시장 대비 평균 ±6.2% 움직였습니다(오르든 내리든, 평소 변동폭에 가까움)");
   assert.match(moveLine(move, false) ?? "", /참고치로만/);
+});
+
+test("josa follows the last sound of the name", () => {
+  assert.equal(josa("넥스틴", "은", "는"), "은");
+  assert.equal(josa("SK하이닉스", "은", "는"), "는");
+  assert.equal(josa("LG이노텍", "이", "가"), "이");
+  assert.equal(josa("ISC", "과", "와"), "와");
+  assert.equal(josa("KCC", "을", "를"), "를");
+  assert.equal(josa("SKC", "은", "는"), "는");
+});
+
+test("why text explains how the news reaches the company", () => {
+  const step = (s: string, t: string, rel: string) => ({ sourceCompanyId: s, sourceName: s, targetCompanyId: t, targetName: t, relationshipType: rel as never, edgeSource: "NEWS", strength: 1, evidence: [] });
+  const industries: Record<string, string> = { 넥스틴: "반도체 장비", 한미반도체: "반도체 장비", SK하이닉스: "반도체 제조", 케이씨텍: "반도체 장비" };
+  const industryOf = (name: string) => industries[name] ?? null;
+  const node = (over: Record<string, unknown>) => ({ basis: "INFERRED", companyId: "x", anchorCompanyId: null, path: [], position: "SUPPLIER", name: "x", industry: null, ...over }) as never;
+
+  assert.equal(
+    whyText(node({ basis: "REPORTED", name: "한미반도체", position: "REPORTED" }), "EARNINGS_BEAT", industryOf),
+    "한미반도체는 이 기사에 직접 나온 회사예요. 자기 회사의 실적 소식이라 주가에 가장 직접 반영돼요.",
+  );
+  assert.equal(
+    whyText(node({ name: "넥스틴", companyId: "넥스틴", anchorCompanyId: "SK하이닉스", industry: "반도체 장비", path: [step("넥스틴", "SK하이닉스", "SUPPLY")] }), "TARIFF", industryOf),
+    "넥스틴은 SK하이닉스에 장비를 공급하는 회사예요. SK하이닉스의 생산·수출에 차질이 생기면 넥스틴의 납품 일정도 함께 흔들릴 수 있어요.",
+  );
+  assert.equal(
+    whyText(node({ name: "SK하이닉스", companyId: "SK하이닉스", anchorCompanyId: "한미반도체", position: "CUSTOMER", industry: "반도체 제조", path: [step("한미반도체", "SK하이닉스", "SUPPLY")] }), "EARNINGS_BEAT", industryOf),
+    "SK하이닉스는 한미반도체의 장비를 사 가는 고객사예요. 한미반도체의 실적·수주가 좋다는 건 고객사인 SK하이닉스가 투자와 생산을 늘리고 있다는 신호로 읽혀요.",
+  );
+  assert.equal(
+    whyText(node({ name: "넥스틴", companyId: "넥스틴", anchorCompanyId: "케이씨텍", industry: "반도체 장비", path: [step("케이씨텍", "SK하이닉스", "SUPPLY"), step("넥스틴", "SK하이닉스", "SUPPLY")] }), "SUPPLY_DEAL", industryOf),
+    "넥스틴은 SK하이닉스에 장비를 공급하는 회사예요. SK하이닉스가 잘되거나 투자를 늘리면 넥스틴에 들어오는 주문도 늘 수 있어요. SK하이닉스는 이 기사의 케이씨텍과 공급 관계로 이어져 있어서, 그 소식이 SK하이닉스를 거쳐 넥스틴까지 닿아요.",
+  );
+  assert.match(
+    whyText(node({ name: "DB하이텍", companyId: "DB하이텍", anchorCompanyId: "삼성전자", position: "COMPETITOR", path: [step("삼성전자", "DB하이텍", "COMPETE")] }), "OTHER", industryOf) ?? "",
+    /^DB하이텍은 삼성전자와 같은 시장에서 경쟁하는 회사예요\./,
+  );
 });

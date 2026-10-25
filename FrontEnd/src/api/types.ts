@@ -586,6 +586,8 @@ export interface EventNode {
   name: string;
   stockCode: string | null;
   market: Market | null;
+  /** 대표 업종 (예: 반도체 장비), 없으면 null */
+  industry: string | null;
   basis: ImpactBasis;
   hop: number;
   score: number | null;

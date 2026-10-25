@@ -156,7 +156,8 @@ public class EventService {
             UUID anchor = "INFERRED".equals(i.basis()) && !steps.isEmpty() ? anchorOf(steps.getFirst(), reported) : null;
             List<SignalRow> own = signals.getOrDefault(i.companyId(), List.of());
             String position = positionOf(own);
-            return new EventNodeResponse(i.companyId(), i.name(), i.stockCode(), i.market(), i.basis(), i.hop(),
+            return new EventNodeResponse(i.companyId(), i.name(), i.stockCode(), i.market(), i.industry(), i.basis(),
+                    i.hop(),
                     i.score(), i.status(), i.holdReason(), i.impactDirection(), i.impactMagnitude(), i.confidence(), anchor,
                     steps,
                     returns.getOrDefault(i.companyId(), List.of()),

@@ -522,6 +522,19 @@ class EventServiceIntegrationTest {
     }
 
     @Test
+    void nodeCarriesPrimaryIndustry() {
+        UUID industryId = jdbcTemplate.queryForObject(
+                "INSERT INTO industry (name) VALUES ('테스트 장비') RETURNING industry_id", UUID.class);
+        jdbcTemplate.update("INSERT INTO company_industry (company_id, industry_id, is_primary) VALUES (?, ?, TRUE)",
+                C3, industryId);
+
+        EventMapResponse map = eventService.findEventMap(E1);
+
+        assertThat(node(map, C3).industry()).isEqualTo("테스트 장비");
+        assertThat(node(map, C1).industry()).isNull();
+    }
+
+    @Test
     void expectedMovesAttachedPerHorizon() {
         insertExpectedMove(C1, "LONG", "0.085", 40, "MID");
         insertExpectedMove(C1, "SHORT", "0.031", 40, "LARGE");

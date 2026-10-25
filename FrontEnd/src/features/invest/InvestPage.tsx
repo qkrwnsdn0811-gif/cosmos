@@ -213,10 +213,21 @@ function NewsDetail({ map, horizon }: { map: EventMap; horizon: Horizon }) {
     setOpen((prev) => new Set(prev).add(companyId));
     requestAnimationFrame(() => document.getElementById(stockCardId(companyId))?.scrollIntoView({ behavior: "smooth", block: "start" }));
   };
+  const industries = useMemo(() => new Map(map.nodes.map((n) => [n.name, n.industry])), [map.nodes]);
+  const industryOf = (name: string) => industries.get(name) ?? null;
   const card = (n: EventNode) => {
     const id = n.companyId ?? n.name;
     return (
-      <StockCard key={id} node={n} event={event} horizon={horizon} moveGraded={moveGraded} open={open.has(id)} onToggle={() => toggle(id)} />
+      <StockCard
+        key={id}
+        node={n}
+        event={event}
+        horizon={horizon}
+        moveGraded={moveGraded}
+        industryOf={industryOf}
+        open={open.has(id)}
+        onToggle={() => toggle(id)}
+      />
     );
   };
 

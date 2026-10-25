@@ -156,7 +156,9 @@ public class EventQueryRepository {
         return jdbcTemplate.query("""
                 SELECT i.company_id, c.name, c.stock_code, c.market, i.basis, i.hop, i.propagation_score, i.status,
                        i.hold_reason, i.impact_direction, i.impact_magnitude, i.confidence,
-                       i.path::text AS path
+                       i.path::text AS path,
+                       (SELECT ind.name FROM company_industry ci JOIN industry ind ON ind.industry_id = ci.industry_id
+                        WHERE ci.company_id = i.company_id AND ci.is_primary LIMIT 1) AS industry
                 FROM event_company_impact i
                 JOIN company c ON c.company_id = i.company_id
                 WHERE i.event_id = :eventId
@@ -165,7 +167,8 @@ public class EventQueryRepository {
                 rs.getObject("company_id", UUID.class), rs.getString("name"), rs.getString("stock_code"),
                 rs.getString("market"), rs.getString("basis"), rs.getInt("hop"), rs.getBigDecimal("propagation_score"),
                 rs.getString("status"), rs.getString("hold_reason"), rs.getString("impact_direction"),
-                rs.getBigDecimal("impact_magnitude"), rs.getBigDecimal("confidence"), rs.getString("path")));
+                rs.getBigDecimal("impact_magnitude"), rs.getBigDecimal("confidence"), rs.getString("path"),
+                rs.getString("industry")));
     }
 
     /** 이벤트의 모든 기업·모든 기간(1·3·5·20거래일) 초과수익률. 기간을 거르지 않는다. */
@@ -444,7 +447,8 @@ public class EventQueryRepository {
             String impactDirection,
             BigDecimal impactMagnitude,
             BigDecimal confidence,
-            String pathJson
+            String pathJson,
+            String industry
     ) {
     }
 

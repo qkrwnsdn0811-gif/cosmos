@@ -17,6 +17,7 @@ import {
   signalText,
   stockCardId,
   toneOf,
+  whyText,
 } from "./investCopy";
 import PriceChart from "./PriceChart";
 
@@ -35,6 +36,7 @@ export default function StockCard({
   event,
   horizon,
   moveGraded,
+  industryOf,
   open,
   onToggle,
 }: {
@@ -43,6 +45,8 @@ export default function StockCard({
   horizon: Horizon;
   /** 이 기간의 변동폭 등급이 시험 기간 검증을 통과했는가 (gradesHold) */
   moveGraded: boolean;
+  /** 경로 위 다른 기업의 업종 — "왜 이 종목?" 문장에 쓴다 */
+  industryOf: (name: string) => string | null;
   open: boolean;
   onToggle: () => void;
 }) {
@@ -50,6 +54,7 @@ export default function StockCard({
   const tone = toneOf(signal?.label);
   const past = pastLine(signal, event.newsTypeLabel, node.positionLabel);
   const move = moveFor(node, horizon);
+  const why = whyText(node, event.newsType, industryOf);
   const badge = moveBadge(move, moveGraded);
   const path = pathText(node);
   const metrics = metricsText(node.fundamental, horizon);
@@ -76,6 +81,11 @@ export default function StockCard({
       </button>
 
       <div className="invest-stock-body">
+        {why && (
+          <p className="invest-why">
+            <span className="lab">왜 이 종목?</span> {why}
+          </p>
+        )}
         {past ? <p className="invest-past">{past}</p> : null}
         {move && <p className="invest-move-line">{moveLine(move, moveGraded)}</p>}
         {signal?.caseScope === "POSITION" && signal.caseCount > 0 && (

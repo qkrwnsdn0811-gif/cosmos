@@ -12,6 +12,7 @@ import java.util.UUID;
  * confidence가 있는데 impactDirection이 null이면 신뢰도가 표시 기준 미만인 방향 보류다.
  * position·signals는 과거 사례 통계로 붙인 위치와 방향 딱지(nexus cases)이며 딱지가 없으면 null·빈 목록이다.
  * expectedMoves는 이 종목의 예상 변동폭(SHORT, LONG 순)이며 아직 없으면 빈 목록이다.
+ * industry는 기업의 대표 업종(예: 반도체 장비)이고 없으면 null이다. 화면이 "왜 이 종목인가"를 풀어 쓸 때 쓴다.
  * fundamental은 기업 지표이고 아직 없으면 null이다.
  */
 public record EventNodeResponse(
@@ -19,6 +20,7 @@ public record EventNodeResponse(
         String name,
         String stockCode,
         String market,
+        String industry,
         String basis,
         int hop,
         BigDecimal score,

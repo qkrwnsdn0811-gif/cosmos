@@ -356,6 +356,18 @@
   border: 1px solid rgba(245, 166, 35, 0.5);
   background: rgba(245, 166, 35, 0.08);
 }
+/* "왜 이 종목?" — 뉴스가 이 종목에 닿는 이유를 풀어 쓴 문장. 카드에서 가장 먼저 읽힌다 */
+.invest-why {
+  margin: 0 0 2px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--text);
+}
+.invest-why .lab {
+  margin-right: 4px;
+  font-weight: 700;
+  color: var(--primary-3);
+}
 .invest-move-line {
   margin: 0;
   font-size: 13px;

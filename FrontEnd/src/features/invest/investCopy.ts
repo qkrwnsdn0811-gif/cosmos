@@ -163,6 +163,125 @@ export function moveCheckText(rows: MoveBacktestRow[], horizon: Horizon): { line
   return { line, holds };
 }
 
+/** 받침 있는 소리로 끝나는 영문자·숫자 (엘·엠·엔·알, 영·일·삼·육·칠·팔) */
+const BATCHIM_LATIN = /[LMNR013678]$/i;
+
+/** 받침 유무로 조사를 고른다 — 한글은 마지막 글자의 받침, 영문·숫자는 읽는 소리로 */
+export function josa(word: string, withBatchim: string, without: string): string {
+  const last = word.trim().slice(-1);
+  const code = last.charCodeAt(0) - 0xac00;
+  const has = code >= 0 && code <= 11171 ? code % 28 !== 0 : BATCHIM_LATIN.test(last);
+  return has ? withBatchim : without;
+}
+
+/** 업종 → 공급하는 것 ("반도체 장비" → "장비") */
+const SUPPLIED: Record<string, string> = { 장비: "장비", 소재: "소재", 부품: "부품", 설계: "칩 설계", 후공정: "패키징·테스트", 제조: "반도체" };
+
+function supplied(industry: string | null): string {
+  const kind = industry?.split(" ").pop() ?? "";
+  return SUPPLIED[kind] ?? "제품";
+}
+
+const DEMAND_UP = new Set(["EARNINGS_BEAT", "SUPPLY_DEAL", "AI_DEMAND", "CAPEX", "PRICE_UP"]);
+const DEMAND_DOWN = new Set(["EARNINGS_MISS", "PRODUCTION_CUT", "PRICE_DOWN"]);
+const SUPPLY_SHOCK = new Set(["ACCIDENT", "EXPORT_CONTROL", "TARIFF"]);
+
+/** 기사에 직접 나온 회사에게 이 유형의 뉴스가 왜 중요한가 */
+const REPORTED_WHY: Record<string, string> = {
+  EARNINGS_BEAT: "자기 회사의 실적 소식이라 주가에 가장 직접 반영돼요.",
+  EARNINGS_MISS: "자기 회사의 실적 소식이라 주가에 가장 직접 반영돼요.",
+  SUPPLY_DEAL: "수주·공급 계약의 당사자라 앞으로의 매출 전망이 바로 바뀌어요.",
+  EXPORT_CONTROL: "규제 대상 시장·고객과의 거래가 막히거나 풀리는 당사자예요.",
+  TARIFF: "관세가 붙는 품목을 직접 만들고 수출하는 회사예요.",
+  ACCIDENT: "사고·공급 차질이 이 회사의 생산과 출하에 바로 닿아요.",
+  PRICE_UP: "제품 값이 오르면 이 회사의 판매 단가와 이익이 함께 움직여요.",
+  PRICE_DOWN: "제품 값이 내리면 이 회사의 판매 단가와 이익이 함께 움직여요.",
+  PRODUCTION_CUT: "감산·재고 조정은 이 회사의 생산량과 가격에 바로 닿아요.",
+  CAPEX: "증설·투자의 주체라 앞으로의 생산 능력과 비용이 바뀌어요.",
+  SHAREHOLDER: "자사주·배당 같은 주주환원은 이 회사 주식의 수요에 바로 닿아요.",
+  AI_DEMAND: "AI·HBM 수요가 이 회사 제품 판매로 바로 이어져요.",
+  POLICY: "정부 지원·규제가 이 회사의 투자와 비용에 바로 닿아요.",
+  ANALYST: "증권가의 전망·목표가가 이 회사 주식에 대한 시장의 기대를 바꿔요.",
+  MARKET_WRAP: "증시 흐름 기사에 이름이 오른 종목이라 시장 분위기를 그대로 받아요.",
+};
+
+interface WhyNode {
+  basis: EventNode["basis"];
+  companyId: string | null;
+  anchorCompanyId: string | null;
+  path: EventNode["path"];
+  position: EventNode["position"];
+  name: string;
+  industry: string | null;
+}
+
+/** 경로를 언급 기업에서 이 기업까지 걸으며 단계마다 (앞 기업, 뒤 기업, 관계, 앞 기업이 관계의 source 인가)를 낸다 */
+function walk(node: WhyNode) {
+  const first = node.path[0];
+  let cur: string | null = node.anchorCompanyId ?? (first.targetCompanyId === node.companyId ? first.sourceCompanyId : first.targetCompanyId);
+  const nameOf = (id: string | null) =>
+    node.path.flatMap((s) => [[s.sourceCompanyId, s.sourceName], [s.targetCompanyId, s.targetName]]).find(([i]) => i === id)?.[1] ?? "?";
+  return node.path.map((s) => {
+    const forward = s.sourceCompanyId === cur;
+    const next = forward ? s.targetCompanyId : s.sourceCompanyId;
+    const stepInfo = { from: nameOf(cur), to: nameOf(next), rel: s.relationshipType ?? "", forward };
+    cur = next;
+    return stepInfo;
+  });
+}
+
+/**
+ * "왜 이 뉴스가 이 종목에 닿을까" — 뉴스 유형, 기업 위치(기사 기업·공급사·고객사·경쟁사·협력사·지분·함께 언급), 업종, 경로로
+ * 한두 문장을 풀어 쓴다. 규칙으로 만든 해석이라 '…할 수 있어요'로 말하고, 오른다·내린다는 말하지 않는다.
+ * industryOf: 경로 위 다른 기업의 업종(같은 지도 노드에서 찾는다). 경로가 없거나 위치를 모르면 null
+ */
+export function whyText(node: WhyNode, newsType: NewsTypeCode | null, industryOf: (name: string) => string | null): string | null {
+  const me = node.name;
+  const type = newsType ?? "OTHER";
+  if (node.basis === "REPORTED") {
+    return `${me}${josa(me, "은", "는")} 이 기사에 직접 나온 회사예요. ${REPORTED_WHY[type] ?? "기사 내용이 이 회사에 대한 시장의 관심을 바꿔요."}`;
+  }
+  if (!node.path.length) return null;
+  const steps = walk(node);
+  const last = steps[steps.length - 1];
+  const x = last.from;
+  let text: string;
+  if (last.rel === "SUPPLY" && !last.forward) {
+    // 내가 앞 기업(x)에 공급한다
+    text = `${me}${josa(me, "은", "는")} ${x}에 ${supplied(node.industry)}${josa(supplied(node.industry), "을", "를")} 공급하는 회사예요. `;
+    if (DEMAND_UP.has(type)) text += `${x}${josa(x, "이", "가")} 잘되거나 투자를 늘리면 ${me}에 들어오는 주문도 늘 수 있어요.`;
+    else if (DEMAND_DOWN.has(type)) text += `${x}${josa(x, "이", "가")} 생산을 줄이거나 실적이 꺾이면 ${me}의 주문도 줄 수 있어요.`;
+    else if (SUPPLY_SHOCK.has(type)) text += `${x}의 생산·수출에 차질이 생기면 ${me}의 납품 일정도 함께 흔들릴 수 있어요.`;
+    else text += `${x}에 대한 시장의 기대나 걱정이 공급망을 따라 ${me}에도 번지곤 해요.`;
+  } else if (last.rel === "SUPPLY") {
+    // 앞 기업(x)이 나에게 공급한다
+    const thing = supplied(industryOf(x));
+    text = `${me}${josa(me, "은", "는")} ${x}의 ${thing}${josa(thing, "을", "를")} 사 가는 고객사예요. `;
+    if (type === "PRICE_UP") text += `${x} 제품 값이 오르면 ${me}의 원가 부담이 커질 수 있어요.`;
+    else if (type === "PRICE_DOWN") text += `${x} 제품 값이 내리면 ${me}의 원가 부담이 줄 수 있어요.`;
+    else if (DEMAND_UP.has(type)) text += `${x}의 실적·수주가 좋다는 건 고객사인 ${me}${josa(me, "이", "가")} 투자와 생산을 늘리고 있다는 신호로 읽혀요.`;
+    else if (DEMAND_DOWN.has(type)) text += `${x}의 실적이 꺾이거나 생산이 줄면 고객사인 ${me}의 투자·수요가 약해졌다는 신호일 수 있어요.`;
+    else if (SUPPLY_SHOCK.has(type)) text += `${x}의 공급이 흔들리면 ${me}${josa(me, "이", "가")} 쓰는 ${thing} 조달에 차질이 생길 수 있어요.`;
+    else text += `${x}의 소식이 거래 관계를 따라 고객사인 ${me}에도 영향을 줄 수 있어요.`;
+  } else if (last.rel === "COMPETE") {
+    text = `${me}${josa(me, "은", "는")} ${x}${josa(x, "과", "와")} 같은 시장에서 경쟁하는 회사예요. ${x}의 소식이 점유율 경쟁으로는 반대로, 업황 전체로는 같은 방향으로 작용할 수 있어요.`;
+  } else if (last.rel === "PARTNER") {
+    text = `${me}${josa(me, "은", "는")} ${x}${josa(x, "과", "와")} 함께 사업하는 협력사예요. ${x}의 사업 변화가 공동 사업을 거쳐 ${me}에도 이어질 수 있어요.`;
+  } else if (last.rel === "INVEST") {
+    text = last.forward
+      ? `${me}${josa(me, "은", "는")} ${x}${josa(x, "이", "가")} 지분을 가진 회사예요. 두 회사의 실적과 기업 가치가 함께 움직일 수 있어요.`
+      : `${me}${josa(me, "은", "는")} ${x}의 지분을 가진 회사예요. ${x}의 가치 변화가 ${me}${josa(me, "이", "가")} 가진 지분 가치에 반영될 수 있어요.`;
+  } else {
+    text = `${me}${josa(me, "은", "는")} ${x}${josa(x, "과", "와")} 같은 기사에 자주 함께 나오는 회사예요. 직접 거래 근거는 없지만 시장이 함께 묶어 보는 경향이 있어요.`;
+  }
+  if (steps.length > 1) {
+    const a = steps[0].from;
+    const rel = REL_KO[steps[0].rel] ?? "관계";
+    text += ` ${x}${josa(x, "은", "는")} 이 기사의 ${a}${josa(a, "과", "와")} ${rel} 관계로 이어져 있어서, 그 소식이 ${x}${josa(x, "을", "를")} 거쳐 ${me}까지 닿아요.`;
+  }
+  return text;
+}
+
 export const AFTER_NEWS = "이 뉴스 뒤 기사";
 
 /**

@@ -16,6 +16,7 @@
 - 배포하는 push: `main`의 `BackEnd/**`, `FrontEnd/**`, `deploy/compose.yml`, `deploy/scripts/**`, 워크플로 파일 변경. 문서만 바꾼 커밋은 배포하지 않는다.
 - `main` 대상 PR은 `frontend`·`backend`만 돈다. Actions 화면의 **Run workflow**로 `main`을 수동 배포할 수 있다.
 - 2026-10-26에 `NEXUS`를 `main`에 합치고 원격 `NEXUS`를 지워서, 배포 기준을 `NEXUS`에서 `main`으로 바꿨다.
+- `main` 실행은 push 순서대로 하나씩 돈다. 예전 실행을 다시 돌려도(re-run) 지금 서버에 있는 것보다 오래된 커밋이면 배포하지 않고 넘어간다.
 - 헬스체크·HTTPS 스모크 테스트·실패 시 직전 릴리스 복구는 기존 `deploy.sh`가 한다. 실패하면 Actions 잡이 빨간색이 되고 서버는 직전 버전으로 돌아가 있다.
 - PARTION-LAB(AWS)과 달리 ci와 deploy를 `workflow_run` 대신 한 워크플로의 `needs`로 잇는다. 배포가 같은 커밋의 두 테스트를 기다린다.
 - GitHub Secrets는 쓰지 않는다. GCP 인증은 Workload Identity Federation이고 이 저장소의 `refs/heads/main` 토큰만 받는다.

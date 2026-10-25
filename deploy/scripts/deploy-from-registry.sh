@@ -21,8 +21,9 @@ main() {
     [[ "$registry" =~ ^[a-z0-9-]+-docker\.pkg\.dev/[a-z0-9-]+/[a-z0-9-]+$ ]] || exit 2
     local host="${registry%%/*}" tag="gh-${sha:0:12}"
     local secrets="${COSMOS_ENV_FILE:-/etc/cosmos/app.env}"
+    local state="${COSMOS_STATE_DIR:-/opt/cosmos/releases}"
     local token_url="${COSMOS_METADATA_TOKEN_URL:-http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token}"
-    local public_url token pulled=0
+    local public_url running running_commit token pulled=0
 
     public_url="$(sed -n 's/^PUBLIC_URL=//p' "$secrets")"
     [[ -n "$public_url" ]] || { echo "PUBLIC_URL is missing from $secrets" >&2; exit 1; }
@@ -30,6 +31,16 @@ main() {
     # A re-run of an old workflow must not roll the demo back to a commit that has left main.
     git fetch --quiet origin main
     git merge-base --is-ancestor "$sha" FETCH_HEAD || { echo "Commit $sha is not on origin/main" >&2; exit 1; }
+    # Nor may a re-run or a run whose tests finished late replace a newer release that is already live.
+    running="$(cat "$state/current" 2> /dev/null || true)"
+    if [[ "$running" =~ ^gh-([0-9a-f]{12})$ ]]; then
+        running_commit="$(git rev-parse --verify --quiet "${BASH_REMATCH[1]}^{commit}" || true)"
+        if [[ -n "$running_commit" && "$running_commit" != "$sha" ]] &&
+            git merge-base --is-ancestor "$sha" "$running_commit"; then
+            echo "Commit $sha is older than the running release $running; nothing to deploy" >&2
+            exit 0
+        fi
+    fi
     git checkout --quiet --detach "$sha"
 
     token="$(curl --fail --silent --show-error --max-time 10 --header 'Metadata-Flavor: Google' "$token_url" |

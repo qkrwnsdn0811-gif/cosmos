@@ -22,8 +22,16 @@ cat > "$fixture/bin/git" <<'GIT'
 #!/usr/bin/env bash
 set -eu
 printf 'git %s\n' "$*" >> "$FAKE_CALLS"
-if [[ "$1" == merge-base && "$FAKE_SCENARIO" == not-on-main ]]; then
-    exit 1
+if [[ "$1" == merge-base ]]; then
+    if [[ "$4" == FETCH_HEAD ]]; then
+        [[ "$FAKE_SCENARIO" != not-on-main ]] || exit 1
+    else
+        # Is the requested commit behind the running release?
+        [[ "$FAKE_SCENARIO" == older-than-current ]] || exit 1
+    fi
+fi
+if [[ "$1" == rev-parse ]]; then
+    printf '%s\n' "$FAKE_CURRENT_COMMIT"
 fi
 GIT
 
@@ -54,11 +62,15 @@ sha=0123456789abcdef0123456789abcdef01234567
 registry=asia-northeast3-docker.pkg.dev/cosmos-nexus-1026/cosmos
 host=asia-northeast3-docker.pkg.dev
 tag=gh-0123456789ab
+current_commit=fedcba9876543210fedcba9876543210fedcba98
+export FAKE_CURRENT_COMMIT="$current_commit"
 
 run_case() {
-    local name="$1" scenario="$2" commit="$3" target="$4"
+    local name="$1" scenario="$2" commit="$3" target="$4" running="${5:-}"
     local case_dir="$fixture/$name"
-    mkdir -p "$case_dir"
+    mkdir -p "$case_dir/state"
+    export COSMOS_STATE_DIR="$case_dir/state"
+    [[ -z "$running" ]] || printf '%s\n' "$running" > "$COSMOS_STATE_DIR/current"
     export COSMOS_ENV_FILE="$case_dir/app.env"
     export COSMOS_METADATA_TOKEN_URL=http://metadata.test/token
     export FAKE_SCENARIO="$scenario"
@@ -122,6 +134,18 @@ run_case pull-failure pull-failure "$sha" "$registry"
 ! grep -q '^deploy.sh' "$FAKE_CALLS" || fail 'deploy.sh ran after a failed pull'
 grep -q "^docker logout $host" "$FAKE_CALLS" || fail 'registry credentials were kept after a failed pull'
 echo 'PASS: failed pull leaves the running release alone and logs out'
+
+run_case older-than-current older-than-current "$sha" "$registry" gh-fedcba987654
+[[ "$status" == 0 ]] || fail "commit older than the running release returned $status"
+grep -q "^git merge-base --is-ancestor $sha $current_commit" "$FAKE_CALLS" || fail 'running release was not compared'
+! grep -Eq '^git checkout|^docker |^deploy.sh' "$FAKE_CALLS" || fail 'older commit replaced the running release'
+grep -q 'older than the running release gh-fedcba987654' "$fixture/older-than-current/output" || fail 'skip reason was not reported'
+echo 'PASS: commit older than the running release is not deployed'
+
+run_case newer-than-current success "$sha" "$registry" gh-fedcba987654
+[[ "$status" == 0 ]] || fail "commit newer than the running release returned $status"
+grep -q "^deploy.sh $tag " "$FAKE_CALLS" || fail 'commit newer than the running release was not deployed'
+echo 'PASS: commit newer than the running release is deployed'
 
 run_case deploy-failure deploy-failure "$sha" "$registry"
 [[ "$status" == 17 ]] || fail "deploy.sh failure was reported as $status"

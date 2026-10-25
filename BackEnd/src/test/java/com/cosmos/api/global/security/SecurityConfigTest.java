@@ -54,6 +54,11 @@ class SecurityConfigTest {
             return "events";
         }
 
+        @GetMapping("/api/market/probe")
+        String marketProbe() {
+            return "market";
+        }
+
         @GetMapping("/api/users/probe")
         String protectedProbe(@AuthenticationPrincipal AuthUser user) {
             return String.valueOf(user.userId());
@@ -82,6 +87,16 @@ class SecurityConfigTest {
         mockMvc.perform(get("/api/events/probe"))
                 .andExpect(status().isOk())
                 .andExpect(content().string("events"));
+    }
+
+    // 상황: 토큰 없이 기업 탭 지수 주소 호출
+    // 기대: 200 (시장 지수도 비로그인 공개 조회)
+    @Test
+    @DisplayName("시장 지수 API는 토큰 없이 호출할 수 있다")
+    void market_api_without_token() throws Exception {
+        mockMvc.perform(get("/api/market/probe"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("market"));
     }
 
     // 상황: 토큰 없이 로그인 필요 주소 호출

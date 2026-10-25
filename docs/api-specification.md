@@ -153,6 +153,12 @@
 | `GET` | `/api/events/company-history` | 기업 과거 뉴스와 주가 반응 |
 | `GET` | `/api/companies/{companyId}/fundamental` | 기업 지표 (NEXUS 투자자 화면용, 경로는 companies) |
 
+### market | NEXUS 기업 탭 시세
+
+| 메서드 | URI | API |
+| --- | --- | --- |
+| `GET` | `/api/market/indices` | 코스피·코스닥 지수 |
+
 ### community | 커뮤니티
 
 | 메서드 | URI | API |
@@ -2148,6 +2154,47 @@ GET /api/events/company-history?companyId=928aa9d3-d527-4995-963f-ea928a8fc68b&s
 | 400 | VALIDATION_FAILED | companyId가 UUID 형식이 아님 |
 | 404 | COMPANY_NOT_FOUND | 기업이 없거나 비활성 |
 
+
+
+### market | NEXUS 기업 탭 시세
+
+기업 탭 시세판(`/companies`)과 기업 상세(`/companies/:id`)에 쓰는 API다. 모두 공개 GET이다. 등락은 거래일 수로 센다:
+1일 = 1거래일 전 종가 대비, 1개월 = 20거래일 전 종가 대비. 비율은 0.0327 = 3.27%다.
+
+#### GET /api/market/indices — 코스피·코스닥 지수
+
+#### 목적
+시장 띠의 지수 카드와 기업 상세 차트의 '지수와 비교' 선을 그린다.
+#### 인증
+불필요.
+#### Query Params
+| 이름 | 필수 | 기본값 | 설명 |
+| --- | --- | --- | --- |
+| period | 아니오 | 3M | `1M`·`3M`·`6M`·`1Y` = 거래일 20·60·120·250개. 기준점 1개를 더 준다(3M → 61개) |
+#### Response — 200 OK
+```json
+{
+  "asOf": "2026-10-23",
+  "items": [
+    {
+      "indexCode": "KOSPI",
+      "close": 5533.77,
+      "change1d": -0.0102,
+      "change1m": 0.0415,
+      "points": [{ "date": "2026-07-27", "close": 5011.20 }, { "date": "2026-10-23", "close": 5533.77 }]
+    },
+    { "indexCode": "KOSDAQ", "close": 764.10, "change1d": 0.0031, "change1m": -0.0122, "points": [] }
+  ]
+}
+```
+(값은 형식을 보이기 위한 예시다. `points` 는 실제로는 기간 거래일 수 + 1개.)
+- 출처는 `market_index_price`(파이프라인 `nexus cases` 가 FinanceDataReader 로 채운다). `items` 는 KOSPI, KOSDAQ 순이고 행이 없는 지수는 빠진다.
+- `asOf` 는 지수가 있는 마지막 거래일, `points` 는 오래된 것부터다. 거래일이 모자라면 `change1d`·`change1m` 은 null.
+
+#### Error
+| 상태 | code | 상황 |
+| --- | --- | --- |
+| 400 | VALIDATION_FAILED | period가 1M·3M·6M·1Y가 아님 |
 
 ### community | 커뮤니티
 

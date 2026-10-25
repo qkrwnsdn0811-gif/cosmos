@@ -158,6 +158,7 @@ function NewsItem({ event, horizon, active, onPick }: { event: EventSummary; hor
   );
 }
 
+/** 피드의 하락·상승 우세 수. 판단 보류는 세어 보이지 않는다 — 둘 다 없으면 아무것도 그리지 않는다 */
 function SignalDots({ counts }: { counts: { up: number; down: number; hold: number } }) {
   const text = countsText(counts);
   if (!text) return null;
@@ -173,12 +174,6 @@ function SignalDots({ counts }: { counts: { up: number; down: number; hold: numb
         <span className="up">
           <i />
           상승 {counts.up}
-        </span>
-      )}
-      {counts.hold > 0 && (
-        <span className="hold">
-          <i />
-          보류 {counts.hold}
         </span>
       )}
     </span>

@@ -57,8 +57,9 @@ test("past line names the type, who and the window", () => {
 });
 
 test("feed counts skip zeros", () => {
-  assert.equal(countsText({ up: 1, down: 2, hold: 5 }), "하락 우세 2 · 상승 우세 1 · 보류 5");
-  assert.equal(countsText({ up: 0, down: 0, hold: 3 }), "보류 3");
+  // 판단 보류는 피드에 쓰지 않는다 (2026-10-25 사용자 요청)
+  assert.equal(countsText({ up: 1, down: 2, hold: 5 }), "하락 우세 2 · 상승 우세 1");
+  assert.equal(countsText({ up: 0, down: 0, hold: 3 }), "");
 });
 
 const fundamental = (over: Partial<Fundamental> = {}): Fundamental => ({

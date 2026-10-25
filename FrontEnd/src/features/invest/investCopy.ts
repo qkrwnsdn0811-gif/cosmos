@@ -92,14 +92,10 @@ export function pastLine(signal: EventSignal | null, typeLabel: string | null, p
   return `과거 ${type}뉴스 뒤 ${who} ${signal.caseCount.toLocaleString("ko-KR")}건: ${down.toLocaleString("ko-KR")}건(${fmtPct(signal.downShare, 0, false)}) 하락, ${signal.windowDays}거래일 평균 초과수익률 ${fmtPct(signal.meanAr)}`;
 }
 
-/** 피드 요약 — "하락 우세 2 · 상승 우세 1 · 보류 5" (0 인 항목은 뺀다) */
+/** 피드 요약 — "하락 우세 2 · 상승 우세 1" (0 인 항목은 뺀다). 판단 보류 수는 피드에 쓰지 않는다 */
 export function countsText(counts: SignalCount | null | undefined): string {
   if (!counts) return "";
-  const parts = [
-    counts.down ? `하락 우세 ${counts.down}` : null,
-    counts.up ? `상승 우세 ${counts.up}` : null,
-    counts.hold ? `보류 ${counts.hold}` : null,
-  ].filter(Boolean);
+  const parts = [counts.down ? `하락 우세 ${counts.down}` : null, counts.up ? `상승 우세 ${counts.up}` : null].filter(Boolean);
   return parts.join(" · ");
 }
 

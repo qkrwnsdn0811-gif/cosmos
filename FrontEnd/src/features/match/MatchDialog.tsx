@@ -20,6 +20,8 @@ import {
 } from "./investorMatch";
 
 const STEPS = SCORED_QUESTIONS.length + 1;
+/** 고른 선택지를 보여 주는 시간 — 진행 바가 차오르는 것을 볼 만큼만 */
+const PICK_MS = 260;
 const HORIZON_LABEL: Record<Horizon, string> = { SHORT: "단기", LONG: "장기" };
 
 /**
@@ -38,7 +40,12 @@ export default function MatchDialog({
   const [result, setResult] = useState<SavedMatch | null>(initial);
   const [step, setStep] = useState(0);
   const [scores, setScores] = useState<number[]>([]);
+  // 고른 선택지를 잠깐 보여 준 뒤 넘긴다 — 그 사이 진행 바가 먼저 차오르고 다음 질문이 미끄러져 들어온다
+  const [picked, setPicked] = useState<string | null>(null);
+  const [dir, setDir] = useState<"next" | "back">("next");
+  const timer = useRef<number | undefined>(undefined);
   const panel = useRef<HTMLDivElement>(null);
+  useEffect(() => () => window.clearTimeout(timer.current), []);
 
   useEffect(() => {
     // 별표에서 띄운 로그인 창이 위에 있으면 Esc 는 그 창만 닫는다
@@ -51,24 +58,44 @@ export default function MatchDialog({
     panel.current?.querySelector<HTMLButtonElement>(".md-opt")?.focus();
   }, [step, result]);
 
-  const answer = (score: number) => {
-    setScores([...scores.slice(0, step), score]);
-    setStep(step + 1);
+  /** 선택 표시 → PICK_MS 뒤 다음 화면. 기다리는 동안 다른 선택지는 받지 않는다 */
+  const pick = (label: string, then: () => void) => {
+    if (picked) return;
+    setPicked(label);
+    setDir("next");
+    timer.current = window.setTimeout(() => {
+      then();
+      setPicked(null);
+    }, PICK_MS);
   };
-  const chooseHorizon = (horizon: Horizon) => {
-    const match = { type: investorType(scores), horizon };
-    saveMatch(match);
-    onSaved(match);
-    setResult(match);
+  const answer = (label: string, score: number) =>
+    pick(label, () => {
+      setScores([...scores.slice(0, step), score]);
+      setStep(step + 1);
+    });
+  const chooseHorizon = (label: string, horizon: Horizon) =>
+    pick(label, () => {
+      const match = { type: investorType(scores), horizon };
+      saveMatch(match);
+      onSaved(match);
+      setResult(match);
+    });
+  const back = () => {
+    if (picked) return;
+    setDir("back");
+    setStep(step - 1);
   };
   const restart = () => {
+    setDir("next");
     setResult(null);
     setStep(0);
     setScores([]);
   };
+  // 진행 바: 지금 질문까지 + 방금 고른 것. 고르는 순간 먼저 차오른다
+  const progress = Math.min(STEPS, step + 1 + (picked ? 1 : 0)) / STEPS;
 
   return (
-    <div className="scrim" onMouseDown={(e) => e.target === e.currentTarget && onClose()} role="presentation">
+    <div className="scrim md-scrim" onMouseDown={(e) => e.target === e.currentTarget && onClose()} role="presentation">
       <div ref={panel} className="card dialog md-dialog" role="dialog" aria-modal="true" aria-labelledby="md-title">
         <div className="row between">
           <span className="kick">투자 성향 맞춤</span>
@@ -78,56 +105,76 @@ export default function MatchDialog({
         </div>
         {result ? (
           <MatchResult match={result} onRestart={restart} onClose={onClose} />
-        ) : step < SCORED_QUESTIONS.length ? (
-          <Question
-            step={step}
-            text={SCORED_QUESTIONS[step].text}
-            options={SCORED_QUESTIONS[step].options.map((o) => ({ label: o.label, on: scores[step] === o.score, pick: () => answer(o.score) }))}
-            onBack={step > 0 ? () => setStep(step - 1) : undefined}
-          />
         ) : (
-          <Question
-            step={step}
-            text={HORIZON_QUESTION.text}
-            options={HORIZON_QUESTION.options.map((o) => ({ label: o.label, on: false, pick: () => chooseHorizon(o.horizon) }))}
-            onBack={() => setStep(step - 1)}
-          />
+          <div className="md-quiz">
+            <p className="md-intro">질문 5개로 투자 성향을 간단히 알아보고, 성향에 맞는 반도체 종목을 골라 드려요.</p>
+            {/* 바는 질문이 바뀌어도 같은 요소라 폭이 이어서 차오른다 */}
+            <div className="md-progress" aria-hidden="true">
+              <i style={{ width: `${progress * 100}%` }} />
+            </div>
+            {step < SCORED_QUESTIONS.length ? (
+              <Question
+                key={step}
+                step={step}
+                dir={dir}
+                text={SCORED_QUESTIONS[step].text}
+                options={SCORED_QUESTIONS[step].options.map((o) => ({
+                  label: o.label,
+                  on: picked ? picked === o.label : scores[step] === o.score,
+                  pick: () => answer(o.label, o.score),
+                }))}
+                busy={picked != null}
+                onBack={step > 0 ? back : undefined}
+              />
+            ) : (
+              <Question
+                key={step}
+                step={step}
+                dir={dir}
+                text={HORIZON_QUESTION.text}
+                options={HORIZON_QUESTION.options.map((o) => ({ label: o.label, on: picked === o.label, pick: () => chooseHorizon(o.label, o.horizon) }))}
+                busy={picked != null}
+                onBack={back}
+              />
+            )}
+          </div>
         )}
       </div>
     </div>
   );
 }
 
+/** 질문 하나. key 가 바뀔 때마다 새로 붙어 dir 방향으로 미끄러져 들어온다 */
 function Question({
   step,
+  dir,
   text,
   options,
+  busy,
   onBack,
 }: {
   step: number;
+  dir: "next" | "back";
   text: string;
   options: { label: string; on: boolean; pick: () => void }[];
+  busy: boolean;
   onBack?: () => void;
 }) {
   return (
-    <div className="md-quiz">
-      {step === 0 && <p className="md-intro">질문 5개로 투자 성향을 간단히 알아보고, 성향에 맞는 반도체 종목을 골라 드려요.</p>}
-      <div className="md-progress" aria-hidden="true">
-        <i style={{ width: `${((step + 1) / STEPS) * 100}%` }} />
-      </div>
+    <div className={`md-q md-q-${dir} ${busy ? "leaving" : ""}`}>
       <span className="md-step num">
         {step + 1} / {STEPS}
       </span>
       <h2 id="md-title">{text}</h2>
       <div className="md-options">
         {options.map((o) => (
-          <button key={o.label} type="button" className={`md-opt ${o.on ? "on" : ""}`} onClick={o.pick}>
+          <button key={o.label} type="button" className={`md-opt ${o.on ? "on" : ""}`} aria-pressed={o.on} onClick={o.pick} disabled={busy && !o.on}>
             {o.label}
           </button>
         ))}
       </div>
       {onBack && (
-        <button type="button" className="btn btn-g btn-sm md-back" onClick={onBack}>
+        <button type="button" className="btn btn-g btn-sm md-back" onClick={onBack} disabled={busy}>
           이전 질문
         </button>
       )}

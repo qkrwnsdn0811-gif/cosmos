@@ -59,6 +59,7 @@ bash deploy/scripts/deploy.sh "$TAG"
 ```
 
 `deploy.sh` 는 `/etc/cosmos/app.env` 가 없으면 실행 중인 백엔드 컨테이너에서 환경값을 되살린다. 그래서 ③에서 백엔드를 멈추지 않는다.
+다만 되살린 파일에는 `MAIL_USERNAME`·`MAIL_PASSWORD` 가 빠져 있어 `compose.yml` 검사에서 멈춘다. 환경 파일에 두 값을 직접 넣어 둔다(6절).
 Compose를 직접 띄웠다면 이미지 태그만 `$TAG` 로 바꿔 `docker compose up -d` 한다.
 
 ## 4. 확인
@@ -76,3 +77,24 @@ curl -s "https://34-64-222-128.sslip.io/api/events?valueChain=SEMICONDUCTOR&size
 
 ③의 명령에서 덤프 파일만 `~/cosmos-before-nexus-update.dump` 로 바꿔 복원하고, 이전 이미지 태그로 `deploy.sh` 를 다시 돌린다.
 이전 태그는 `/opt/cosmos/releases/current` 에 남아 있다(`deploy.sh` 로 배포했을 때).
+
+## 6. 회원가입이 안 될 때 (인증 메일)
+
+가입은 이메일 인증 코드를 받아야 끝나고, 코드는 서버의 Gmail 계정으로 보낸다. 10-25 배포 서버는 코드 요청
+(`POST /api/auth/email/send-code`)이 500 "서버 내부 오류"로 끝났다. 가입 API·DB는 정상이다(중복 확인 응답 200).
+
+원인은 백엔드 로그에 나온다.
+
+```bash
+docker logs --since 1h $(docker ps -q --filter label=com.docker.compose.service=backend) 2>&1 | grep -E "Mail|Redis" | tail -5
+```
+
+| 로그 | 뜻 | 고치는 법 |
+|---|---|---|
+| `Username and Password not accepted` (535) | 계정 값이 틀림. `deploy/.env.example` 의 `replace-with-…` 자리표시를 그대로 두었거나 Gmail 로그인 비밀번호를 넣음 | Gmail 2단계 인증을 켜고 앱 비밀번호(16자)를 만들어 `MAIL_USERNAME`(Gmail 주소)·`MAIL_PASSWORD` 에 넣는다 |
+| `no password specified` | `MAIL_PASSWORD` 가 비어 있음 | 위와 같다 |
+| `RedisConnectionFailure`·`NOAUTH` | Redis 가 죽었거나 비밀번호가 다름 | `REDIS_PASSWORD` 와 redis 컨테이너 상태를 본다 |
+| `Couldn't connect to host`·timeout | 서버에서 587 포트로 못 나감 | 방화벽의 송신 587 허용 |
+
+값은 환경 파일(`/etc/cosmos/app.env`, 없으면 `/opt/cosmos/releases/app.env`)에 넣고 `deploy.sh` 를 다시 돌려 백엔드를 새로 띄운다.
+고친 뒤 가입 창에서 본인 메일로 코드를 요청해 6자리 코드가 오면 된다. 메일 계정은 COSMOS 원래 기능이라 본선 코드와 상관없다.

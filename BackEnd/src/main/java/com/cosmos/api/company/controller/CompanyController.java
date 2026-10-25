@@ -4,10 +4,12 @@ import com.cosmos.api.company.dto.CompanyDetailResponse;
 import com.cosmos.api.company.dto.CompanyFundamentalResponse;
 import com.cosmos.api.company.dto.CompanyMetricHistoryResponse;
 import com.cosmos.api.company.dto.CompanyMetricResponse;
+import com.cosmos.api.company.dto.CompanyQuoteListResponse;
 import com.cosmos.api.company.dto.CompanySummaryResponse;
 import com.cosmos.api.company.dto.IndustryListResponse;
 import com.cosmos.api.company.dto.StockPriceHistoryResponse;
 import com.cosmos.api.company.repository.CompanySearchCondition;
+import com.cosmos.api.company.service.CompanyQuoteService;
 import com.cosmos.api.company.service.CompanyService;
 import com.cosmos.api.global.response.CursorPageResponse;
 import jakarta.validation.constraints.Max;
@@ -29,9 +31,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class CompanyController {
 
     private final CompanyService companyService;
+    private final CompanyQuoteService quoteService;
 
-    public CompanyController(CompanyService companyService) {
+    public CompanyController(CompanyService companyService, CompanyQuoteService quoteService) {
         this.companyService = companyService;
+        this.quoteService = quoteService;
     }
 
     @GetMapping("/companies")
@@ -44,6 +48,12 @@ public class CompanyController {
     ) {
         return companyService.findCompanies(
                 new CompanySearchCondition(keyword, market, industryId, cursor, size));
+    }
+
+    /** 기업 탭 시세판: 활성 기업 전부의 시세·지표·1년 관계 수 (페이지 없음) */
+    @GetMapping("/companies/quotes")
+    public CompanyQuoteListResponse findQuotes() {
+        return quoteService.findQuotes();
     }
 
     @GetMapping("/companies/{companyId}")

@@ -14,6 +14,7 @@ import com.cosmos.api.company.dto.CompanyIndustryResponse;
 import com.cosmos.api.company.dto.CompanyMetricHistoryItemResponse;
 import com.cosmos.api.company.dto.CompanyMetricHistoryResponse;
 import com.cosmos.api.company.dto.CompanyMetricResponse;
+import com.cosmos.api.company.dto.CompanyQuoteListResponse;
 import com.cosmos.api.company.dto.CompanySummaryResponse;
 import com.cosmos.api.company.dto.IndustryListResponse;
 import com.cosmos.api.company.dto.IndustryReferenceResponse;
@@ -21,6 +22,7 @@ import com.cosmos.api.company.dto.IndustryResponse;
 import com.cosmos.api.company.dto.StockPriceHistoryResponse;
 import com.cosmos.api.company.dto.StockPriceItemResponse;
 import com.cosmos.api.company.repository.CompanySearchCondition;
+import com.cosmos.api.company.service.CompanyQuoteService;
 import com.cosmos.api.company.service.CompanyService;
 import com.cosmos.api.global.error.GlobalExceptionHandler;
 import com.cosmos.api.global.response.CursorPageResponse;
@@ -41,14 +43,28 @@ class CompanyControllerTest {
     private static final UUID INDUSTRY_ID = UUID.fromString("10000000-0000-0000-0000-000000000001");
 
     private CompanyService companyService;
+    private CompanyQuoteService quoteService;
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
         companyService = mock(CompanyService.class);
-        mockMvc = MockMvcBuilders.standaloneSetup(new CompanyController(companyService))
+        quoteService = mock(CompanyQuoteService.class);
+        mockMvc = MockMvcBuilders.standaloneSetup(new CompanyController(companyService, quoteService))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
+    }
+
+    // /companies/quotes 가 /companies/{companyId} 로 잡혀 UUID 변환 오류(400)가 나지 않아야 한다
+    @Test
+    void quotesPathIsNotReadAsCompanyId() throws Exception {
+        when(quoteService.findQuotes()).thenReturn(new CompanyQuoteListResponse(LocalDate.of(2026, 10, 23), List.of()));
+
+        mockMvc.perform(get("/api/companies/quotes"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.asOf").value("2026-10-23"))
+                .andExpect(jsonPath("$.items").isEmpty());
+        verify(quoteService).findQuotes();
     }
 
     @Test

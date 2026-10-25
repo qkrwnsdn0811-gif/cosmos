@@ -158,6 +158,7 @@
 | 메서드 | URI | API |
 | --- | --- | --- |
 | `GET` | `/api/market/indices` | 코스피·코스닥 지수 |
+| `GET` | `/api/companies/quotes` | 전 종목 시세 (경로는 companies) |
 
 ### community | 커뮤니티
 
@@ -2195,6 +2196,39 @@ GET /api/events/company-history?companyId=928aa9d3-d527-4995-963f-ea928a8fc68b&s
 | 상태 | code | 상황 |
 | --- | --- | --- |
 | 400 | VALIDATION_FAILED | period가 1M·3M·6M·1Y가 아님 |
+
+#### GET /api/companies/quotes — 전 종목 시세
+
+#### 목적
+시세판 표 한 번에 그리기. 활성 기업 전부를 페이지 없이 돌려준다(반도체 61종목 + 주가 없는 기업).
+#### 인증
+불필요.
+#### Response — 200 OK
+```json
+{
+  "asOf": "2026-10-23",
+  "items": [
+    {
+      "companyId": "fd2cbfd5-cd56-49eb-acab-5a7ff13e2fab",
+      "name": "삼성전자", "stockCode": "005930", "market": "KOSPI", "industry": "반도체 제조",
+      "close": 213500.0, "prevClose": 214500.0, "tradingDate": "2026-10-23",
+      "change1d": -0.0047, "change1m": 0.0312, "change3m": 0.1544,
+      "spark": [207000.0, 213500.0],
+      "marketCap": 1259873040024000, "marketCapRank": 1, "sizeClass": "LARGE",
+      "per": 8.3592, "pbr": 2.1748, "dividendYield": 0.00774, "dividendPerShare": 1668.00,
+      "netIncomeTtm": 150717225000000, "equity": 579309676000000,
+      "fiscalBasis": "2025 사업보고서 + 2026 반기 − 2025 반기", "priceDate": "2026-10-25",
+      "relationCount": 16
+    }
+  ]
+}
+```
+(값은 형식을 보이기 위한 예시다. `spark` 는 실제로는 21개.)
+- 등락은 거래일 수로 센다: `change1d` 1거래일, `change1m` 20거래일, `change3m` 60거래일 전 종가 대비. 거래일이 모자라면 null.
+- `spark` 는 최근 21개 종가(오래된 것부터, 모자라면 있는 만큼). 주가가 없으면 `close`·`prevClose`·`tradingDate`·`change*` 가 null, `spark` 는 빈 목록.
+- 지표 칸(`marketCap` ~ `priceDate`)은 `GET /api/companies/{companyId}/fundamental` 과 같은 값이고, 지표가 없으면 null.
+- `industry` 는 대표 업종 이름, `relationCount` 는 공개 은하 스냅샷 1년(1Y) 관계에서 만나는 상대 기업 수다.
+- 정렬은 시가총액 내림차순, 시가총액이 없으면 이름순으로 뒤에. `asOf` 는 종목들의 마지막 거래일.
 
 ### community | 커뮤니티
 

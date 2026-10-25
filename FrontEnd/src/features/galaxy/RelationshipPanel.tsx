@@ -1,6 +1,6 @@
 import type { RelationshipEvidence } from "@/api/types";
 import { Empty, Icon, ImpactBadge, ScoreBar, Skeleton, TypeBadge } from "@/components/ui";
-import { fmtDateTime, fmtPctFrom01, fmtRelative, fmtScore, pct01 } from "@/lib/format";
+import { fmtDateTime, fmtPctFrom01, fmtRelative, fmtScore } from "@/lib/format";
 import type { SceneModel } from "@/lib/graph";
 import { EVIDENCE_UI, SURPRISE_UI } from "@/lib/guide";
 import { METRIC_WINDOW_LABEL, METRIC_WINDOWS, relationshipMeta, scoreBand } from "@/lib/meta";
@@ -11,6 +11,7 @@ import { useGalaxy } from "@/store/galaxy";
 import { useUi } from "@/store/ui";
 import { useNewsWeight } from "@/store/weight";
 import "./evidence.css";
+import { evidenceCopyText, evidenceText } from "./evidenceText";
 
 interface Props {
   relationshipId: string;
@@ -28,9 +29,9 @@ function ageOpacityOf(publishedAt: string | null) {
   return band?.opacity ?? 1;
 }
 
-/** 근거 문장 복사 — Clipboard API 실패 시(비보안 컨텍스트·권한 거부) textarea 폴백 */
+/** 근거 문장(문장이 없는 함께 언급 근거는 기사 제목) 복사 — Clipboard API 실패 시(비보안 컨텍스트·권한 거부) textarea 폴백 */
 async function copyEvidenceSentence(e: RelationshipEvidence) {
-  const text = `"${e.evidenceSentence}" — ${e.publisher ?? ""}, ${(e.publishedAt ?? "").slice(0, 10)}, ${e.originalUrl}`;
+  const text = evidenceCopyText(e);
   try {
     if (!navigator.clipboard?.writeText) throw new Error("clipboard unavailable");
     await navigator.clipboard.writeText(text);
@@ -144,6 +145,26 @@ export default function RelationshipPanel({ relationshipId, onClose, onPickCompa
               {meta.description}
             </div>
 
+            {/* 공시 지분(NEXUS, OpenDART 타법인 출자 현황) — 관계 점수가 곧 지분율이고, 근거는 기사 대신 공시 원문이다 */}
+            {r.ownership && (
+              <div className="ev-why mt-16">
+                <div className="kick ev-why-title">공시 지분 · OpenDART 타법인 출자 현황</div>
+                <div className="row" style={{ alignItems: "baseline", gap: 10, marginTop: 6 }}>
+                  <b className="num" style={{ fontSize: 26 }}>
+                    {Number(r.ownership.stakePct.toFixed(2))}%
+                  </b>
+                  <span className="meta">
+                    {[r.ownership.settledOn && `${r.ownership.settledOn} 기준`, r.ownership.purpose].filter(Boolean).join(" · ")}
+                  </span>
+                </div>
+                {r.ownership.sourceUrl && (
+                  <a className="meta" href={r.ownership.sourceUrl} target="_blank" rel="noreferrer noopener" style={{ display: "inline-block", marginTop: 6 }}>
+                    공시 원문 보기 (DART) ↗
+                  </a>
+                )}
+              </div>
+            )}
+
             <div className="row between mt-20">
               <span className="kick">관계 점수</span>
               <div className="seg" style={{ padding: 3 }}>
@@ -159,7 +180,7 @@ export default function RelationshipPanel({ relationshipId, onClose, onPickCompa
                 {fmtScore(r.score)}
               </div>
               <div className="grow">
-                <div className="lab">{scoreBand(r.score)} · 100점 기준</div>
+                <div className="lab">{r.ownership ? "공시 지분율 그대로" : scoreBand(r.score)} · 100점 기준</div>
                 <div className="mt-8" style={{ display: "flex" }}>
                   <ScoreBar score={r.score} color={meta.color} />
                 </div>
@@ -186,7 +207,7 @@ export default function RelationshipPanel({ relationshipId, onClose, onPickCompa
                 <div className="v num">{fmtPctFrom01(r.confidence)}</div>
               </div>
               <div className="stat">
-                <div className="lab">근거 문서</div>
+                <div className="lab">{EVIDENCE_UI.evidenceCountIn(METRIC_WINDOW_LABEL[window])}</div>
                 <div className="v num">
                   {r.evidenceCount} <span className="lab">건</span>
                 </div>
@@ -215,32 +236,37 @@ export default function RelationshipPanel({ relationshipId, onClose, onPickCompa
                 // 공시 근거는 기사 인용이 아니라 공시를 요약해 만든 문장이다. 같은 모양으로
                 // 그리면 사용자가 둘을 구분하지 못하므로, 따옴표를 빼고 배지를 붙인다.
                 const isDisclosure = e.documentType === "DISCLOSURE";
+                const text = evidenceText(e);
                 return (
                 <div key={e.newsId} className="ev-item" style={{ opacity: ageOpacityOf(e.publishedAt) }}>
                   <div className="ev-item-rail" aria-hidden="true">
                     <i className="ev-item-dot" />
                   </div>
                   <div className="ev-item-body">
-                    <div className="row between">
-                      <span className="meta num">{[e.publisher, fmtRelative(e.publishedAt)].filter(Boolean).join(" · ")}</span>
-                      <span className="meta num">
-                        {EVIDENCE_UI.contribution} {(e.contributionScore ?? 0).toFixed(2)}
-                      </span>
-                    </div>
-                    <span className="bar ev-item-bar">
-                      <i style={{ width: `${pct01(e.contributionScore)}%`, background: meta.color }} />
-                    </span>
+                    <span className="meta num">{[e.publisher, fmtRelative(e.publishedAt)].filter(Boolean).join(" · ")}</span>
                     <span className="row" style={{ gap: 6, flexWrap: "wrap" }}>
-                      <span className="badge ev-kind-badge">{isDisclosure ? EVIDENCE_UI.disclosureBadge : EVIDENCE_UI.newsBadge}</span>
+                      <span className="badge ev-kind-badge">
+                        {isDisclosure ? EVIDENCE_UI.disclosureBadge : text.kind === "article" ? EVIDENCE_UI.comentionBadge : EVIDENCE_UI.newsBadge}
+                      </span>
                       {e.newsId === representativeId && <span className="badge ev-rep-badge">{EVIDENCE_UI.representative}</span>}
                     </span>
                     <div className="ev-item-quote">
-                      {isDisclosure ? <span>{e.evidenceSentence}</span> : <q>{e.evidenceSentence}</q>}
+                      {text.kind === "article" ? (
+                        <>
+                          <b>{text.title}</b>
+                          {text.preview && <span className="ev-item-preview"> {text.preview}</span>}
+                        </>
+                      ) : isDisclosure ? (
+                        <span>{text.text}</span>
+                      ) : (
+                        <q>{text.text}</q>
+                      )}
                     </div>
                     {isDisclosure && <div className="meta ev-item-note">{EVIDENCE_UI.disclosureNote}</div>}
+                    {text.kind === "article" && <div className="meta ev-item-note">{EVIDENCE_UI.comentionNote}</div>}
                     <div className="ev-item-actions">
                       <button type="button" className="link-btn" onClick={() => void copyEvidenceSentence(e)}>
-                        {EVIDENCE_UI.copy}
+                        {text.kind === "article" ? EVIDENCE_UI.copyTitle : EVIDENCE_UI.copy}
                       </button>
                       <a href={e.originalUrl} target="_blank" rel="noreferrer" className="link-btn row" style={{ gap: 4 }}>
                         {EVIDENCE_UI.original} <Icon.External />

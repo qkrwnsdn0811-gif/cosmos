@@ -1,6 +1,8 @@
+import { COMENTION_DIM, isComention } from "@/lib/edgePick";
 import type { SceneModel } from "@/lib/graph";
 import type { PathResult } from "@/lib/path";
 import { roleOf, type RoleKey } from "@/lib/roles";
+import { isolatedNodes, visibleEdgeIds } from "./isolated";
 
 export interface Emphasis {
   node: Map<string, number>;
@@ -8,10 +10,12 @@ export interface Emphasis {
   /** 강조의 이유가 되는 노드 (라벨 항상 표시) */
   pinned: Set<string>;
   /**
-   * 행성 정면에 로고 원판(배지)을 띄울 노드. 기본 상태에서는 행성 표면을 비워 툰 질감이 보이게 하고,
-   * 호버 노드·중심 기업·선택(호버) 간선의 양끝에서만 배지가 떠오른다.
+   * 강조의 끝점 — 호버 노드·중심 기업·선택(호버) 간선의 양끝. 예전에는 툰 구체 정면에 로고 원판(배지)을 띄울 노드였지만,
+   * 행성이 언제나 로고 원판이 된 뒤로 CompanyNodes 는 이 값을 쓰지 않는다.
    */
   badges: Set<string>;
+  /** 보이는 선이 하나도 없어 숨기는 행성 (hideIsolated 일 때만 채운다) */
+  hidden: Set<string>;
 }
 
 export interface EmphasisInput {
@@ -37,6 +41,8 @@ export interface EmphasisInput {
    * "옅게 남기기" 동작은 그대로 유지된다.
    */
   isolate?: boolean;
+  /** 켜면 지금 그려지는 선이 하나도 없는 행성을 숨긴다 — 은하는 관계가 있는 기업만 띄운다 (중심·호버·선택 간선 양끝은 남김) */
+  hideIsolated?: boolean;
 }
 
 const DEPTH_DIM = [1, 1, 0.74, 0.56];
@@ -70,22 +76,40 @@ function budgetSet(model: SceneModel, visible: Set<string>, on: boolean) {
   return keep;
 }
 
+/** 관계 종류·최소 점수 필터를 통과한 간선 */
+function visibleEdges(model: SceneModel, input: EmphasisInput): Set<string> {
+  return visibleEdgeIds(model.edges, input.minScore, input.activeTypes);
+}
+
+/**
+ * 어떤 노드·간선을 얼마나 밝게 그릴지 계산하고, hideIsolated 면 선 없는 행성을 숨긴다(밝기 0, 이름표·배지 없음).
+ */
+export function computeEmphasis(model: SceneModel, input: EmphasisInput): Emphasis {
+  const out = baseEmphasis(model, input);
+  const sel = input.selectedEdgeId ? model.edgeById.get(input.selectedEdgeId) : undefined;
+  const hidden = input.hideIsolated
+    ? isolatedNodes(model, visibleEdges(model, input), [input.hoveredId, sel?.source, sel?.target])
+    : new Set<string>();
+  hidden.forEach((id) => {
+    out.node.set(id, 0);
+    out.pinned.delete(id);
+    out.badges.delete(id);
+  });
+  return { ...out, hidden };
+}
+
 /**
  * 어떤 노드·간선을 얼마나 밝게 그릴지 계산한다.
  * 우선순위: 경로 > 호버 노드 > 선택 간선 > 호버 간선 > 역할 필터 > 기업 중심 뷰의 depth 흐림 > 기본.
  * 필터(최소 점수·관계 유형)에 걸린 간선은 0 으로 숨기고, 간선 예산 밖의 간선은 호버 노드에 붙은 것만 보인다.
  */
-export function computeEmphasis(model: SceneModel, input: EmphasisInput): Emphasis {
+function baseEmphasis(model: SceneModel, input: EmphasisInput): Omit<Emphasis, "hidden"> {
   const node = new Map<string, number>();
   const edge = new Map<string, number>();
   const pinned = new Set<string>();
   const badges = new Set<string>();
 
-  const visible = new Set<string>();
-  model.edges.forEach((e) => {
-    const ok = e.score >= input.minScore && input.activeTypes.has(String(e.type));
-    if (ok) visible.add(e.id);
-  });
+  const visible = visibleEdges(model, input);
   const shown = budgetSet(model, visible, input.budget ?? false);
 
   const base = (id: string) => {
@@ -154,7 +178,10 @@ export function computeEmphasis(model: SceneModel, input: EmphasisInput): Emphas
   }
 
   model.nodes.forEach((n) => node.set(n.id, base(n.id)));
-  model.edges.forEach((e) => edge.set(e.id, shown.has(e.id) ? Math.min(base(e.source), base(e.target)) : 0));
+  // 함께 언급은 관계의 근거가 아니라 기본 상태에서 흐리게 둔다 — 호버·선택하면 다른 간선처럼 밝아진다
+  model.edges.forEach((e) =>
+    edge.set(e.id, shown.has(e.id) ? Math.min(base(e.source), base(e.target)) * (isComention(String(e.type)) ? COMENTION_DIM : 1) : 0),
+  );
   if (model.centerId) {
     pinned.add(model.centerId);
     badges.add(model.centerId);

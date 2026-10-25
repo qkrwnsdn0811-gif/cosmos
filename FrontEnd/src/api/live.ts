@@ -23,6 +23,8 @@ const remember = <R>(res: R, pick: (r: R) => readonly { companyId: string; marke
   return res;
 };
 
+/** 로고 기억용 — 시세 행의 시장·코드 (시장이 없으면 KOSPI 로 둔다: 로고 조회 키일 뿐) */
+const quoteRef = (q: T.CompanyQuote) => ({ companyId: q.companyId, market: (q.market ?? "KOSPI") as T.Market, stockCode: q.stockCode });
 const normSummary = (c: T.CompanySummary): T.CompanySummary => ({
   ...c,
   nameEn: nz(c.nameEn),
@@ -89,10 +91,16 @@ export const liveApi: CosmosApi = {
     metricsHistory: (id, params) => request(`/companies/${id}/metrics/history${qs(params)}`),
     // interval 은 MVP 에서 1D 만 지원한다 (명세 Query Params)
     stockPrices: (id, period) => request(`/companies/${id}/stock-prices${qs({ period, interval: "1D" })}`),
+    fundamental: (id) => request(`/companies/${id}/fundamental`),
     industries: async () => {
       const res = await request<{ items: T.Industry[] }>("/industries");
       return { items: res.items.map(normIndustry) };
     },
+    quotes: async () => remember(await request<T.CompanyQuotes>("/companies/quotes"), (r) => r.items.map(quoteRef)),
+    related: async (id) => remember(await request<T.RelatedCompanies>(`/companies/${id}/related`), (r) => r.items.map((i) => quoteRef(i.quote))),
+  },
+  market: {
+    indices: (period) => request(`/market/indices${qs({ period })}`),
   },
   news: {
     list: (p) => request(`/news${qs(p)}`),
@@ -103,6 +111,13 @@ export const liveApi: CosmosApi = {
     company: (id, p) => request(`/graphs/companies/${id}${qs(p)}`),
     relationship: (id, window) => request(`/relationships/${id}${qs({ window })}`),
     evidence: (id, p) => request(`/relationships/${id}/evidence${qs(p)}`),
+  },
+  events: {
+    list: (p) => request(`/events${qs(p)}`),
+    detail: (id) => request(`/events/${id}`),
+    chart: (eventId, companyId) => request(`/events/${eventId}/companies/${companyId}/chart`),
+    backtest: (valueChain) => request(`/events/backtest${qs({ valueChain })}`),
+    companyHistory: (p) => request(`/events/company-history${qs(p)}`),
   },
   community: {
     latest: (p) => request(`/community/comments${qs(p)}`),

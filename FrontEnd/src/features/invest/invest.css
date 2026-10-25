@@ -1,0 +1,621 @@
+/* 첫 화면 — 반도체 뉴스 → 영향 종목 (features/invest). 전역 토큰(global.css)만 쓴다. */
+.invest-page {
+  display: grid;
+  gap: 14px;
+}
+.invest-top {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.invest-h1 {
+  margin: 6px 0 4px;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  line-height: 1.25;
+}
+.invest-muted {
+  color: var(--text-4);
+  font-size: 13px;
+}
+
+/* 투자 기간 토글 (F9) */
+.invest-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.03);
+}
+.invest-toggle .lab {
+  padding: 0 8px 0 10px;
+  font-size: 12px;
+  color: var(--text-4);
+}
+.invest-toggle button {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-3);
+}
+.invest-toggle button small {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-4);
+}
+.invest-toggle button.on {
+  background: rgba(109, 140, 255, 0.18);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px rgba(109, 140, 255, 0.5);
+}
+.invest-toggle button:focus-visible {
+  outline: 2px solid var(--primary-2);
+  outline-offset: 2px;
+}
+
+/* 예상 변동폭 검증 (MoveCheckBanner) — 등급이 맞은 기간은 초록 테두리, 참고치인 기간은 무채색 */
+.invest-accuracy {
+  padding: 12px 16px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border-strong);
+  background: rgba(255, 255, 255, 0.03);
+}
+.invest-accuracy.holds {
+  border-color: rgba(42, 199, 105, 0.45);
+  background: rgba(42, 199, 105, 0.05);
+}
+.invest-accuracy-line {
+  margin: 6px 0 2px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* 관심 종목 알림 (F14) */
+.invest-watch {
+  display: grid;
+  gap: 8px;
+}
+.invest-watch-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 8px;
+}
+.invest-watch-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  text-align: left;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--panel);
+}
+.invest-watch-item:hover {
+  border-color: var(--border-strong);
+}
+.invest-watch-title {
+  display: block;
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+
+/* 2열 — 피드 · 상세 */
+.invest-grid {
+  display: grid;
+  grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+.invest-feed {
+  padding: 14px;
+  display: grid;
+  gap: 10px;
+  position: sticky;
+  top: calc(var(--header-h) + 12px);
+  max-height: calc(100vh - var(--header-h) - 24px);
+  grid-template-rows: auto minmax(0, 1fr);
+}
+.invest-feed-list {
+  display: grid;
+  gap: 8px;
+  overflow-y: auto;
+  align-content: start;
+  padding-right: 2px;
+}
+.invest-filter select {
+  background: var(--field);
+  color: var(--text-2);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-size: 12.5px;
+}
+.invest-news {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  padding: 11px 12px;
+  text-align: left;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.02);
+  transition: border-color 0.15s, background 0.15s;
+}
+.invest-news:hover {
+  border-color: var(--border-strong);
+}
+.invest-news.on {
+  border-color: rgba(109, 140, 255, 0.55);
+  background: rgba(109, 140, 255, 0.08);
+}
+.invest-news-title {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--text);
+}
+.invest-news-foot {
+  justify-content: space-between;
+  gap: 6px;
+}
+.invest-firms {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.invest-firm {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--text-3);
+}
+.invest-type {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--primary-3);
+  background: rgba(109, 140, 255, 0.12);
+  border: 1px solid rgba(109, 140, 255, 0.3);
+  white-space: nowrap;
+}
+
+/* 딱지 요약 점 — 색만으로 구분하지 않도록 글자를 함께 쓴다 */
+.invest-dots {
+  display: inline-flex;
+  gap: 8px;
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+.invest-dots span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.invest-dots i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-4);
+}
+.invest-dots .down i {
+  background: var(--neg);
+}
+.invest-dots .up i {
+  background: var(--pos);
+}
+
+/* 뉴스 상세 */
+.invest-detail {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.invest-news-head {
+  padding: 18px 20px;
+  display: grid;
+  gap: 10px;
+}
+.invest-news-h {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: -0.3px;
+}
+.invest-news-summary {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text-3);
+}
+/* 뉴스 상세 안의 3D 관계 지도 (예전 /events 화면을 합쳤다) */
+.invest-map {
+  padding: 14px 16px 16px;
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+.invest-stock {
+  /* 지도에서 행성을 고르면 카드로 스크롤한다 — 고정 헤더 아래에 카드 머리가 오도록 */
+  scroll-margin-top: calc(var(--header-h) + 12px);
+}
+.invest-list-head {
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 0 4px;
+}
+.invest-cards {
+  display: grid;
+  gap: 10px;
+}
+
+/* 영향 종목 카드 (F5) */
+.invest-stock {
+  padding: 0;
+  overflow: hidden;
+}
+.invest-stock.weak {
+  opacity: 0.72;
+}
+.invest-stock-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 16px 6px;
+  text-align: left;
+}
+.invest-stock-id {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.invest-stock-name {
+  font-size: 15px;
+  color: var(--text);
+}
+.invest-role {
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: var(--text-3);
+  border: 1px solid var(--border-strong);
+}
+.invest-role.reported {
+  color: var(--primary-3);
+  border-color: rgba(109, 140, 255, 0.4);
+}
+.invest-metrics {
+  overflow-wrap: anywhere;
+}
+.invest-badge {
+  flex: none;
+  max-width: 46%;
+  padding: 6px 11px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 700;
+  border: 1px solid var(--border-strong);
+  color: var(--text-2);
+  background: rgba(255, 255, 255, 0.04);
+  text-align: center;
+}
+.invest-badge.down {
+  color: var(--neg-fg);
+  border-color: rgba(255, 92, 122, 0.45);
+  background: rgba(255, 92, 122, 0.1);
+}
+.invest-badge.up {
+  color: var(--pos-fg);
+  border-color: rgba(42, 199, 105, 0.45);
+  background: rgba(42, 199, 105, 0.1);
+}
+.invest-badge.hold {
+  font-weight: 600;
+  color: var(--text-3);
+}
+/* 방향 딱지 아래 예상 변동폭 배지 — 크기만 말하므로 오르내림 색을 쓰지 않고, '변동 큼'만 주의 색으로 */
+.invest-badges {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  max-width: 46%;
+}
+.invest-badges .invest-badge {
+  max-width: 100%;
+}
+.invest-move {
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-3);
+  border: 1px dashed var(--border-strong);
+  white-space: nowrap;
+}
+.invest-move.large {
+  color: #f5a623;
+  border: 1px solid rgba(245, 166, 35, 0.5);
+  background: rgba(245, 166, 35, 0.08);
+}
+/* "왜 이 종목?" — 뉴스가 이 종목에 닿는 이유를 풀어 쓴 문장. 카드에서 가장 먼저 읽힌다 */
+.invest-why {
+  margin: 0 0 2px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--text);
+}
+.invest-why .lab {
+  margin-right: 4px;
+  font-weight: 700;
+  color: var(--primary-3);
+}
+.invest-move-line {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-3);
+}
+.invest-stock-body {
+  display: grid;
+  gap: 4px;
+  padding: 0 16px 14px 66px;
+}
+.invest-past {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text-2);
+}
+.invest-path {
+  margin: 0;
+}
+.invest-stock-body .meta {
+  margin: 0;
+}
+.invest-stock-more {
+  display: grid;
+  gap: 14px;
+  padding: 14px 16px 16px;
+  border-top: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.12);
+}
+.invest-realized {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 14px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+.invest-realized .pos {
+  color: var(--pos-fg);
+}
+.invest-realized .neg {
+  color: var(--neg-fg);
+}
+.invest-evidence {
+  display: grid;
+  gap: 8px;
+}
+.invest-evidence blockquote {
+  margin: 4px 0 2px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border-left: 3px solid rgba(109, 140, 255, 0.5);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-2);
+  overflow-wrap: anywhere;
+}
+.invest-step {
+  display: grid;
+  gap: 2px;
+}
+.invest-links {
+  gap: 8px;
+}
+.invest-page .event-link {
+  color: var(--primary-2);
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+.invest-page .more-btn {
+  width: 100%;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 10px;
+}
+.invest-page .more-btn:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* 뉴스 전후 주가 차트 (F7) */
+.invest-chart {
+  margin: 0;
+  display: grid;
+  gap: 6px;
+}
+.invest-chart figcaption {
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.invest-chart-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-3);
+}
+.invest-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-3);
+}
+.invest-legend i {
+  display: inline-block;
+  width: 18px;
+  border-top: 2px solid;
+  margin-left: 8px;
+}
+.invest-legend i.dash {
+  border-top-style: dashed;
+}
+.invest-chart-stage {
+  position: relative;
+}
+.invest-chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.invest-chart .grid {
+  stroke: rgba(255, 255, 255, 0.06);
+}
+.invest-chart .zero {
+  stroke: rgba(255, 255, 255, 0.22);
+}
+.invest-chart .newsday {
+  stroke: rgba(130, 156, 255, 0.55);
+  stroke-dasharray: 3 4;
+}
+.invest-chart .crosshair {
+  stroke: rgba(255, 255, 255, 0.35);
+}
+.invest-chart .dot {
+  stroke: var(--panel-solid);
+  stroke-width: 2;
+}
+.invest-chart .tick {
+  fill: var(--text-4);
+  font-size: 11px;
+}
+.invest-chart .end-label {
+  fill: var(--text-2);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+.invest-chart .end-label.muted {
+  fill: var(--text-4);
+}
+.invest-tip {
+  position: absolute;
+  top: 4px;
+  transform: translateX(-50%);
+  display: grid;
+  gap: 2px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: var(--panel-solid);
+  border: 1px solid var(--border-strong);
+  font-size: 12px;
+  color: var(--text-2);
+  pointer-events: none;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.invest-tip b {
+  color: var(--text);
+}
+
+.invest-disclaimer {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--text-4);
+}
+
+@media (max-width: 900px) {
+  .invest-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .invest-feed {
+    position: static;
+    max-height: 420px;
+  }
+  .invest-h1 {
+    font-size: 21px;
+  }
+  .invest-stock-body {
+    padding-left: 16px;
+  }
+  .invest-badge {
+    max-width: 52%;
+  }
+}
+
+/* 기업 화면의 투자 정보 (F8 · F13) — CompanyInvestSection 은 기업 미리보기 대화상자 안에서도 쓰인다 */
+.invest-company .more-btn {
+  width: 100%;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 10px;
+}
+.invest-history {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.invest-history-item {
+  display: grid;
+  gap: 4px;
+  padding: 9px 11px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.02);
+  color: inherit;
+  text-decoration: none;
+}
+.invest-history-item:hover {
+  border-color: var(--border-strong);
+}
+.invest-history-title {
+  font-size: 13px;
+  color: var(--text-2);
+}
+.invest-history-ar {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-3);
+}
+.invest-history-ar.pos {
+  color: var(--pos-fg);
+}
+.invest-history-ar.neg {
+  color: var(--neg-fg);
+}
+.invest-badge.sm {
+  justify-self: start;
+  padding: 3px 9px;
+  font-size: 11.5px;
+}

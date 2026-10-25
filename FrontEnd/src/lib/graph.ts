@@ -5,6 +5,7 @@
 import type { CompanyGraph, GraphEdge, LatestGraph, LatestGraphNode, Market, RelationshipType } from "@/api/types";
 import { ARMS, ARM_SPREAD, CORE_Y, DISC_Y, R_CORE, R_MAX, armTheta, nearestArm } from "./galaxyShape";
 import { INDUSTRY_COLORS, NEIGHBOR_NODE_COLOR, UNCLASSIFIED_INDUSTRY, industryColor, relationshipMeta } from "./meta";
+import { strongestPerPair } from "./edgePick";
 import { gaussian, hashString, seededRandom } from "./rng";
 
 export type Vec3 = [number, number, number];
@@ -12,6 +13,8 @@ export type Vec3 = [number, number, number];
 export interface SceneNode {
   id: string;
   name: string;
+  /** 이름표에 쓸 글 — 없으면 name. 이벤트 지도는 기업명 뒤에 초과수익률을 붙인다 (로고 이니셜은 계속 name 에서 만든다) */
+  label?: string;
   industry: string;
   market: Market;
   /** company.stock_code 는 DDL 상 NULL 허용 — 로고 조회에만 쓰고 표시에는 쓰지 않는다 */
@@ -191,16 +194,9 @@ function finish(kind: SceneModel["kind"], centerId: string | null, nodes: SceneN
   const neighbors = new Map<string, Set<string>>();
   const incident = new Map<string, Set<string>>();
   const sceneEdges: SceneEdge[] = [];
-  // 같은 두 기업(방향 무관) 사이 관계가 여럿이면 점수가 가장 높은 것 하나만 그린다 — 뷰마다 다른 관계(협력/경쟁)가 보이지 않게 경로 뷰와 같은 규칙
-  const strongest = new Map<string, GraphEdge>();
-  edges.forEach((e) => {
-    const a = e.sourceCompanyId;
-    const b = e.targetCompanyId;
-    const key = a < b ? `${a}:${b}` : `${b}:${a}`;
-    const cur = strongest.get(key);
-    if (!cur || e.score > cur.score) strongest.set(key, e);
-  });
-  strongest.forEach((e) => {
+  // 같은 두 기업(방향 무관) 사이 관계가 여럿이면 하나만 그린다 — 뷰마다 다른 관계(협력/경쟁)가 보이지 않게 경로 뷰와 같은 규칙.
+  // 빅카인즈 함께 언급은 관계의 근거가 아니라서 근거 관계가 있으면 점수와 관계없이 그쪽을 남긴다 (edgePick)
+  strongestPerPair(edges).forEach((e) => {
     const a = nodeById.get(e.sourceCompanyId);
     const b = nodeById.get(e.targetCompanyId);
     if (!a || !b) return;
@@ -625,7 +621,7 @@ export function layoutGalaxy(graph: LatestGraph, capT: CapScale = capScale(graph
  */
 export const ORBIT = [0, 42, 76, 108];
 /** 궤도 타원의 z 축 비율 — 비스듬히 내려다볼 때 원으로 보이도록 살짝 눌렀다 */
-const SYSTEM_SQUASH = 0.82;
+export const SYSTEM_SQUASH = 0.82;
 /**
  * 전체 은하의 z 축(안길이) 비율 — 행성이 가운데(원형)에 몰려 보인다는 피드백에 따라, 은하를 좌우로
  * 긴 타원으로 눌러 화면의 좌우 공간을 더 쓰게 한다. x 는 그대로 두고 z 만 이 비율만큼 줄인다.

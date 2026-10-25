@@ -1,9 +1,10 @@
 /**
- * 기업 로고 수집 — 종목코드/티커 → 대표 도메인(계열사는 그룹 도메인) 순으로 공개 아이콘 출처를 훑어
- * public/company-logos/{code}.{ext} 로 저장한다. 후보 중 긴 변 128px 이상이 나오면 그것을 쓰고,
+ * 기업 로고 수집 — 국내 종목은 토스증권 종목 아이콘을 먼저 받고, 없으면 대표 도메인(계열사는 그룹 도메인) 순으로
+ * 공개 아이콘 출처를 훑어 public/company-logos/{code}.{ext} 로 저장한다. 도메인 후보 중 긴 변 128px 이상이 나오면 그것을 쓰고,
  * 없으면 가장 큰 것을 쓴다 (가이드 권장 조건: 정사각형·투명 배경·최소 128×128).
  * 128px 보다 큰 그림은 받지 않는다 — 로고는 three/logoAtlas 의 128px 셀과 패널 아바타(≤56px)에만 쓰여서
  * 그보다 큰 픽셀은 첫 화면 전송량만 늘린다 (2026-09-18: 256px 로 받아 둔 로고 3.8MB → 1.6MB).
+ * 토스 아이콘은 480~1920px 이라 scripts/png.mjs 로 128px 로 줄여 저장한다.
  * 이미 있는 파일은 건너뛴다 — 특정 기업만 다시 받으려면 그 파일을 지우고 실행한다.
  * 실행: npm run logos:fetch  (--force 로 전부 덮어쓰기)
  * 저장된 목록은 src/lib/logo-codes.json 으로 다시 생성된다.
@@ -11,6 +12,7 @@
 import { mkdir, readdir, writeFile, stat } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import { shrinkPng } from "./png.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const outDir = path.join(root, "public", "company-logos");
@@ -33,6 +35,51 @@ const DOMAINS = {
   "240810": ["wonik-ips.com", "wonik.com"],
   "089030": ["techwing.co.kr"],
   "095340": ["isc21.kr"],
+  // 국내 반도체 밸류체인(nexus/data/master/semis_companies.csv) — 토스 아이콘을 먼저 받는다.
+  // 도메인이 빈 배열인 곳은 대표 도메인을 확신하지 못해 비워 둔 것이다(토스에도 없으면 화면이 이니셜로 대신한다)
+  "319660": ["pskinc.com"], // 피에스케이
+  "095610": [], // 테스
+  "084370": ["eugenetech.co.kr"], // 유진테크
+  "281820": ["kctech.co.kr"], // 케이씨텍
+  "079370": [], // 제우스
+  "140860": ["parksystems.com"], // 파크시스템스
+  "348210": ["nextinsol.com"], // 넥스틴
+  "322310": ["aurostech.com"], // 오로스테크놀로지
+  "036810": ["fstc.co.kr"], // 에프에스티
+  "053610": [], // 프로텍
+  "003160": [], // 디아이
+  "083310": ["lotvacuum.com"], // 엘오티베큠
+  "098460": ["kohyoung.com"], // 고영
+  "102710": ["enftech.com"], // 이엔에프테크놀로지
+  "077360": [], // 덕산하이메탈
+  "101490": ["snstech.co.kr"], // 에스앤에스텍
+  "281740": ["lakematerials.com"], // 레이크머티리얼즈
+  "104830": ["wonikmaterials.com", "wonik.com"], // 원익머트리얼즈
+  "166090": ["hanamts.com"], // 하나머티리얼즈
+  "064760": [], // 티씨케이
+  "074600": ["wonikqnc.com", "wonik.com"], // 원익QnC
+  "101160": ["worldex.co.kr"], // 월덱스
+  "146320": [], // 비씨엔씨
+  "272110": [], // 케이엔제이
+  "098120": [], // 마이크로컨텍솔
+  "059090": [], // 미코
+  "183300": [], // 코미코
+  "222800": ["simmtech.com"], // 심텍
+  "007810": [], // 코리아써키트
+  "195870": ["haesungds.com"], // 해성디에스
+  "067310": ["hanamicron.co.kr"], // 하나마이크론
+  "036540": ["sfasemicon.com"], // SFA반도체
+  "033640": ["nepes.co.kr"], // 네패스
+  "061970": ["lbsemicon.com"], // LB세미콘
+  "131970": ["doosan.com"], // 두산테스나
+  "399720": ["gaonchips.com"], // 가온칩스
+  "200710": [], // 에이디테크놀로지
+  "394280": ["openedges.com"], // 오픈엣지테크놀로지
+  "094360": ["chipsnmedia.com"], // 칩스앤미디어
+  "432720": [], // 퀄리타스반도체
+  "080220": [], // 제주반도체
+  "445090": ["asicland.com"], // 에이직랜드
+  "108320": ["lxsemicon.com"], // LX세미콘
   NVDA: ["nvidia.com"],
   AMD: ["amd.com"],
   INTC: ["intel.com"],
@@ -361,6 +408,24 @@ function maxDim(buf) {
 
 const MIN_PX = 128;
 
+/** 국내 종목코드 — 숫자 하나로 시작하는 6자리(영문이 섞인 신규 코드 0126Z0 포함). 미국 티커는 토스 아이콘 주소가 달라 건너뛴다 */
+const KRX_CODE = /^[0-9][0-9A-Z]{5}$/;
+
+/**
+ * 토스증권 종목 아이콘 — 종목코드만으로 받을 수 있는 정사각형 로고(480~1920px, 배경을 꽉 채운 그림이라 원형으로 잘라도 빈 데가 없다).
+ * 공식 공개 API 가 아니라 토스 앱·웹이 쓰는 정적 이미지 주소라 예고 없이 바뀌거나 막힐 수 있다 — 그때는 도메인 출처로 넘어간다.
+ * 없는 코드는 403 이 온다. 128px 로 줄이지 못하면(못 읽는 PNG) 128px 제한을 지키려고 쓰지 않는다
+ */
+async function fetchToss(code) {
+  if (!KRX_CODE.test(code)) return null;
+  const got = await tryFetch(`https://static.toss.im/png-icons/securities/icn-sec-fill-${code}.png`, 500);
+  if (!got || !got.type.includes("png")) return null;
+  const dim = maxDim(got.buf);
+  const buf = dim > MIN_PX ? shrinkPng(got.buf, MIN_PX) : got.buf;
+  if (!buf) return null;
+  return { buf, type: "image/png", source: "toss", ext: "png", dim: Math.min(dim, MIN_PX) };
+}
+
 /**
  * 한 도메인의 후보를 순서대로 훑되, 128px 이상이 나오면 그 자리에서 멈춘다.
  * 하나도 그 크기에 못 미치면 그중 가장 큰 것을 쓴다 — 작은 favicon 이라도 모노그램보다는 기업을 알아보기 쉽다.
@@ -417,7 +482,13 @@ const worker = async () => {
       continue;
     }
     let done = false;
-    for (const d of domains) {
+    const toss = await fetchToss(code);
+    if (toss) {
+      await writeFile(path.join(outDir, `${code}.png`), toss.buf);
+      report.saved.push(`${code} ← toss (${toss.dim}px, ${Math.round(toss.buf.length / 1024)}KB)`);
+      done = true;
+    }
+    for (const d of done ? [] : domains) {
       const got = await fetchLogo(d);
       if (got) {
         await writeFile(path.join(outDir, `${code}.${got.ext}`), got.buf);

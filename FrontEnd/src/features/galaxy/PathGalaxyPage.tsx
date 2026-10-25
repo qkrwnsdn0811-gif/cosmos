@@ -7,6 +7,7 @@ import { Icon } from "@/components/ui";
 import CompanyPanel from "./CompanyPanel";
 import RelationshipPanel from "./RelationshipPanel";
 import SearchPalette from "./SearchPalette";
+import { GALAXY_PATH, galaxyCompanyPath } from "@/lib/routes";
 import "./galaxy.css";
 
 const Scene = lazy(() => import("@/three/Scene"));
@@ -54,7 +55,7 @@ export default function PathGalaxyPage() {
    */
 
   /** 관계망을 더 보고 싶으면(패널의 "관계망 보기") 전체 은하로 나가 그 기업 중심 뷰를 연다 — 이 화면은 경로 한 줄만 보여준다 */
-  const openInGalaxy = (id: string) => navigate(`/?company=${id}`);
+  const openInGalaxy = (id: string) => navigate(galaxyCompanyPath(id));
   const pickCompany = (id: string) => (pathModel?.nodeById.has(id) ? selectCompany(id) : openInGalaxy(id));
 
   const loading = universe.isLoading;
@@ -88,7 +89,7 @@ export default function PathGalaxyPage() {
         <div className="stage-loading" style={{ pointerEvents: "auto" }}>
           <b>이어지는 관계를 찾지 못했습니다</b>
           <span>두 기업이 최신 공개 스냅샷 안에서 서로 연결돼 있지 않습니다.</span>
-          <button type="button" className="btn btn-g btn-sm" onClick={() => navigate("/")}>
+          <button type="button" className="btn btn-g btn-sm" onClick={() => navigate(GALAXY_PATH)}>
             <Icon.Back /> 전체 은하로
           </button>
         </div>
@@ -97,7 +98,7 @@ export default function PathGalaxyPage() {
         <div className="stage-loading" style={{ pointerEvents: "auto" }}>
           <b>검색한 기업 정보가 없습니다</b>
           <span>검색창에서 관계 검색으로 두 기업을 다시 골라 주세요.</span>
-          <button type="button" className="btn btn-g btn-sm" onClick={() => navigate("/")}>
+          <button type="button" className="btn btn-g btn-sm" onClick={() => navigate(GALAXY_PATH)}>
             <Icon.Back /> 전체 은하로
           </button>
         </div>
@@ -106,7 +107,7 @@ export default function PathGalaxyPage() {
       {/* 좌상단: 뒤로 가기 + 경로 브레드크럼(A → B → C) + 검색(다른 경로를 바로 다시 찾도록 — GalaxyPage 기업 중심 뷰의 검색 아이콘과 같은 자리) */}
       <div className="hud hud-crumb">
         <div className="crumb">
-          <button type="button" onClick={() => navigate("/")} title="전체 은하로 돌아가기">
+          <button type="button" onClick={() => navigate(GALAXY_PATH)} title="전체 은하로 돌아가기">
             <Icon.Back /> 전체 은하
           </button>
           {hasPath && pathModel && (

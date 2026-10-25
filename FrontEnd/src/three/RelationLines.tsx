@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import * as THREE from "three";
+import { isComention } from "@/lib/edgePick";
 import type { SceneEdge, SceneModel } from "@/lib/graph";
 import { altitudeGate, altitudeState } from "./altitude";
 import { touch } from "./bufferUtil";
@@ -199,7 +200,8 @@ export default function RelationLines({ edges, emphasis, model, onHover, onSelec
       const s = e.score / 100;
       const r = radiusOf(s);
       radii[ei] = r;
-      speeds[ei] = 0.05 + s * 0.14;
+      // 함께 언급은 흐름(전이 방향)이 없는 통계라 구슬을 흘리지 않는다
+      speeds[ei] = isComention(String(e.type)) ? 0 : 0.05 + s * 0.14;
       phases[ei] = (ei * 0.6180339887) % 1;
       // 이 셰이더는 톤매핑도 출력 색공간 변환도 거치지 않는다 — 넘긴 값이 곧 화면 sRGB 라서
       // 선형화(THREE.Color 기본 변환)를 거치면 파랑·보라가 함께 어두운 청색으로 몰려 구분이 사라진다
@@ -422,7 +424,7 @@ export default function RelationLines({ edges, emphasis, model, onHover, onSelec
         const bell = Math.sin(u * Math.PI);
         size[k] = built.radii[ei] * (6.0 + bell * 3.6) * (hot ? HOVER_SIZE : 1);
         const grown = (built.outward[ei] ? u : 1 - u) <= rvE;
-        alpha[k] = emph <= 0.003 || !grown ? 0 : (0.35 + 0.65 * bell) * Math.min(1, emph * 1.4) * fade;
+        alpha[k] = emph <= 0.003 || !grown || isComention(String(e.type)) ? 0 : (0.35 + 0.65 * bell) * Math.min(1, emph * 1.4) * fade;
       }
     });
     built.pPos.needsUpdate = true;

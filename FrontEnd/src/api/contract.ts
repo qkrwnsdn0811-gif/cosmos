@@ -31,7 +31,17 @@ export interface CosmosApi {
     metrics(companyId: string, window?: T.MetricWindow): Promise<T.CompanyMetrics>;
     metricsHistory(companyId: string, params?: T.MetricsHistoryParams): Promise<T.MetricsHistory>;
     stockPrices(companyId: string, period?: T.PricePeriod): Promise<T.StockPrices>;
+    /** 시가총액·규모·PER·PBR·배당수익률. 값이 없으면 각 칸이 null */
+    fundamental(companyId: string): Promise<T.Fundamental>;
     industries(): Promise<{ items: T.Industry[] }>;
+    /** 기업 탭 시세판: 활성 기업 전부(페이지 없음) */
+    quotes(): Promise<T.CompanyQuotes>;
+    /** 공개 은하 스냅샷 1년 관계 기업과 그 시세, 점수 내림차순 */
+    related(companyId: string): Promise<T.RelatedCompanies>;
+  };
+  market: {
+    /** 코스피·코스닥. 기간 1M·3M·6M·1Y = 거래일 20·60·120·250개 + 기준점 1개 */
+    indices(period?: T.PricePeriod): Promise<T.MarketIndices>;
   };
   news: {
     list(params?: T.NewsListParams): Promise<T.Page<T.NewsItem>>;
@@ -43,6 +53,17 @@ export interface CosmosApi {
     relationship(relationshipId: string, window?: T.MetricWindow): Promise<T.RelationshipDetail>;
     /** size 는 기본 10 · 최대 20 (명세). 그 이상을 보내면 실 백엔드가 400 을 낸다. */
     evidence(relationshipId: string, params?: { cursor?: string; size?: number }): Promise<T.Page<T.RelationshipEvidence>>;
+  };
+  events: {
+    /** size 는 기본 20 · 최대 100 */
+    list(params?: T.EventListParams): Promise<T.Page<T.EventSummary>>;
+    detail(eventId: string): Promise<T.EventMap>;
+    /** 뉴스 5거래일 전 ~ 20거래일 뒤 종목·지수 종가와 누적 초과수익률 */
+    chart(eventId: string, companyId: string): Promise<T.EventChart>;
+    /** 방향 딱지 적중률 (학습 기간 뒤 뉴스) */
+    backtest(valueChain: T.ValueChain): Promise<T.Backtest>;
+    /** 한 종목에 영향을 준 과거 뉴스와 그때의 주가 반응 */
+    companyHistory(params: T.CompanyHistoryParams): Promise<T.Page<T.CompanyHistoryItem>>;
   };
   community: {
     latest(params?: { cursor?: string; size?: number }): Promise<T.Page<T.GlobalComment>>;

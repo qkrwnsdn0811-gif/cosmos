@@ -5,6 +5,7 @@ import { useScraps, useToggleScrap, useToggleWatch, useWatchlist } from "@/lib/q
 import { useSession } from "@/store/session";
 import { useUi } from "@/store/ui";
 import { CompanyAvatar, Empty, Icon, Skeleton } from "@/components/ui";
+import { GALAXY_MINE_PATH, galaxyCompanyPath } from "@/lib/routes";
 import "./profile.css";
 
 /**
@@ -64,7 +65,7 @@ function WatchCard() {
           </h2>
         </div>
         {/* 목록에서 바로 개인 은하로 — 관심 기업이 어떻게 이어지는지는 표가 아니라 은하가 보여 준다 */}
-        <button type="button" className="btn btn-g btn-sm" onClick={() => navigate("/?scope=mine")}>
+        <button type="button" className="btn btn-g btn-sm" onClick={() => navigate(GALAXY_MINE_PATH)}>
           <Icon.Galaxy /> 내 은하에서 보기
         </button>
       </div>
@@ -74,7 +75,7 @@ function WatchCard() {
         {items.map((w) => (
           <div key={w.companyId} className="me-item">
             <CompanyAvatar name={w.name} stockCode={w.stockCode} market={w.market} industry={w.primaryIndustry?.name} size={40} />
-            <button type="button" className="grow" style={{ textAlign: "left" }} onClick={() => navigate(`/?company=${w.companyId}`)}>
+            <button type="button" className="grow" style={{ textAlign: "left" }} onClick={() => navigate(galaxyCompanyPath(w.companyId))}>
               <b>{w.name}</b>
               <span className="meta num">
                 {[w.stockCode, w.primaryIndustry?.name, `${fmtRelative(w.watchedAt)} 등록`].filter(Boolean).join(" · ")}

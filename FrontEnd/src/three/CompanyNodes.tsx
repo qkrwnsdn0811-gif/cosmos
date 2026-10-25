@@ -2,59 +2,46 @@ import { useEffect, useMemo, useRef } from "react";
 import { useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import * as THREE from "three";
 import type { SceneModel, SceneNode } from "@/lib/graph";
-import { initials } from "@/lib/format";
-import { logoUrl } from "@/lib/logos";
-import { hashString } from "@/lib/rng";
 import { ROLE_META, ROLE_ORDER, roleColor, type RoleKey } from "@/lib/roles";
 import { useNarrowViewport } from "@/lib/viewport";
 import { HOLD_MS, useGalaxy } from "@/store/galaxy";
 import { altitudeState } from "./altitude";
 import { touch } from "./bufferUtil";
 import { cameraBusy } from "./cameraState";
-import { CHIP_H, CHIP_NAME_H, CHIP_PILL, CHIP_STEM, chipFragment, chipHit, chipVertex } from "./chipShader";
+import { CHIP_PILL, chipAspect, chipFragment, chipHit, chipVertex, roleWidth } from "./chipShader";
 import type { Emphasis } from "./emphasis";
-import { ATLAS_CELL_UV, cellUv, ensureLogoCell, logoAtlasTexture } from "./logoAtlas";
-import { discFragment, discVertex } from "./logoDiscShader";
+import { ATLAS_CELL_UV, logoAtlasTexture, nodeLogoCell } from "./logoAtlas";
+import { discFragment, discHit, discVertex } from "./logoDiscShader";
 import { dragState, liveFor, morphState, type LiveTransform } from "./morph";
 import { ensureNameCell, nameAtlasTexture, type NameCell } from "./nameAtlas";
 import { animFor } from "./nodeAnim";
 import { spreadState } from "./spread";
 import { dotTexture, ringTexture } from "./textures";
-import { PLANET_RADIUS_K, planetGeometry, planetPaletteFor, toonGradient, type PlanetPalette } from "./toon";
+import { PLANET_RADIUS_K } from "./toon";
 
 interface Props {
   model: SceneModel;
   emphasis: Emphasis;
+  /** 지금 주인공인 기업 — 호버한 기업, 없으면 선택한 기업 (밝게·크게, 이웃 역할 태그의 기준) */
   hoveredId: string | null;
+  /** 선택한 기업 — 다른 행성에 마우스를 올려 hoveredId 가 바뀌어도 이름표를 계속 띄운다 */
+  selectedId?: string | null;
   onHover: (id: string | null) => void;
   onClick: (id: string) => void;
-  /** 이름표 칩에 기업명을 펼칠 수 있게 할지 (끄면 언제나 로고 원만 남는다). 켜 두어도 이름은 호버·강조 고정·중심에서만 펼쳐진다 */
+  /** 이름표에 기업명을 띄울 수 있게 할지. 켜 두어도 이름은 호버·선택·중심 기업에서만 나온다 (끄면 이름은 아예 없고 역할 태그만 남는다) */
   showLabels?: boolean;
+  /** 강조 고정(pinned) 기업에도 이름을 띄운다 — 관계 경로 화면처럼 기본 상태에서 모든 이름을 보여 주는 곳 */
+  pinnedNames?: boolean;
   /** 더블클릭(두 번째 click, nativeEvent.detail ≥ 2) — 그 기업의 관계망으로. 첫 클릭은 onClick(미리보기)으로 이미 처리돼 있다 */
   onDoubleClick?: (id: string) => void;
-  /** 호버 노드의 이웃 → 역할. 그 이웃 칩의 로고 원과 이름 사이에 유형색 역할 태그(공급사·고객…)가 붙는다 */
+  /** 호버 노드의 이웃 → 역할. 그 이웃 행성 위에 유형색 역할 태그(공급사·고객…)가 뜬다 */
   roleTags?: Map<string, RoleKey> | null;
-}
-
-/**
- * 행성 외형 — 대륙형과 고리형 둘. 예전에는 작은 위성이 도는 "moon" 형도 있었지만, 그 위성이 옆 기업의 행성처럼
- * 읽혀 관계도를 오해하게 한다는 지적이 있어 없앴다 (같은 비율만큼 고리형으로 돌린다).
- */
-type Variant = "land" | "ring";
-interface Planet {
-  node: SceneNode;
-  radius: number;
-  palette: PlanetPalette;
-  variant: Variant;
-  seed: number;
-  geo: THREE.BufferGeometry;
 }
 
 const tmpObj = new THREE.Object3D();
 const TMP = new THREE.Vector3();
 const TO_CAM = new THREE.Vector3();
 const UPV = new THREE.Vector3();
-const RGT = new THREE.Vector3();
 const NDC = new THREE.Vector3();
 /** 드래그 스크래치 — 한 번에 하나만 끌 수 있으므로 모듈에 둔다 */
 const DRAG_PLANE = new THREE.Plane();
@@ -189,49 +176,28 @@ function cullOverlappingChips(order: number[], rect: Float32Array, prio: Float32
   }
 }
 /**
- * 티어별 칩이 완전히 사라지는 카메라 거리 — 0.75 배 지점부터 페이드.
- * 은하: 티어는 질량 랭크로 나뉜다(상위 12 = 0, 50 위까지 = 1, 나머지 = 2, lib/graph).
- *   한동안 세 티어를 모두 띄웠더니 첫 화면이 로고 200개로 뒤덮여 난잡하다는 지적을 받아, 기본 자세
- *   에서는 핵심 허브(티어 0)만 남기고 나머지는 다가갈 때 나타나게 되돌렸다. 기준은 카메라~원점이 아니라
- *   카메라~그 행성 거리이고 원반 앞쪽 행성은 원점보다 100 이상 가깝다 — 그래서 티어 1(150)·2(115)는
- *   기본 자세(원점까지 ≈ 270)보다 한참 안쪽에 둬야 "기본 화면에는 허브만" 이 지켜진다.
- * 기업 중심 뷰: 티어가 depth(0·1·2+)라 이웃이 수십 개뿐이다. 거리로 감출 이유가 없어 넉넉히 둔다.
- */
-const TIER_FAR: Record<SceneModel["kind"], number[]> = { galaxy: [520, 150, 115], system: [900, 620, 460] };
-/**
  * 칩 겹침 판정의 여백(px) — 화면에 실제로 그려질 칩 사각형이 이 여백 안으로 겹치면 우선순위 낮은 쪽을 숨긴다.
  * 예전 방식(행성 위치를 96×28 격자에 넣어 같은 칸만 겹침으로 침)은 칩이 칸보다 넓어지자 무력해졌다 — 26px 칩은 폭이 100~150px 라
  * 옆 칸의 칩과 그대로 겹쳤다(기본 자세에서 겹치는 쌍 실측 4.3/프레임). 사각형끼리 재면 폭이 얼마든 정확하다
  */
 const CHIP_GAP = 4;
 /**
- * 칩 목표 화면 높이(px)와 월드 높이 클램프 — 코앞에서도 너무 작아지지 않고 멀리서도 행성을 통째로 덮지 않게.
- * 20px·상한 4 일 때는 은하 기본 자세에서 칩이 13px 안팎, 글자는 7px 남짓이라 읽히지 않았다. 26px 로 키우고 상한을 10 으로 올렸다가,
- * 이름이 호버에서만 나오게 바뀐 뒤 글자를 키우려고 30 → 34px 로, 기본 화면에 핵심 허브만 남고 카메라도 조금 물러난 뒤
- * 40px 로 올렸다 (글자 ≈ 17px → 26px, 굵기는 그대로). 그 뒤 글자만 크다는 지적에 칩은 두고 글자 영역(chipShader CHIP_NAME_H)을
- * 0.8 → 0.68 로 줄였다 (글자 ≈ 22px) — 로고 원 크기는 그대로다.
- * 화면 px 로 고정하면 확대할수록 행성만 커지고 로고는 그대로라 작아 보인다 — 아래 CHIP_OF_PLANET 하한이 그때 로고를 함께 키운다.
- * 상한이 걸리는 구간(기본 자세 카메라 거리 ≈ 265~310 에서 계산): 캔버스 세로 790px 이상이면 허브 칩이 모두 26px, 720px 에서는 23.8~26px,
- * 650px 에서는 21.5~25.2px. 글자 높이는 이름 아틀라스 행(ROW 44 중 글자 36)에 따라 칩 높이의 약 0.65 배 ≈ 17px 이다.
- * 하한은 코앞(궤도 최소 거리 22)에서 칩이 화면 45~65px 로 커지는 정도 — 더 올리면 긴 이름이 화면 1/3 을 덮는다
+ * 이름표 목표 화면 높이(px)와 월드 높이 클램프 — 코앞에서도 너무 작아지지 않고 멀리서도 행성을 통째로 덮지 않게.
+ * 로고 원이 칩 왼쪽에 붙어 있던 시절에는 40px 칩에 글자 ≈ 22px 였다. 행성이 로고가 되면서 이름표에는 글자만 남아
+ * 캡슐을 32px 로 얇게 하고 글자 영역(chipShader CHIP_NAME_H)을 0.8 로 넓혀 글자 크기(≈ 21px)는 거의 그대로 뒀다.
+ * 상한 10 은 은하 기본 자세(카메라 ≈ 265~310)에서 캔버스 세로 790px 기준 이름표가 30px 남짓으로 줄어드는 값이다
  */
-const CHIP_PX = 40;
+const CHIP_PX = 32;
 const CHIP_MIN = 1.3;
 const CHIP_MAX = 10.0;
+/** 이름표 아래 끝과 행성 테두리 사이 — 이름표 높이의 비율 */
+const CHIP_LIFT = 0.2;
 /**
- * 칩 높이의 하한 — 행성 반지름의 이 배. 가까이 다가가 행성이 커지면 로고도 같이 커진다 (멀리서는 CHIP_PX 가 이긴다).
- * 로고 원 지름이 행성 지름의 45% 남짓이 되는 값이다 — 더 키우면 로고가 행성을 덮어 버린다.
- * 멀리서 격자를 볼 때는 행성이 작아 이 하한이 걸리지 않으므로, 정렬 화면의 촘촘함에는 영향을 주지 않는다
+ * 행성 원판을 행성 중심에서 카메라 쪽으로 반지름 × 이 배만큼 내놓는다. 예전 구체의 앞면 자리라서, 행성 뒤로 지나가는 관계선은
+ * 원판 뒤에 가려지고(깊이), 행성 중심에 있는 헤일로 점광은 원판 둘레로만 비친다. 시선 위로 옮기므로 화면 위치는 그대로다
  */
-const CHIP_OF_PLANET = 0.9;
-/**
- * 화면 밖으로 완전히 나간 칩은 목표 알파에서 뺀다 — 어차피 안 보이는데 겹침 판정에서 다른 칩을 밀어내면 안 된다.
- * 한때 화면 중앙에서 멀수록 옅게 그렸지만(가장자리 0.45), 기본 화면에 뜨는 칩이 핵심 허브 열몇 개로 줄면서
- * 자리 때문에 흐려질 이유가 없어졌다 — 보이는 칩은 모두 제 색으로 그린다.
- */
-/** 항성 점광 레이어 — 랩과 동일 */
-const LIT = 1;
-/** 피킹에서 무시하는 배지·칩 알파 — 이 아래는 보이지 않는데 포인터를 가로채면 안 된다 */
+const DISC_LIFT = 1.0;
+/** 피킹에서 무시하는 원판·칩 알파 — 이 아래는 보이지 않는데 포인터를 가로채면 안 된다 */
 const PICK_ALPHA = 0.05;
 
 /**
@@ -250,55 +216,26 @@ function filteredRaycast(accept: (instanceId: number, uv: THREE.Vector2) => bool
 }
 
 /**
- * 기업 노드 = 저폴리 툰 행성 (장난감 우주 스타일).
- * - 산업색에서 만든 팔레트로 면 단위 바다·대륙을 칠하고, 대륙형·고리형·위성형을 기업 id 시드로 섞는다
- *   (은하 뷰와 기업 중심 뷰에서 같은 기업이 같은 행성으로 보인다)
- * - 크기는 연결 가중치 + 시가총액(node.size, graph.ts nodeSize), 호버·중심·강조로 크기와 밝기를 프레임마다 lerp. 위치는 live 버퍼(morph.ts)에서 읽는다
- * - 행성 표면은 비워 두고, 로고·기업명은 행성 위 깃발 칩(InstancedMesh 1회)에 놓는다. 칩은 화면상 약 30px 높이로
- *   항상 카메라를 향하고, 티어(허브·첫 껍질·나머지)별 거리 LOD 와 칩 사각형 겹침 판정(cullOverlappingChips)으로 혼잡을 억제한다
- * - 정면 배지(흰 로고 원판)는 emphasis.badges — 호버·중심·선택 간선 양끝 — 에서만 카메라→행성 시선 위에 떠오른다
+ * 기업 노드 = 원형으로 자른 기업 로고 하나 (로고 행성, InstancedMesh 1회).
+ * - 로고는 로고 아틀라스(logoAtlas — 128px 셀, 로고가 없으면 이니셜 모노그램)에서 읽고, 가장자리에 얇은 산업색 테두리를 둘러
+ *   성단(산업)이 로고 사이에서도 읽히게 한다. 원판은 언제나 카메라를 향한다(빌보드)
+ * - 크기는 연결 가중치 + 시가총액(node.size, graph.ts nodeSize) — 예전 툰 구체와 같은 반지름이라 배치·관계선·역할 링이 그대로 맞는다.
+ *   호버·중심·강조로 크기와 밝기를 프레임마다 lerp 하고, 흐려지는 행성은 채도도 뺀다. 위치는 live 버퍼(morph.ts)에서 읽는다
+ * - 기업명은 평소에 띄우지 않는다. 호버·선택한 기업(과 기업 중심 뷰의 중심)에만 행성 바로 위에 이름표 캡슐(InstancedMesh 1회)을 띄우고,
+ *   호버 기업의 이웃에는 같은 자리에 역할 태그만 띄운다. 이름표는 화면상 약 32px 높이이고 칩 사각형 겹침 판정(cullOverlappingChips)으로 겹침을 막는다
  * - 멀리서도 위치가 보이도록 아주 약한 헤일로 점광을 함께 둔다
- * - 행성·칩·배지를 끌면 그 행성을 옮길 수 있다. 옮긴 자리는 live 버퍼에만 남으므로 새로고침하면 레이아웃 좌표로 돌아간다
+ * - 행성·이름표를 끌면 그 행성을 옮길 수 있다. 옮긴 자리는 live 버퍼에만 남으므로 새로고침하면 레이아웃 좌표로 돌아간다
  */
-export default function CompanyNodes({ model, emphasis, hoveredId, onHover, onClick, showLabels = true, onDoubleClick, roleTags = null }: Props) {
+export default function CompanyNodes({ model, emphasis, hoveredId, selectedId = null, onHover, onClick, showLabels = true, pinnedNames = false, onDoubleClick, roleTags = null }: Props) {
   // 좁은 화면(모바일 배치)에서는 마우스로도 길게 누르기를 받는다 — 터치 여부만 보면 데스크톱 브라우저의 모바일 에뮬레이션에서 확인할 수 없다
   const narrow = useNarrowViewport();
-  const tags = useRef<THREE.InstancedMesh>(null);
+  const discs = useRef<THREE.InstancedMesh>(null);
   const chips = useRef<THREE.InstancedMesh>(null);
   const ring = useRef<THREE.Sprite>(null);
-  const groups = useRef<(THREE.Group | null)[]>([]);
-  const bodies = useRef<(THREE.Mesh | null)[]>([]);
   const n = model.nodes.length;
   const live = liveFor(model);
   const gl = useThree((s) => s.gl);
   const camera = useThree((s) => s.camera);
-
-  const planets = useMemo<Planet[]>(
-    () =>
-      model.nodes.map((node) => {
-        // 배열 인덱스가 아니라 기업 id 로 시드를 만들어 뷰가 바뀌어도 외형이 유지된다
-        const h = (hashString(node.id) % 1000) / 1000;
-        // 예전엔 ~27%의 행성에 고리를 둘렀지만(h < 0.27 → "ring"), 굳이 필요 없다는 피드백을 받아
-        // 모든 행성을 고리 없는 일반 행성("land")으로 통일한다. h 는 seed 다양성을 위해 계속 쓴다.
-        const variant: Variant = "land";
-        const radius = node.size * PLANET_RADIUS_K;
-        const palette = planetPaletteFor(node.color);
-        const seed = 0.5 + h * 9;
-        // 세분화는 반지름과 무관하게 고정한다 — 뷰마다 size 가 달라도(기업 중심의 중심 3.4 등) 같은 면 분할·대륙 모양이 나오도록.
-        // 188개 × 320면이라 비용은 무시할 수준
-        const geo = planetGeometry(radius, palette, seed, 2, 0.45);
-        return { node, radius, palette, variant, seed, geo };
-      }),
-    [model],
-  );
-  useEffect(
-    () => () => {
-      planets.forEach((p) => {
-        p.geo.dispose();
-      });
-    },
-    [planets],
-  );
 
   // 모프 없는 모델 교체(필터·폴백)는 기존처럼 팝인하고, 워프 모프 중 마운트는 이어받은 상태를 보존한다
   useEffect(() => {
@@ -308,9 +245,11 @@ export default function CompanyNodes({ model, emphasis, hoveredId, onHover, onCl
     });
   }, [model]);
 
-  // 배지·칩·헤일로 버퍼
+  // 원판·이름표·헤일로 버퍼
   const built = useMemo(() => {
     const color = new Float32Array(n * 3);
+    /** 레이아웃 반지름(월드) — 예전 구체와 같은 값이라 관계선·화살촉·역할 링(PLANET_RADIUS_K 를 쓰는 곳)과 맞는다 */
+    const radius = new Float32Array(n);
     const bright = new Float32Array(n).fill(1);
     const emph = new Float32Array(n).fill(1);
     const alpha = new Float32Array(n);
@@ -329,15 +268,15 @@ export default function CompanyNodes({ model, emphasis, hoveredId, onHover, onCl
       color[i * 3] = c.r;
       color[i * 3 + 1] = c.g;
       color[i * 3 + 2] = c.b;
+      radius[i] = node.size * PLANET_RADIUS_K;
       size[i] = node.size;
       center.x += node.pos[0];
       center.y += node.pos[1];
       center.z += node.pos[2];
-      const idx = ensureLogoCell(`${node.market}|${node.stockCode}|${node.name}`, initials(node.name), node.color, logoUrl(node.stockCode, node.market));
-      const [u, v] = cellUv(idx);
+      const [u, v] = nodeLogoCell(node);
       cell[i * 2] = u;
       cell[i * 2 + 1] = v;
-      const nc = ensureNameCell(node.name);
+      const nc = ensureNameCell(node.label ?? node.name);
       nameCells.push(nc);
       if (nc) {
         name[i * 4] = nc.u;
@@ -360,6 +299,7 @@ export default function CompanyNodes({ model, emphasis, hoveredId, onHover, onCl
       return a;
     };
 
+    // 원판: 2×2 평면이라 인스턴스 스케일이 곧 반지름이다
     const geo = new THREE.PlaneGeometry(2, 2);
     geo.setAttribute("aColor", new THREE.InstancedBufferAttribute(color, 3));
     geo.setAttribute("aCell", new THREE.InstancedBufferAttribute(cell, 2));
@@ -370,25 +310,23 @@ export default function CompanyNodes({ model, emphasis, hoveredId, onHover, onCl
     geo.setAttribute("aEmph", emphAttr);
     geo.setAttribute("aAlpha", alphaAttr);
 
-    // 칩: 로컬 y ∈ [-0.35, 1] (아래 0.35 가 스템). x 폭은 인스턴스 행렬로 aspect 배 늘린다
-    const chipGeo = new THREE.PlaneGeometry(1, CHIP_H);
-    chipGeo.translate(0, CHIP_H / 2 - CHIP_STEM, 0);
+    // 이름표: 로컬 x ∈ [-0.5, 0.5], y ∈ [0, 1] — 아래 가운데가 원점이라 행성 바로 위 가운데에 놓인다. x 폭은 인스턴스 행렬로 aspect 배 늘린다
+    const chipGeo = new THREE.PlaneGeometry(1, 1);
+    chipGeo.translate(0, 0.5, 0);
     chipGeo.setAttribute("aColor", new THREE.InstancedBufferAttribute(color, 3));
-    chipGeo.setAttribute("aCell", new THREE.InstancedBufferAttribute(cell, 2));
     chipGeo.setAttribute("aName", new THREE.InstancedBufferAttribute(name, 4));
-    const aspectArr = new Float32Array(n).fill(1);
-    const chipAspect = dyn(aspectArr, 1);
+    const aspectArr = new Float32Array(n);
+    const chipAspectAttr = dyn(aspectArr, 1);
     // (alpha, emph, bright, nameOn) 을 vec4 하나로 — 정점 속성 수를 16 개 한도 아래로 유지한다 (chipShader 주석 참고)
     const chipStateArr = new Float32Array(n * 4);
     for (let i = 0; i < n; i += 1) {
       chipStateArr[i * 4 + 1] = 1;
       chipStateArr[i * 4 + 2] = 1;
-      chipStateArr[i * 4 + 3] = 1;
     }
     const chipState = dyn(chipStateArr, 4);
     const chipRole = dyn(new Float32Array(n * 4), 4);
     const chipRoleColor = dyn(new Float32Array(n * 3), 3);
-    chipGeo.setAttribute("aAspect", chipAspect);
+    chipGeo.setAttribute("aAspect", chipAspectAttr);
     chipGeo.setAttribute("aState", chipState);
     chipGeo.setAttribute("aRole", chipRole);
     chipGeo.setAttribute("aRoleColor", chipRoleColor);
@@ -405,7 +343,7 @@ export default function CompanyNodes({ model, emphasis, hoveredId, onHover, onCl
     haloAlpha.setUsage(THREE.DynamicDrawUsage);
     haloGeo.setAttribute("aSize", haloSize);
     haloGeo.setAttribute("aAlpha", haloAlpha);
-    return { geo, brightAttr, emphAttr, alphaAttr, chipGeo, chipAspect, chipState, chipRole, chipRoleColor, aspectArr, nameCells, bounds, haloGeo, haloPos, haloSize, haloAlpha };
+    return { radius, geo, brightAttr, emphAttr, alphaAttr, chipGeo, chipAspect: chipAspectAttr, chipState, chipRole, chipRoleColor, aspectArr, nameCells, bounds, haloGeo, haloPos, haloSize, haloAlpha };
   }, [model, n]);
   useEffect(
     () => () => {
@@ -416,7 +354,7 @@ export default function CompanyNodes({ model, emphasis, hoveredId, onHover, onCl
     [built],
   );
 
-  // 역할 태그 — 호버가 바뀔 때만 이웃 칩의 aRole(이름 아틀라스의 역할 라벨 셀)·aRoleColor 를 쓴다. 폭(roleW)은 프레임 루프가 aRole 에서 읽는다
+  // 역할 태그 — 호버가 바뀔 때만 이웃 이름표의 aRole(이름 아틀라스의 역할 라벨 셀)·aRoleColor 를 쓴다. 폭은 프레임 루프가 aRole 에서 읽는다
   useEffect(() => {
     const roleArr = built.chipRole.array as Float32Array;
     const colArr = built.chipRoleColor.array as Float32Array;
@@ -441,7 +379,7 @@ export default function CompanyNodes({ model, emphasis, hoveredId, onHover, onCl
     touch(built.chipRole, built.chipRoleColor);
   }, [roleTags, model, built]);
 
-  // 프레임 스크래치 — 칩 높이·목표 알파·화면 사각형(left, top, right, bottom)·우선순위 (겹침 판정이 끝난 뒤 두 번째 루프에서 쓴다)
+  // 프레임 스크래치 — 이름표 높이·목표 알파·화면 사각형(left, top, right, bottom)·우선순위 (겹침 판정이 끝난 뒤 두 번째 루프에서 쓴다)
   const scratch = useMemo(() => ({ h: new Float32Array(n), target: new Float32Array(n), rect: new Float32Array(n * 4), prio: new Float32Array(n) }), [n]);
 
   useEffect(() => {
@@ -461,17 +399,13 @@ export default function CompanyNodes({ model, emphasis, hoveredId, onHover, onCl
       m.instanceMatrix.needsUpdate = true;
     };
     // 두 메시 모두 raycast 를 감싸 원판·캡슐 안의 보이는 히트만 남기므로, 간선 피킹(RelationLines.nodeAhead)은 pick 만 보면 된다
-    init(tags.current, { pick: "node" });
+    init(discs.current, { pick: "node" });
     init(chips.current, { pick: "node" });
   }, [model, n, built]);
 
   const discUniforms = useMemo(() => ({ uAtlas: { value: logoAtlasTexture() }, uCell: { value: ATLAS_CELL_UV } }), []);
-  const chipUniforms = useMemo(
-    () => ({ uAtlas: { value: logoAtlasTexture() }, uCell: { value: ATLAS_CELL_UV }, uNames: { value: nameAtlasTexture() }, uPill: { value: new THREE.Color(CHIP_PILL) } }),
-    [],
-  );
+  const chipUniforms = useMemo(() => ({ uNames: { value: nameAtlasTexture() }, uPill: { value: new THREE.Color(CHIP_PILL) } }), []);
   const haloUniforms = useMemo(() => ({ uMap: { value: dotTexture() } }), []);
-  const grad = toonGradient(3);
 
   /* eslint-disable react-hooks/immutability -- R3F updates live positions and GPU buffers imperatively in its frame callback. */
   useFrame((state, dt) => {
@@ -501,97 +435,87 @@ export default function CompanyNodes({ model, emphasis, hoveredId, onHover, onCl
       }
     }
     const k = 1 - Math.pow(0.001, dt);
-    // 배지·칩 페이드는 더 빠르게 (0.3s 안에 거의 끝난다)
+    // 원판 알파·이름표 페이드는 더 빠르게 (0.3s 안에 거의 끝난다)
     const kFast = 1 - Math.pow(0.0001, dt);
     const t = state.clock.elapsedTime;
     const cam = state.camera;
-    const tagMesh = tags.current;
+    const discMesh = discs.current;
     const chipMesh = chips.current;
     const morphing = morphState.plan !== null;
 
-    // 칩 배치 기준: 카메라 상·우 방향, 화면 CHIP_PX 에 해당하는 월드 높이 계수
+    // 이름표 배치 기준: 카메라 상 방향, 화면 CHIP_PX 에 해당하는 월드 높이 계수
     UPV.set(0, 1, 0).applyQuaternion(cam.quaternion);
-    RGT.set(1, 0, 0).applyQuaternion(cam.quaternion);
     const persp = cam as THREE.PerspectiveCamera;
     const fov = persp.isPerspectiveCamera ? persp.fov : 52;
     const tanHalf = Math.tan(THREE.MathUtils.degToRad(fov) / 2);
     const pxK = (2 * tanHalf * CHIP_PX) / Math.max(1, state.size.height);
     const W = state.size.width;
     const H = state.size.height;
-    const tierFar = TIER_FAR[model.kind];
-    // 세로로 긴 캔버스는 poseFor 가 가로를 맞추느라 카메라를 1/종횡비 만큼 물린다 — 티어 거리도 같은 배율로 늘려야
-    // 좁은 창(모바일 세로)에서 허브 이름표가 페이드에 걸려 사라지지 않는다
-    const narrow = Math.max(1, 1 / Math.max(0.2, Math.min(1, W / Math.max(1, H))));
-    // 겹침 우선순위: 호버 > 중심 기업 > 강조 고정 > 낮은 티어. 호버·중심에 별도 등급이 없으면 겹친 큰 pinned 이웃이
-    // 호버한 기업의 칩을 밀어내 숨긴다
-    const prioOf = (nd: SceneNode) => (nd.id === hoveredId ? 5 : nd.id === model.centerId ? 4 : emphasis.pinned.has(nd.id) ? 3 : 2 - nd.tier);
+    // 겹침 우선순위: 호버 > 선택 > 중심 기업 > 강조 고정 > 나머지. 호버에 별도 등급이 없으면 겹친 큰 이웃의 역할 태그가
+    // 호버한 기업의 이름표를 밀어내 숨긴다
+    const prioOf = (nd: SceneNode) => (nd.id === hoveredId ? 5 : nd.id === selectedId ? 4 : nd.id === model.centerId ? 3 : emphasis.pinned.has(nd.id) ? 2 : 1);
     CHIP_ORDER.length = 0;
     const roleArr = built.chipRole.array as Float32Array;
+    const brightArr = built.brightAttr.array as Float32Array;
+    const emphArr = built.emphAttr.array as Float32Array;
+    const alphaArr = built.alphaAttr.array as Float32Array;
 
-    planets.forEach((p, i) => {
-      const { node } = p;
+    for (let i = 0; i < n; i += 1) {
+      const node = model.nodes[i];
       const a = animFor(node.id);
       const emph = emphasis.node.get(node.id) ?? 1;
       const isHover = node.id === hoveredId;
       const isCenter = node.id === model.centerId;
       const pinned = emphasis.pinned.has(node.id);
-      const targetScale = (isHover ? 1.18 : 1) * (isCenter ? 1.1 : 1) * (0.7 + 0.3 * emph);
+      // 보이는 선이 없는 행성은 작아지며 사라진다 (emphasis.hidden — 은하는 관계가 있는 기업만 띄운다)
+      const hidden = emphasis.hidden.has(node.id);
+      const targetScale = hidden ? 0.001 : (isHover ? 1.18 : 1) * (isCenter ? 1.1 : 1) * (0.7 + 0.3 * emph);
       const targetBright = (isHover ? 1.15 : isCenter ? 1.06 : 1.0) * (0.42 + 0.58 * emph);
       const s = (a.scale += (targetScale - a.scale) * k);
       const br = (a.bright += (targetBright - a.bright) * k);
+      // 원판 알파 — 숨는 행성은 줄어드는 동안 함께 사라지고, 다 사라지면 피킹에서도 빠진다
+      const da = (a.tagA += ((hidden ? 0 : 1) - a.tagA) * kFast);
 
       TMP.fromArray(live.pos, i * 3);
-      const g = groups.current[i];
-      if (g) {
-        g.position.copy(TMP);
-        g.scale.setScalar(s * live.scale[i]);
-      }
-      const body = bodies.current[i];
-      if (body) {
-        body.rotation.y = t * 0.12 + p.seed;
-        (body.material as THREE.MeshToonMaterial).color.setScalar(br);
-      }
-
       TO_CAM.copy(cam.position).sub(TMP);
       const dist = TO_CAM.length();
       TO_CAM.multiplyScalar(1 / Math.max(1e-6, dist));
-      const r = p.radius * s * live.scale[i];
+      const r = built.radius[i] * s * live.scale[i];
 
-      // 정면 배지: badges 에 든 노드만. 행성 중심에서 카메라 쪽으로 반지름만큼 나온 지점에 빌보드로 놓아 항상 한가운데
-      const tagTarget = emphasis.badges.has(node.id) && (!morphing || isCenter) ? 1 : 0;
-      const ta = (a.tagA += (tagTarget - a.tagA) * kFast);
-      if (tagMesh) {
-        tmpObj.position.copy(TMP).addScaledVector(TO_CAM, r * 1.04);
+      // 로고 원판 — 행성 중심에서 카메라 쪽으로 DISC_LIFT·r 나온 자리(예전 구체의 앞면)에 빌보드로 놓는다
+      if (discMesh) {
+        if (da < 0.01) {
+          tmpObj.position.set(0, 0, 0);
+          tmpObj.scale.setScalar(0.001);
+        } else {
+          tmpObj.position.copy(TMP).addScaledVector(TO_CAM, r * DISC_LIFT);
+          tmpObj.scale.setScalar(Math.max(1e-3, r));
+        }
         tmpObj.quaternion.copy(cam.quaternion);
-        tmpObj.scale.setScalar(ta < 0.01 ? 0.001 : r * 0.62 * (0.6 + 0.4 * ta));
         tmpObj.updateMatrix();
-        tagMesh.setMatrixAt(i, tmpObj.matrix);
-        (built.brightAttr.array as Float32Array)[i] = isHover ? 1.05 : 1;
-        (built.emphAttr.array as Float32Array)[i] = emph;
-        (built.alphaAttr.array as Float32Array)[i] = ta;
+        discMesh.setMatrixAt(i, tmpObj.matrix);
+        brightArr[i] = br;
+        emphArr[i] = emph;
+        alphaArr[i] = da;
       }
       (built.haloSize.array as Float32Array)[i] = r * 3.2 * (0.5 + 0.5 * emph);
-      (built.haloAlpha.array as Float32Array)[i] = (0.15 + 0.85 * emph) * 0.22;
+      (built.haloAlpha.array as Float32Array)[i] = hidden ? 0 : (0.15 + 0.85 * emph) * 0.22;
 
-      // 칩 폭(aspect)은 여기서 이 프레임 값으로 확정한다 — 겹침 판정(아래)과 배치(두 번째 루프)가 같은 폭을 봐야 한다.
-      // 역할 태그 폭은 호버 순간 0 → 전체로 바로 뛰므로 직전 프레임 값을 쓰면 그 프레임에 이웃 칩과 겹친다
-      // 기본은 로고 아이콘만 — 이름은 호버한 기업과 그 이웃(pinned), 그리고 기업 중심 뷰의 중심에서만 펼친다.
-      // 폭을 lerp 로 늘리면 그 사이 프레임에서 이름이 오른쪽으로 밀려 나오듯(그리고 눌린 듯) 보여서, 켜고 끄는 건 즉시 한다 —
-      // 나타나는 감각은 칩 자체의 알파 페이드(chipA)가 맡는다
-      a.nameOn = showLabels && (pinned || isCenter) ? 1 : 0;
-      const roleW = roleArr[i * 4 + 3] > 0 ? (roleArr[i * 4 + 2] / roleArr[i * 4 + 3]) * 0.8 : 0;
-      built.aspectArr[i] = 1 + a.nameOn * ((built.nameCells[i]?.aspect ?? 0) * CHIP_NAME_H + 0.3) + (roleW > 0 ? roleW + 0.15 : 0);
+      // 이름표 내용 — 기업명은 호버·선택·중심 기업에서만(pinnedNames 면 강조 고정 기업까지), 역할 태그는 호버 기업의 이웃에서만.
+      // 둘 다 없으면 폭이 0 이라 띄우지 않는다. 폭은 겹침 판정(아래)과 배치(두 번째 루프)가 같은 값을 봐야 해서 이 프레임 값으로 여기서 확정한다 —
+      // 호버가 옮겨 가는 순간 폭이 바로 뛰므로 직전 프레임 값을 쓰면 그 프레임에 이웃 이름표와 겹친다.
+      // 이름을 켜고 끄는 건 즉시 하고, 나타나는 감각은 이름표 알파 페이드(chipA)가 맡는다
+      a.nameOn = showLabels && (isHover || node.id === selectedId || isCenter || (pinnedNames && pinned)) ? 1 : 0;
+      const aspect = (built.aspectArr[i] = chipAspect(built.nameCells[i]?.aspect ?? 0, roleWidth(roleArr[i * 4 + 2], roleArr[i * 4 + 3]), a.nameOn));
 
-      // 칩 목표 알파: 티어별 거리 LOD × 강조, 고정 노드는 항상. 모프 중에는 중심만
-      scratch.h[i] = Math.max(THREE.MathUtils.clamp(dist * pxK, CHIP_MIN, CHIP_MAX), r * CHIP_OF_PLANET);
-      const far = tierFar[Math.min(node.tier, tierFar.length - 1)] * narrow;
-      let ct = pinned ? 1 : 1 - THREE.MathUtils.smoothstep(dist, far * 0.75, far);
-      ct *= 0.15 + 0.85 * emph;
-      if (morphing && !isCenter) ct = 0;
+      // 이름표 목표 알파: 내용이 있으면 강조만큼. 모프 중에는 중심만
+      scratch.h[i] = THREE.MathUtils.clamp(dist * pxK, CHIP_MIN, CHIP_MAX);
+      let ct = aspect > 0 ? 0.15 + 0.85 * emph : 0;
+      if ((morphing && !isCenter) || hidden) ct = 0;
       if (ct > 0.01) {
-        // 카메라 뒤는 제외. 앞이면 칩이 그려질 화면 사각형을 재어 두고, 루프가 끝난 뒤 우선순위 순으로 겹침을 걸러낸다
-        // 두 번째 루프의 배치처럼 카메라 쪽으로 r·0.2 만큼 뺀 지점을 투영한다 (화면 가장자리에서는 이 오프셋이 몇 px 옆으로 새기 때문)
-        NDC.copy(TMP).addScaledVector(TO_CAM, r * 0.2).applyMatrix4(cam.matrixWorldInverse);
+        // 카메라 뒤는 제외. 앞이면 이름표가 그려질 화면 사각형을 재어 두고, 루프가 끝난 뒤 우선순위 순으로 겹침을 걸러낸다
+        // 두 번째 루프의 배치처럼 원판 자리(카메라 쪽으로 DISC_LIFT·r)를 투영한다 (화면 가장자리에서는 이 오프셋이 몇 px 옆으로 새기 때문)
+        NDC.copy(TMP).addScaledVector(TO_CAM, r * DISC_LIFT).applyMatrix4(cam.matrixWorldInverse);
         if (NDC.z >= -1e-3) ct = 0;
         else {
           // 이 깊이에서 월드 1 이 차지하는 픽셀 — 빌보드라 화면 크기는 여기서 그대로 정해진다
@@ -600,28 +524,28 @@ export default function CompanyNodes({ model, emphasis, hoveredId, onHover, onCl
           const px = (NDC.x + 1) * 0.5 * W;
           const py = (1 - NDC.y) * 0.5 * H;
           const h = scratch.h[i];
-          // 두 번째 루프의 배치와 같은 식: 로고 원(폭 h)이 행성 바로 위, 캡슐은 오른쪽으로 aspect 만큼
-          const aspect = built.aspectArr[i];
-          const bottom = py - (r * 1.05 + CHIP_STEM * h) * pxw;
+          // 두 번째 루프의 배치와 같은 식: 행성 테두리 위 CHIP_LIFT·h 에서 시작해 가운데 정렬
+          const bottom = py - (r + CHIP_LIFT * h) * pxw;
+          const half = 0.5 * aspect * h * pxw;
           const o = i * 4;
-          scratch.rect[o] = px - 0.5 * h * pxw;
+          scratch.rect[o] = px - half;
           scratch.rect[o + 1] = bottom - h * pxw;
-          scratch.rect[o + 2] = px + (aspect - 0.5) * h * pxw;
+          scratch.rect[o + 2] = px + half;
           scratch.rect[o + 3] = bottom;
           // 화면 밖으로 완전히 나갔으면 그리지도, 겹침 판정에 넣지도 않는다
           if (scratch.rect[o + 2] < 0 || scratch.rect[o] > W || scratch.rect[o + 3] < 0 || scratch.rect[o + 1] > H) ct = 0;
           else {
-            // 정수부 = 우선순위, 소수부 = 크기(≤ 3.5) — 같은 우선순위면 큰 행성이 앞선다
+            // 정수부 = 우선순위, 소수부 = 크기 — 같은 우선순위면 큰 행성이 앞선다
             scratch.prio[i] = prioOf(node) * 10 + node.size;
             CHIP_ORDER.push(i);
           }
         }
       }
       scratch.target[i] = ct;
-    });
+    }
     cullOverlappingChips(CHIP_ORDER, scratch.rect, scratch.prio, scratch.target);
-    if (tagMesh) {
-      tagMesh.instanceMatrix.needsUpdate = true;
+    if (discMesh) {
+      discMesh.instanceMatrix.needsUpdate = true;
       built.brightAttr.needsUpdate = true;
       built.emphAttr.needsUpdate = true;
       built.alphaAttr.needsUpdate = true;
@@ -640,38 +564,37 @@ export default function CompanyNodes({ model, emphasis, hoveredId, onHover, onCl
       built.haloPos.needsUpdate = true;
     }
 
-    // 칩 — 겹침 판정이 끝난 뒤 알파를 lerp 하고 행렬·속성을 쓴다
+    // 이름표 — 겹침 판정이 끝난 뒤 알파를 lerp 하고 행렬·속성을 쓴다
     if (chipMesh) {
       const stateArr = built.chipState.array as Float32Array;
       for (let i = 0; i < n; i += 1) {
-        const p = planets[i];
-        const { node } = p;
+        const node = model.nodes[i];
         const a = animFor(node.id);
-        const ca = (a.chipA += (scratch.target[i] - a.chipA) * kFast);
-        // 폭(aspect)·이름 표시(nameOn)는 첫 루프가 이 프레임 값으로 정해 두었다
+        // 폭(aspect)·이름 표시(nameOn)는 첫 루프가 이 프레임 값으로 정해 두었다.
+        // 내용이 없어진 이름표(호버가 떠남)는 페이드 없이 바로 접는다 — 남은 알파 동안 글자 없는 빈 캡슐이 보이지 않게
         const aspect = built.aspectArr[i];
+        const ca = (a.chipA = aspect > 0 ? a.chipA + (scratch.target[i] - a.chipA) * kFast : 0);
         stateArr[i * 4] = ca;
         stateArr[i * 4 + 1] = emphasis.node.get(node.id) ?? 1;
         stateArr[i * 4 + 2] = node.id === hoveredId ? 1.1 : 1;
         stateArr[i * 4 + 3] = a.nameOn;
         if (ca < 0.01) {
-          // 안 보이는 칩은 접어 두어 레이캐스트에도 걸리지 않게 한다
+          // 안 보이는 이름표는 접어 두어 레이캐스트에도 걸리지 않게 한다
           tmpObj.position.set(0, 0, 0);
           tmpObj.scale.setScalar(0.001);
         } else {
           const h = scratch.h[i];
           TMP.fromArray(live.pos, i * 3);
           TO_CAM.copy(cam.position).sub(TMP).normalize();
-          const r = p.radius * a.scale * live.scale[i];
-          // 로고 원(x=0.5)이 행성 바로 위에 오도록 캡슐 중심을 오른쪽으로 밀고, 살짝 카메라 쪽으로 빼 행성에 가리지 않게 한다
+          const r = built.radius[i] * a.scale * live.scale[i];
+          // 행성 테두리 바로 위 가운데, 원판과 같은 깊이 — 이름표는 깊이 검사 없이 맨 위에 그리므로 깊이는 투영 위치에만 쓰인다
           tmpObj.position
             .copy(TMP)
-            .addScaledVector(UPV, r * 1.05 + CHIP_STEM * h)
-            .addScaledVector(RGT, (aspect * 0.5 - 0.5) * h)
-            .addScaledVector(TO_CAM, r * 0.2);
-          tmpObj.quaternion.copy(cam.quaternion);
+            .addScaledVector(UPV, r + CHIP_LIFT * h)
+            .addScaledVector(TO_CAM, r * DISC_LIFT);
           tmpObj.scale.set(h * aspect, h, 1);
         }
+        tmpObj.quaternion.copy(cam.quaternion);
         tmpObj.updateMatrix();
         chipMesh.setMatrixAt(i, tmpObj.matrix);
       }
@@ -687,7 +610,7 @@ export default function CompanyNodes({ model, emphasis, hoveredId, onHover, onCl
         const i = model.nodes.indexOf(target);
         rg.visible = true;
         rg.position.fromArray(live.pos, i * 3);
-        rg.scale.setScalar(planets[i].radius * animFor(target.id).scale * live.scale[i] * 3.0);
+        rg.scale.setScalar(built.radius[i] * animFor(target.id).scale * live.scale[i] * 3.0);
         const mat = rg.material as THREE.SpriteMaterial;
         mat.opacity = 0.35 + Math.sin(t * 3) * 0.08;
         mat.color.set(target.color);
@@ -698,12 +621,12 @@ export default function CompanyNodes({ model, emphasis, hoveredId, onHover, onCl
 
   /* eslint-enable react-hooks/immutability */
 
-  // 배지는 보이는 원판 안, 칩은 보이는 캡슐 안만 히트로 남긴다 (스템·투명 모서리·접힌 칩은 레이캐스트 단계에서 제외)
-  const tagRaycast = useMemo(
+  // 원판은 보이는 원 안, 이름표는 보이는 캡슐 안만 히트로 남긴다 (투명 모서리·접힌 이름표는 레이캐스트 단계에서 제외)
+  const discRaycast = useMemo(
     () =>
       filteredRaycast((i, uv) => {
         const node = model.nodes[i];
-        return !!node && animFor(node.id).tagA >= PICK_ALPHA && Math.hypot(uv.x - 0.5, uv.y - 0.5) <= 0.5;
+        return !!node && animFor(node.id).tagA >= PICK_ALPHA && discHit(uv);
       }),
     [model],
   );
@@ -750,7 +673,7 @@ export default function CompanyNodes({ model, emphasis, hoveredId, onHover, onCl
   };
 
   /**
-   * 주 버튼으로 행성·칩·배지를 누르면 드래그 후보로 잡아 둔다 (실제 시작은 슬롭을 넘긴 pointermove).
+   * 주 버튼으로 행성·이름표를 누르면 드래그 후보로 잡아 둔다 (실제 시작은 슬롭을 넘긴 pointermove).
    * 카메라 연출 중(인트로 비행·필터 변경 재프레이밍)에는 시작하지 않는다 — 드래그 평면은 시작 시점의 시선으로 한 번만 고정되는데
    * controls.enabled=false 는 사용자 입력만 막을 뿐 Director 의 연출은 계속 카메라를 밀어 옮기므로, 같은 커서 위치가 프레임마다
    * 다른 점에 떨어져 행성이 커서에서 미끄러진다. OrbitKeys 가 같은 이유로 controls.enabled 를 보는 것과 같은 가드다.
@@ -857,60 +780,14 @@ export default function CompanyNodes({ model, emphasis, hoveredId, onHover, onCl
 
   return (
     <group>
-      {planets.map((p, i) => (
-        <group
-          key={p.node.id}
-          ref={(el) => {
-            groups.current[i] = el;
-          }}
-          position={p.node.pos}
-          scale={0.001}
-        >
-          <mesh
-            ref={(el) => {
-              bodies.current[i] = el;
-            }}
-            geometry={p.geo}
-            onUpdate={(m) => {
-              m.layers.enable(LIT);
-              m.userData.pick = "node";
-            }}
-            onPointerOver={(e) => {
-              if (!pickable(p.node.id)) return;
-              e.stopPropagation();
-              onHover(p.node.id);
-            }}
-            onPointerOut={() => release(p.node.id)}
-            onPointerDown={(e) => beginDrag(e, p.node.id, i)}
-            onClick={(e) => {
-              if (!pickable(p.node.id)) return;
-              e.stopPropagation();
-              activate(e, p.node.id);
-            }}
-            onDoubleClick={(e) => {
-              if (!pickable(p.node.id) || dragState.blockClick) return;
-              e.stopPropagation();
-              onDoubleClick?.(p.node.id);
-            }}
-          >
-            <meshToonMaterial vertexColors gradientMap={grad} />
-          </mesh>
-          {p.variant === "ring" && (
-            <mesh rotation={[Math.PI / 2 - 0.42, 0.25, 0]} raycast={() => null} onUpdate={(m) => m.layers.enable(LIT)}>
-              <ringGeometry args={[p.radius * 1.45, p.radius * 2.05, 40, 1]} />
-              <meshToonMaterial color={p.palette.ring} gradientMap={grad} side={THREE.DoubleSide} transparent opacity={0.9} />
-            </mesh>
-          )}
-        </group>
-      ))}
-
-      {/* 정면 배지 — 호버·중심·선택 간선 양끝에만, 드로우콜 1회 */}
+      {/* 로고 행성 — 드로우콜 1회. 투명 블렌딩(테두리 안티에일리어싱)을 쓰면서도 예전 구체처럼 깊이를 써서, 관계선(renderOrder 1·2)보다
+          먼저 그려 행성 뒤로 지나가는 선을 가린다 */}
       <instancedMesh
-        ref={tags}
+        ref={discs}
         args={[built.geo, undefined, n]}
         frustumCulled={false}
-        renderOrder={3}
-        raycast={tagRaycast}
+        renderOrder={-1}
+        raycast={discRaycast}
         onPointerMove={(e) => {
           const id = idOf(e);
           if (!id || !pickable(id)) return;
@@ -935,16 +812,16 @@ export default function CompanyNodes({ model, emphasis, hoveredId, onHover, onCl
           onDoubleClick?.(id);
         }}
       >
-        <shaderMaterial vertexShader={discVertex} fragmentShader={discFragment} uniforms={discUniforms} transparent depthWrite={false} toneMapped={false} />
+        <shaderMaterial vertexShader={discVertex} fragmentShader={discFragment} uniforms={discUniforms} transparent depthWrite toneMapped={false} />
       </instancedMesh>
 
-      {/* 이름표 칩 — 로고 원 + 기업명, 드로우콜 1회. 행성보다 앞이면 그려지고 다른 행성 뒤면 가려진다.
+      {/* 이름표 — 호버·선택한 기업의 이름과 이웃의 역할 태그, 드로우콜 1회. 몇 개 안 뜨는 대신 앞의 행성·관계선 라벨에 가리지 않게 맨 위에 그린다.
           히트는 캡슐 안으로 제한되므로 onPointerOut 이 곧 캡슐 이탈이다 */}
       <instancedMesh
         ref={chips}
         args={[built.chipGeo, undefined, n]}
         frustumCulled={false}
-        renderOrder={4}
+        renderOrder={5}
         raycast={chipRaycast}
         onPointerMove={(e) => {
           const id = idOf(e);
@@ -970,7 +847,7 @@ export default function CompanyNodes({ model, emphasis, hoveredId, onHover, onCl
           onDoubleClick?.(id);
         }}
       >
-        <shaderMaterial vertexShader={chipVertex} fragmentShader={chipFragment} uniforms={chipUniforms} transparent depthWrite={false} depthTest toneMapped={false} />
+        <shaderMaterial vertexShader={chipVertex} fragmentShader={chipFragment} uniforms={chipUniforms} transparent depthWrite={false} depthTest={false} toneMapped={false} />
       </instancedMesh>
 
       <points geometry={built.haloGeo} frustumCulled={false} raycast={() => null} renderOrder={1}>

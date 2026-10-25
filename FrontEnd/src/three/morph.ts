@@ -1,4 +1,4 @@
-import type { SceneModel, Vec3 } from "@/lib/graph";
+import type { SceneModel, SceneNode, Vec3 } from "@/lib/graph";
 import { PLANET_RADIUS_K } from "./toon";
 
 /**
@@ -64,7 +64,7 @@ export interface MorphPlan {
   delay: Float32Array;
   sizeRatio: Float32Array;
   spawn: Uint8Array;
-  ghosts: { pos: Vec3; dir: Vec3; color: string; radius: number }[];
+  ghosts: { node: SceneNode; pos: Vec3; dir: Vec3; color: string; radius: number }[];
 }
 
 /**
@@ -166,7 +166,7 @@ export function planMorph(src: SceneModel, dst: SceneModel, pivotSrc: Vec3, pivo
     if (dst.nodeById.has(s.id)) return;
     const pos: Vec3 = [s.pos[0] - pivotSrc[0] + pivotDst[0], s.pos[1] - pivotSrc[1] + pivotDst[1], s.pos[2] - pivotSrc[2] + pivotDst[2]];
     const len = Math.hypot(pos[0], pos[1], pos[2]);
-    ghosts.push({ pos, dir: len < 1e-3 ? [0, 1, 0] : [pos[0] / len, pos[1] / len, pos[2] / len], color: s.color, radius: s.size * PLANET_RADIUS_K });
+    ghosts.push({ node: s, pos, dir: len < 1e-3 ? [0, 1, 0] : [pos[0] / len, pos[1] / len, pos[2] / len], color: s.color, radius: s.size * PLANET_RADIUS_K });
   });
 
   return { src, dst, t: 0, n, dur, rA, thA, yA, rB, thB, yB, dth, delay, sizeRatio, spawn, ghosts };

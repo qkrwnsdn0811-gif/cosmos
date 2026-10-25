@@ -3,6 +3,7 @@ import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClie
 import { api } from "@/api";
 import type * as T from "@/api/types";
 import { weightedEdges, weightedRelationship } from "@/lib/score";
+import { holdsWatchState } from "@/lib/watchKeys";
 import { useSession } from "@/store/session";
 import { useNewsWeight } from "@/store/weight";
 
@@ -179,6 +180,84 @@ export function useNewsFeed(params: T.NewsListParams, enabled = true) {
     placeholderData: keepPreviousData,
   });
 }
+/** NEXUS 이벤트 목록 — 공개 API 라 세션 키를 쓰지 않는다 */
+export function useEventFeed(params: Omit<T.EventListParams, "cursor">) {
+  return useInfiniteQuery({
+    queryKey: ["events", "feed", params],
+    queryFn: ({ pageParam }) => api.events.list({ ...params, cursor: pageParam, size: params.size ?? 20 }),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
+    placeholderData: keepPreviousData,
+  });
+}
+export function useEventMap(eventId: string | null) {
+  return useQuery({
+    queryKey: ["events", "map", eventId],
+    queryFn: () => api.events.detail(eventId!),
+    enabled: Boolean(eventId),
+  });
+}
+/** 뉴스 전후 주가 차트 — 카드를 펼쳤을 때만 받는다 */
+export function useEventChart(eventId: string | null, companyId: string | null) {
+  return useQuery({
+    queryKey: ["events", "chart", eventId, companyId],
+    queryFn: () => api.events.chart(eventId!, companyId!),
+    enabled: Boolean(eventId && companyId),
+    staleTime: 10 * 60_000,
+  });
+}
+/** 방향 딱지 적중률 — 파이프라인을 다시 돌릴 때만 바뀐다 */
+export function useBacktest(valueChain: T.ValueChain = "SEMICONDUCTOR") {
+  return useQuery({
+    queryKey: ["events", "backtest", valueChain],
+    queryFn: () => api.events.backtest(valueChain),
+    staleTime: 30 * 60_000,
+  });
+}
+/** 종목별 뉴스 이력 (F13) */
+export function useCompanyHistory(companyId: string | null) {
+  return useInfiniteQuery({
+    queryKey: ["events", "company-history", companyId],
+    queryFn: ({ pageParam }) => api.events.companyHistory({ companyId: companyId!, cursor: pageParam, size: 10 }),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
+    enabled: Boolean(companyId),
+  });
+}
+/** 기업 탭 시세판 — 전 종목 시세 (61종목이라 한 번에 받는다) */
+export function useCompanyQuotes() {
+  return useQuery({
+    queryKey: ["companies", "quotes"],
+    queryFn: () => api.companies.quotes(),
+    staleTime: 5 * 60_000,
+  });
+}
+/** 기업 상세 — 공개 은하 스냅샷 1년 관계 기업과 그 시세 */
+export function useRelatedCompanies(companyId: string | null) {
+  return useQuery({
+    queryKey: ["companies", "related", companyId],
+    queryFn: () => api.companies.related(companyId!),
+    enabled: Boolean(companyId),
+    staleTime: 5 * 60_000,
+  });
+}
+/** 코스피·코스닥 지수 (기업 탭 시장 띠·상세 차트) */
+export function useMarketIndices(period: T.PricePeriod) {
+  return useQuery({
+    queryKey: ["market", "indices", period],
+    queryFn: () => api.market.indices(period),
+    staleTime: 5 * 60_000,
+  });
+}
+/** 기업 지표 (F8) */
+export function useCompanyFundamental(companyId: string | null) {
+  return useQuery({
+    queryKey: ["companies", "fundamental", companyId],
+    queryFn: () => api.companies.fundamental(companyId!),
+    enabled: Boolean(companyId),
+    staleTime: 30 * 60_000,
+  });
+}
 export function useNewsDetail(newsId: string | null) {
   const k = useKey();
   const booted = useBooted();
@@ -237,8 +316,7 @@ export function useToggleWatch() {
       return !watched;
     },
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ["company"] });
-      void qc.invalidateQueries({ queryKey: ["companies"] });
+      void qc.invalidateQueries({ predicate: (q) => holdsWatchState(q.queryKey) });
       void qc.invalidateQueries({ queryKey: ["me", "watchlist"] });
     },
   });

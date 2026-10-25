@@ -9,10 +9,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.cosmos.api.company.dto.CompanyDetailResponse;
+import com.cosmos.api.company.dto.CompanyFundamentalResponse;
 import com.cosmos.api.company.dto.CompanyIndustryResponse;
 import com.cosmos.api.company.dto.CompanyMetricHistoryItemResponse;
 import com.cosmos.api.company.dto.CompanyMetricHistoryResponse;
 import com.cosmos.api.company.dto.CompanyMetricResponse;
+import com.cosmos.api.company.dto.CompanyQuoteListResponse;
 import com.cosmos.api.company.dto.CompanySummaryResponse;
 import com.cosmos.api.company.dto.IndustryListResponse;
 import com.cosmos.api.company.dto.IndustryReferenceResponse;
@@ -20,6 +22,7 @@ import com.cosmos.api.company.dto.IndustryResponse;
 import com.cosmos.api.company.dto.StockPriceHistoryResponse;
 import com.cosmos.api.company.dto.StockPriceItemResponse;
 import com.cosmos.api.company.repository.CompanySearchCondition;
+import com.cosmos.api.company.service.CompanyQuoteService;
 import com.cosmos.api.company.service.CompanyService;
 import com.cosmos.api.global.error.GlobalExceptionHandler;
 import com.cosmos.api.global.response.CursorPageResponse;
@@ -40,14 +43,28 @@ class CompanyControllerTest {
     private static final UUID INDUSTRY_ID = UUID.fromString("10000000-0000-0000-0000-000000000001");
 
     private CompanyService companyService;
+    private CompanyQuoteService quoteService;
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
         companyService = mock(CompanyService.class);
-        mockMvc = MockMvcBuilders.standaloneSetup(new CompanyController(companyService))
+        quoteService = mock(CompanyQuoteService.class);
+        mockMvc = MockMvcBuilders.standaloneSetup(new CompanyController(companyService, quoteService))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
+    }
+
+    // /companies/quotes 가 /companies/{companyId} 로 잡혀 UUID 변환 오류(400)가 나지 않아야 한다
+    @Test
+    void quotesPathIsNotReadAsCompanyId() throws Exception {
+        when(quoteService.findQuotes()).thenReturn(new CompanyQuoteListResponse(LocalDate.of(2026, 10, 23), List.of()));
+
+        mockMvc.perform(get("/api/companies/quotes"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.asOf").value("2026-10-23"))
+                .andExpect(jsonPath("$.items").isEmpty());
+        verify(quoteService).findQuotes();
     }
 
     @Test
@@ -126,6 +143,35 @@ class CompanyControllerTest {
                 .andExpect(jsonPath("$.window").value("30D"))
                 .andExpect(jsonPath("$.newsMentionCount").value(152))
                 .andExpect(jsonPath("$.measuredAt").value("2026-09-07T06:00:00Z"));
+    }
+
+    @Test
+    void returnsFundamental() throws Exception {
+        when(companyService.findFundamental(COMPANY_ID)).thenReturn(new CompanyFundamentalResponse(
+                new BigDecimal("1500000000000"), 3, "MID", new BigDecimal("15.0000"), new BigDecimal("2.0000"),
+                new BigDecimal("0.016667"), new BigDecimal("100000000000"), new BigDecimal("750000000000"),
+                new BigDecimal("500.00"), new BigDecimal("30000.00"), LocalDate.parse("2026-10-16"), "TTM"));
+
+        mockMvc.perform(get("/api/companies/{companyId}/fundamental", COMPANY_ID))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.marketCap").value(1500000000000L))
+                .andExpect(jsonPath("$.marketCapRank").value(3))
+                .andExpect(jsonPath("$.sizeClass").value("MID"))
+                .andExpect(jsonPath("$.per").value(15.0))
+                .andExpect(jsonPath("$.dividendYield").value(0.016667))
+                .andExpect(jsonPath("$.priceDate").value("2026-10-16"))
+                .andExpect(jsonPath("$.fiscalBasis").value("TTM"));
+    }
+
+    @Test
+    void returnsEmptyFundamentalWithNullFields() throws Exception {
+        when(companyService.findFundamental(COMPANY_ID)).thenReturn(CompanyFundamentalResponse.empty());
+
+        mockMvc.perform(get("/api/companies/{companyId}/fundamental", COMPANY_ID))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.marketCap").isEmpty())
+                .andExpect(jsonPath("$.per").isEmpty())
+                .andExpect(jsonPath("$.priceDate").isEmpty());
     }
 
     @Test

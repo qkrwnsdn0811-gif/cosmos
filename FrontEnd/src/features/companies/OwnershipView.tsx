@@ -3,6 +3,7 @@ import type { LatestGraph, Market } from "@/api/types";
 import { josa } from "@/lib/format";
 import { OWNERSHIP_TYPES, relationshipMeta } from "@/lib/meta";
 import { CompanyAvatar, Empty, ScoreBar } from "@/components/ui";
+import { ownLabel } from "./quoteFormat";
 
 interface Props {
   graph: LatestGraph | null;
@@ -50,13 +51,16 @@ export default function OwnershipView({ graph, onPick }: Props) {
     // root가 이미 "직접 보유"로 보여준 회사가 다시 나타날 수 있다 — 같은 회사가 두 자리에 중복 표시돼
     // 헷갈리므로, 이미 1단계에 있는 회사는 2단계 목록에서 뺀다
     const level1Ids = new Set(level1.map((e) => e.targetCompanyId));
+    // 공시(OpenDART 타법인 출자 현황) 지분 관계는 disclosureScore 에 지분율이 들어 있다 — 그때 숫자는 %로 읽고,
+    // 은하의 뉴스·공시 비율 슬라이더로 다시 섞인 score 대신 공시 값을 그대로 쓴다
     return level1.map((e) => ({
       id: e.targetCompanyId,
-      score: e.score,
+      score: e.disclosureScore ?? e.score,
+      disclosed: e.disclosureScore != null,
       children: invest
         .filter((x) => x.sourceCompanyId === e.targetCompanyId && x.targetCompanyId !== root && !level1Ids.has(x.targetCompanyId))
         .sort((a, b) => b.score - a.score)
-        .map((x) => ({ id: x.targetCompanyId, score: x.score })),
+        .map((x) => ({ id: x.targetCompanyId, score: x.disclosureScore ?? x.score, disclosed: x.disclosureScore != null })),
     }));
   }, [invest, root]);
 
@@ -69,10 +73,12 @@ export default function OwnershipView({ graph, onPick }: Props) {
     if (!tree) return null;
     const level1Ids = new Set(tree.map((l1) => l1.id));
     const level2Ids = new Set(tree.flatMap((l1) => l1.children.map((c) => c.id)).filter((id) => !level1Ids.has(id)));
-    const scores = tree.map((l1) => l1.score);
-    const avgScore = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
-    const maxEntry = tree.length ? tree.reduce((a, b) => (b.score > a.score ? b : a)) : null;
-    return { directCount: level1Ids.size, totalAffiliates: level1Ids.size + level2Ids.size, avgScore, maxEntry };
+    // 평균·최대는 공시 지분율이 있으면 그것만으로(점수와 섞지 않는다), 없으면 관계 점수로
+    const disclosed = tree.filter((l1) => l1.disclosed);
+    const basis = disclosed.length ? disclosed : tree;
+    const avgScore = basis.length ? basis.reduce((a, b) => a + b.score, 0) / basis.length : 0;
+    const maxEntry = basis.length ? basis.reduce((a, b) => (b.score > a.score ? b : a)) : null;
+    return { directCount: level1Ids.size, totalAffiliates: level1Ids.size + level2Ids.size, avgScore, maxEntry, byStake: disclosed.length > 0 };
   }, [tree]);
   const parentHolders = useMemo(() => (root ? invest.filter((e) => e.targetCompanyId === root).sort((a, b) => b.score - a.score) : []), [invest, root]);
 
@@ -119,7 +125,7 @@ export default function OwnershipView({ graph, onPick }: Props) {
               if (!n) return null;
               return (
                 <div key={l1.id}>
-                  <OwnRow node={n} score={l1.score} color={meta.color} expandable={holderIds.has(l1.id)} onClick={() => handleNodeClick(l1.id)} />
+                  <OwnRow node={n} score={l1.score} disclosed={l1.disclosed} color={meta.color} expandable={holderIds.has(l1.id)} onClick={() => handleNodeClick(l1.id)} />
                   {l1.children.length > 0 && (
                     <div className="own-sub">
                       <div className="own-level-label own-level-label-sub">
@@ -129,7 +135,7 @@ export default function OwnershipView({ graph, onPick }: Props) {
                       {l1.children.map((l2) => {
                         const cn = info.get(l2.id);
                         if (!cn) return null;
-                        return <OwnRow key={l2.id} node={cn} score={l2.score} color={meta.color} sub expandable={holderIds.has(l2.id)} onClick={() => handleNodeClick(l2.id)} />;
+                        return <OwnRow key={l2.id} node={cn} score={l2.score} disclosed={l2.disclosed} color={meta.color} sub expandable={holderIds.has(l2.id)} onClick={() => handleNodeClick(l2.id)} />;
                       })}
                     </div>
                   )}
@@ -150,14 +156,14 @@ export default function OwnershipView({ graph, onPick }: Props) {
               <b className="num">{stats?.totalAffiliates ?? 0}개</b>
             </div>
             <div className="own-stat-row">
-              <span className="lab">평균 지분 점수</span>
-              <b className="num">{stats?.avgScore ?? 0}</b>
+              <span className="lab">{stats?.byStake ? "평균 지분율 (공시)" : "평균 관계 점수"}</span>
+              <b className="num">{ownLabel(stats?.avgScore ?? 0, Boolean(stats?.byStake))}</b>
             </div>
             {stats?.maxEntry && (
               <div className="own-stat-row">
-                <span className="lab">최고 지분 점수</span>
+                <span className="lab">{stats.byStake ? "최대 지분율" : "최고 관계 점수"}</span>
                 <b className="num">
-                  {Math.round(stats.maxEntry.score)} <span className="meta">({info.get(stats.maxEntry.id)?.name ?? "…"})</span>
+                  {ownLabel(stats.maxEntry.score, stats.byStake)} <span className="meta">({info.get(stats.maxEntry.id)?.name ?? "…"})</span>
                 </b>
               </div>
             )}
@@ -171,7 +177,7 @@ export default function OwnershipView({ graph, onPick }: Props) {
                   return (
                     <button key={e.relationshipId} type="button" className="own-parent-chip" onClick={() => handleNodeClick(e.sourceCompanyId)}>
                       <span className="nm">{holder.name}</span>
-                      <span className="num">{Math.round(e.score)}</span>
+                      <span className="num">{ownLabel(e.disclosureScore ?? e.score, e.disclosureScore != null)}</span>
                     </button>
                   );
                 })}
@@ -184,10 +190,10 @@ export default function OwnershipView({ graph, onPick }: Props) {
       )}
       <div className="row wrap mt-12" style={{ gap: 16 }}>
         <span className="meta row" style={{ gap: 6 }}>
-          <i className="dot" style={{ background: meta.color }} /> 보유 → 피보유 순서로, 관계 점수가 높은 기업부터 나열합니다
+          <i className="dot" style={{ background: meta.color }} /> 보유 → 피보유 순서로, 지분율·관계 점수가 높은 기업부터 나열합니다
         </span>
         <span className="meta">
-          <b style={{ color: "var(--text-3)" }}>▸</b> 표시가 있는 기업(다른 기업을 보유 중)을 누르면 그 기업 기준으로 계속 펼치고, 그 외 기업을 누르면 미리보기가 열립니다. 지분율은 백엔드 관계 상세에 포함되면 표시됩니다.
+          <b style={{ color: "var(--text-3)" }}>▸</b> 표시가 있는 기업(다른 기업을 보유 중)을 누르면 그 기업 기준으로 계속 펼치고, 그 외 기업을 누르면 종목 상세로 갑니다. % 는 OpenDART 타법인 출자 현황(최신 정기보고서)의 지분율이고, % 없는 숫자는 뉴스로만 확인된 관계의 관계 점수입니다.
         </span>
       </div>
     </div>
@@ -197,6 +203,7 @@ export default function OwnershipView({ graph, onPick }: Props) {
 function OwnRow({
   node,
   score,
+  disclosed = false,
   color,
   sub,
   expandable,
@@ -204,6 +211,7 @@ function OwnRow({
 }: {
   node: { companyId: string; name: string; stockCode: string | null; market: Market; industryName: string | null };
   score: number;
+  disclosed?: boolean;
   color: string;
   sub?: boolean;
   expandable?: boolean;
@@ -218,7 +226,7 @@ function OwnRow({
       </span>
       <ScoreBar score={score} color={color} />
       <span className="sc">
-        <b className="num">{Math.round(score)}</b>
+        <b className="num">{ownLabel(score, disclosed)}</b>
       </span>
       {expandable && (
         <span className="own-arrow" aria-hidden="true">

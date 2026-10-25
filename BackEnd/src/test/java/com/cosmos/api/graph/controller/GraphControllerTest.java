@@ -137,7 +137,8 @@ class GraphControllerTest {
                         new BigDecimal("0.88"),
                         16,
                         AS_OF_AT,
-                        false));
+                        false,
+                        null));
 
         mockMvc.perform(get("/api/relationships/{relationshipId}", RELATIONSHIP_ID))
                 .andExpect(status().isOk())

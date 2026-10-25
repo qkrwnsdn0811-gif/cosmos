@@ -342,6 +342,17 @@ export interface RelationshipDetail {
   evidenceCount: number;
   asOfAt: ISODateTime;
   personalized: boolean;
+  /** 투자·지분 관계의 공시 지분 (OpenDART 타법인 출자 현황). 없으면 null — 예전 응답에는 칸이 없을 수 있다 */
+  ownership?: OwnershipDisclosure | null;
+}
+export interface OwnershipDisclosure {
+  /** 기말 지분율, 23.7 = 23.7% */
+  stakePct: number;
+  purpose: string | null;
+  settledOn: string | null;
+  receiptNo: string | null;
+  /** DART 공시 원문 주소 */
+  sourceUrl: string | null;
 }
 export interface RelationshipEvidence {
   newsId: UUID;
@@ -356,7 +367,8 @@ export interface RelationshipEvidence {
    * 사용자가 인용문과 생성문을 구분하지 못하므로 표시를 나눈다.
    */
   documentType: "NEWS" | "DISCLOSURE" | (string & {});
-  evidenceSentence: string;
+  /** 함께 언급(CO_MENTIONED) 근거는 문장 원문이 없어 null 이다 — evidenceText() 가 제목으로 대신 보여 준다 */
+  evidenceSentence: string | null;
   /** 그 문장을 만든 모델·규칙. 공시 요약은 생성 모델 이름이 들어온다 */
   modelVersion: string | null;
   contributionScore: number | null;
@@ -398,4 +410,303 @@ export interface CommentEditResponse {
   createdAt: ISODateTime;
   updatedAt: ISODateTime;
   edited: boolean;
+}
+
+/* ---------------- NEXUS 이벤트 (docs/api-specification.md "events") ---------------- */
+export type ValueChain = "SEMICONDUCTOR" | "BATTERY" | "AUTO";
+/** REPORTED = 기사에 직접 언급(근거), INFERRED = 공급망을 타고 추정 */
+export type ImpactBasis = "REPORTED" | "INFERRED";
+/** HOLD = 판단 보류 (holdReason 동반) */
+export type ImpactStatus = "OK" | "HOLD";
+/** 추정 경로 한 단계의 출처 — COSMOS 기존 관계 · NEWS 빅카인즈 근거 · COMENTION 같은 문장 동시언급 */
+export type EdgeSource = "COSMOS" | "NEWS" | "COMENTION" | (string & {});
+
+export interface EventCompanyRef {
+  companyId: UUID;
+  name: string;
+  stockCode: string | null;
+  market: Market | null;
+}
+/** 뉴스 유형 코드 (nexus/nexus/cases/newstype.py). 라벨은 응답의 newsTypeLabel 을 쓴다 */
+export type NewsTypeCode =
+  | "ACCIDENT" | "EXPORT_CONTROL" | "TARIFF" | "EARNINGS_BEAT" | "EARNINGS_MISS" | "SUPPLY_DEAL" | "PRICE_UP"
+  | "PRICE_DOWN" | "PRODUCTION_CUT" | "CAPEX" | "SHAREHOLDER" | "AI_DEMAND" | "POLICY" | "ANALYST" | "MARKET_WRAP"
+  | "OTHER";
+/** 투자 기간 — SHORT 3거래일, LONG 20거래일 */
+export type Horizon = "SHORT" | "LONG";
+/** 방향 딱지 — 과거 사례 통계이며 예측이 아니다 */
+export type SignalLabel = "UP" | "DOWN" | "HOLD";
+/** 기업 위치 — 기사에 나옴 또는 추정 경로 마지막 단계의 관계 */
+export type CompanyPosition = "REPORTED" | "SUPPLIER" | "CUSTOMER" | "COMPETITOR" | "PARTNER" | "INVEST" | "COMENTION";
+export interface SignalCount {
+  up: number;
+  down: number;
+  hold: number;
+}
+export interface EventSignal {
+  horizon: Horizon;
+  windowDays: number;
+  label: SignalLabel;
+  /** HOLD 일 때 사유 (사례 부족 · 오른 경우와 내린 경우가 비슷함 · 반응이 작음 · 비슷한 유형 없음 · 연결이 약함) */
+  holdReason: string | null;
+  /** COMPANY = 그 종목의 과거 사례, POSITION = 같은 위치 기업 전체 사례 */
+  caseScope: "COMPANY" | "POSITION" | null;
+  caseCount: number;
+  /** 많은 쪽으로 움직인 사례 비율 (0~1) */
+  sameShare: number | null;
+  /** 과거 사례 평균 초과수익률 (비율) */
+  meanAr: number | null;
+  /** 과거 사례 중 하락 비율 (0~1) */
+  downShare: number | null;
+}
+export interface Fundamental {
+  marketCap: number | null;
+  marketCapRank: number | null;
+  sizeClass: "LARGE" | "MID" | "SMALL" | null;
+  /** 적자거나 재무제표가 없으면 null */
+  per: number | null;
+  pbr: number | null;
+  /** 비율(0.012 = 1.2%) */
+  dividendYield: number | null;
+  netIncomeTtm: number | null;
+  equity: number | null;
+  dividendPerShare: number | null;
+  closePrice: number | null;
+  priceDate: string | null;
+  fiscalBasis: string | null;
+}
+export interface ChartPoint {
+  /** 0 = 뉴스 거래일 */
+  offset: number;
+  date: string;
+  close: number | null;
+  indexClose: number | null;
+  /** 뉴스 전날 종가 대비 누적 수익률 (비율) */
+  stockReturn: number | null;
+  indexReturn: number | null;
+  abnormalReturn: number | null;
+}
+export interface EventChart {
+  eventId: UUID;
+  companyId: UUID;
+  tradingDate: string;
+  benchmark: "KOSPI" | "KOSDAQ";
+  points: ChartPoint[];
+}
+export interface BacktestRow {
+  horizon: Horizon;
+  /** null = 전체 유형 */
+  newsType: NewsTypeCode | null;
+  newsTypeLabel: string | null;
+  caseCount: number;
+  labeledCount: number;
+  hitCount: number;
+  hitRate: number | null;
+  upLabels: number;
+  downLabels: number;
+  baseDownShare: number | null;
+  /** 무조건 많은 쪽으로 답할 때의 적중률 */
+  baselineRate: number | null;
+}
+export type MoveGrade = "SMALL" | "MID" | "LARGE";
+/** 예상 변동폭 검증 한 줄 — 학습 기간 뒤 뉴스일에서 그 등급 종목의 예상과 실제 |초과수익률| 평균 */
+export interface MoveBacktestRow {
+  horizon: Horizon;
+  windowDays: number;
+  grade: MoveGrade;
+  caseCount: number;
+  predictedMove: number | null;
+  realizedMove: number | null;
+}
+export interface Backtest {
+  valueChain: ValueChain;
+  trainEnd: string | null;
+  testStart: string | null;
+  testEnd: string | null;
+  rows: BacktestRow[];
+  /** SHORT 먼저, 기간 안에서 SMALL · MID · LARGE 순 */
+  moveRows: MoveBacktestRow[];
+}
+/** 종목의 예상 변동폭 — 학습 기간 이 종목 뉴스일 뒤 |초과수익률| 평균(방향과 무관). 종목마다 기간별로 하나 */
+export interface ExpectedMove {
+  horizon: Horizon;
+  windowDays: number;
+  expectedMove: number;
+  caseCount: number;
+  grade: MoveGrade;
+}
+export interface CompanyHistoryItem {
+  event: EventSummary;
+  basis: ImpactBasis;
+  position: CompanyPosition | null;
+  positionLabel: string | null;
+  signals: EventSignal[];
+  abnormalReturns: AbnormalReturn[];
+}
+export interface EventSummary {
+  eventId: UUID;
+  /** /api/news/{newsId} 와 같은 문서 ID */
+  newsId: UUID;
+  title: string;
+  summary: string | null;
+  publisher: string | null;
+  /** 빈 문자열이면 원문 링크 없음 */
+  originalUrl: string;
+  dateline: ISODateTime;
+  /** 초과수익률 기준 거래일(YYYY-MM-DD). 아직 정해지지 않았으면 null */
+  tradingDate: string | null;
+  valueChain: ValueChain;
+  categories: string[];
+  reportedCompanies: EventCompanyRef[];
+  inferredCount: number;
+  holdCount: number;
+  newsType: NewsTypeCode | null;
+  newsTypeLabel: string | null;
+  /** 이 뉴스의 영향 종목 딱지 수 (기간별) */
+  signalCounts: Record<Horizon, SignalCount>;
+}
+export interface EvidenceSnippet {
+  bigkindsNewsId: string;
+  title: string;
+  publisher: string | null;
+  publishedAt: ISODateTime;
+  originalUrl: string;
+  snippet: string;
+  confidence: number | null;
+}
+export interface PathStep {
+  sourceCompanyId: UUID | null;
+  sourceName: string | null;
+  targetCompanyId: UUID | null;
+  targetName: string | null;
+  relationshipType: RelationshipType | null;
+  edgeSource: EdgeSource | null;
+  strength: number | null;
+  evidence: EvidenceSnippet[];
+}
+export interface AbnormalReturn {
+  windowDays: number;
+  benchmark: string;
+  stockReturn: number | null;
+  benchmarkReturn: number | null;
+  /** 비율(0.017 = 1.7%p). 관측값이며 예측이 아니다 */
+  abnormalReturn: number | null;
+}
+export interface EventNode {
+  companyId: UUID | null;
+  name: string;
+  stockCode: string | null;
+  market: Market | null;
+  /** 대표 업종 (예: 반도체 장비), 없으면 null */
+  industry: string | null;
+  basis: ImpactBasis;
+  hop: number;
+  score: number | null;
+  status: ImpactStatus;
+  holdReason: string | null;
+  /** 영향 모델(nexus predict-impact)이 채운다. confidence가 있는데 impactDirection이 null이면 방향 보류 */
+  impactDirection: ImpactDirection | null;
+  /** 0~1, 상승 확률과 하락 확률의 차이 */
+  impactMagnitude: number | null;
+  confidence: number | null;
+  anchorCompanyId: UUID | null;
+  path: PathStep[];
+  abnormalReturns: AbnormalReturn[];
+  position: CompanyPosition | null;
+  positionLabel: string | null;
+  /** SHORT 다음 LONG */
+  signals: EventSignal[];
+  /** SHORT 다음 LONG, 아직 없으면 빈 목록 */
+  expectedMoves: ExpectedMove[];
+  fundamental: Fundamental | null;
+}
+export interface EventMap {
+  event: EventSummary;
+  nodes: EventNode[];
+}
+export interface EventListParams {
+  valueChain?: ValueChain;
+  companyId?: UUID;
+  hasInferred?: boolean;
+  newsType?: NewsTypeCode;
+  cursor?: string;
+  size?: number;
+}
+export interface CompanyHistoryParams {
+  companyId: UUID;
+  cursor?: string;
+  size?: number;
+}
+
+/* ── 기업 탭 시세 (GET /market/indices, /companies/quotes, /companies/{id}/related) ──
+   등락은 비율(0.0327 = 3.27%)이고 거래일 수로 센다: 1일 · 1개월 = 20거래일 · 3개월 = 60거래일. 날짜는 YYYY-MM-DD */
+export interface IndexPoint {
+  date: string;
+  close: number;
+}
+export interface MarketIndex {
+  indexCode: "KOSPI" | "KOSDAQ";
+  close: number;
+  change1d: number | null;
+  change1m: number | null;
+  /** 오래된 것부터, 기간 거래일 수 + 1개 */
+  points: IndexPoint[];
+}
+export interface MarketIndices {
+  asOf: string | null;
+  items: MarketIndex[];
+}
+export interface CompanyQuote {
+  companyId: UUID;
+  name: string;
+  stockCode: string | null;
+  market: Market | null;
+  /** 대표 업종 (예: 반도체 장비) */
+  industry: string | null;
+  close: number | null;
+  prevClose: number | null;
+  tradingDate: string | null;
+  change1d: number | null;
+  change1m: number | null;
+  change3m: number | null;
+  /** 최근 21개 종가, 오래된 것부터 (주가 없으면 빈 목록) */
+  spark: number[];
+  marketCap: number | null;
+  marketCapRank: number | null;
+  sizeClass: "LARGE" | "MID" | "SMALL" | null;
+  per: number | null;
+  pbr: number | null;
+  dividendYield: number | null;
+  dividendPerShare: number | null;
+  netIncomeTtm: number | null;
+  equity: number | null;
+  fiscalBasis: string | null;
+  priceDate: string | null;
+  /** 공개 은하 스냅샷 1년 관계의 상대 수 */
+  relationCount: number;
+  /** 마지막 뉴스 날 기준 최근 7일 이 기업이 직접 나온 기사 수 */
+  news7d: number;
+  /** 그 전 60일의 7일 평균 기사 수 */
+  newsUsual7d: number | null;
+  /** 최근 250거래일 고가 최고·저가 최저 */
+  high52w: number | null;
+  low52w: number | null;
+}
+export interface CompanyQuotes {
+  asOf: string | null;
+  items: CompanyQuote[];
+}
+/** OUT = 이 기업이 공급·투자하는 쪽, IN = 상대가 이 기업에 공급·투자하는 쪽, NONE = 방향 없는 관계 */
+export type RelationDirection = "OUT" | "IN" | "NONE";
+export interface RelatedCompany {
+  relationType: RelationshipType;
+  direction: RelationDirection;
+  score: number;
+  otherTypes: RelationshipType[];
+  quote: CompanyQuote;
+}
+export interface RelatedCompanies {
+  companyId: UUID;
+  window: string;
+  items: RelatedCompany[];
 }

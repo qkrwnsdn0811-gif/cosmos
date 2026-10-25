@@ -8,6 +8,7 @@ import { companyGraphQuery, useCompanyGraph, useIndustries, useLatestGraph, useS
 import { useGalaxy, type GalaxyScope } from "@/store/galaxy";
 import { useSession } from "@/store/session";
 import { useUi } from "@/store/ui";
+import { shownCount } from "@/three/isolated";
 import { useSceneReady } from "@/three/sceneReady";
 import { Icon } from "@/components/ui";
 import CameraPresets from "./CameraPresets";
@@ -76,6 +77,8 @@ export default function GalaxyPage() {
   const selectEdge = useGalaxy((s) => s.selectEdge);
   const setSearchOpen = useGalaxy((s) => s.setSearchOpen);
   const panelOpen = useGalaxy((s) => s.panelOpen);
+  const minScore = useGalaxy((s) => s.minScore);
+  const activeTypes = useGalaxy((s) => s.activeTypes);
   const setPanelOpen = useGalaxy((s) => s.setPanelOpen);
   // 관계선(간선) 계산 기준 기간 — ControlDock 의 주가 고도 옆 버튼이 고른다. 메인 은하·기업 중심 뷰가 요청하는
   // 그래프에 그대로 실려 백엔드가 이 기간 기준으로 다시 계산한 edges 를 돌려준다
@@ -105,6 +108,11 @@ export default function GalaxyPage() {
   const mine = useMemo(() => (mineScope && universe.data ? layoutMyGalaxy(universe.data, watchIds, true, capT) : null), [mineScope, universe.data, watchIds, capT]);
   // 별이 하나도 없으면 씬에 null 을 준다 — 빈 원반을 그리는 대신 빈 상태 카드가 화면을 설명한다
   const galaxyModel = mineScope ? (mine && mine.model.nodes.length ? mine.model : null) : fullModel;
+  // 산업 선택 버튼의 숫자 — 선 없는 행성은 은하에 뜨지 않으므로(emphasis.hideIsolated) 실제로 뜬 기업만 센다
+  const shown = useMemo(
+    () => (galaxyModel ? shownCount(galaxyModel, minScore, activeTypes as ReadonlySet<string>) : undefined),
+    [galaxyModel, minScore, activeTypes],
+  );
   const lookup = useMemo<CompanyLookup>(() => {
     const nodes = universe.data?.nodes ?? [];
     const m = new Map(nodes.map((n) => [n.companyId, { name: n.name, industryName: n.industryName, market: n.market, stockCode: n.stockCode, capT: capT(n.marketCapKrw) }]));
@@ -309,15 +317,8 @@ export default function GalaxyPage() {
   const panelActive = Boolean(panelOpen && (focusId || selectedEdgeId || selectedId));
   // 내 은하의 기준 스냅샷은 우주다 — 상태 카드의 시각·갱신 예정도 그 재료를 가리켜야 한다
   const snapshot = mineScope ? universe.data : latest.data;
-  const nextRefreshAt = snapshot?.nextRefreshAt;
-  const [now, setNow] = useState(Date.now);
-  useEffect(() => {
-    if (!nextRefreshAt) return;
-    // 갱신 예정 시각을 넘을 때 상태 표시를 갱신하고, 스냅샷 변경 시 예약을 교체한다.
-    const timer = setTimeout(() => setNow(Date.now()), Math.max(0, Date.parse(nextRefreshAt) - Date.now() + 1));
-    return () => clearTimeout(timer);
-  }, [nextRefreshAt]);
-  const stale = nextRefreshAt ? now > Date.parse(nextRefreshAt) : false;
+  // NEXUS 은하 스냅샷은 매시 갱신이 아니라 빅카인즈 뉴스 분석을 다시 돌릴 때(nexus publish-graph) 새로 게시한다.
+  // 백엔드의 nextRefreshAt(기준 + 1시간, COSMOS 매시 배치 기준)은 맞지 않아 '다음 갱신'·'새 스냅샷 가능' 표시를 쓰지 않는다
   const scopeLoading = mineScope ? universe.isLoading || watchlist.isLoading : latest.isLoading;
   const loading = scopeLoading || (Boolean(focusId) && focusGraph.isLoading && !systemModel);
   // 모델은 왔지만 씬이 첫 프레임을 매끄럽게 낼 준비(셰이더 컴파일·텍스처 업로드 — Scene.tsx Director 의 워밍업)가 안 됐으면 로딩 화면을 조금 더 붙잡는다.
@@ -344,6 +345,7 @@ export default function GalaxyPage() {
       industries={industries.data?.items ?? []}
       loading={industries.isLoading}
       total={universe.data?.nodes.length}
+      shown={shown}
       value={industryId}
       onChange={(id) => {
         setIndustry(id);
@@ -485,13 +487,12 @@ export default function GalaxyPage() {
         <div className="card status-card">
           <div>
             <div className="t">
-              <i className={`dot ${stale ? "warn" : ""}`} />
+              <i className="dot" />
               {mineScope ? `내 은하 · 관심 ${watchIds.length}` : snapshot?.personalized ? "개인화 그래프" : "공개 스냅샷"}
-              {stale && <span className="meta">· 새 스냅샷 가능</span>}
             </div>
             <div className="meta num" style={{ marginTop: 4 }}>
               {snapshot
-                ? `${fmtDateTime(snapshot.asOfAt)} 기준 · 다음 갱신 ${fmtDateTime(snapshot.nextRefreshAt).slice(-5)}`
+                ? `${fmtDateTime(snapshot.asOfAt)} 기준 · 빅카인즈 뉴스 분석`
                 : scopeError
                   ? noSnapshot
                     ? "공개된 스냅샷 없음 · 분석 결과 게시 전"

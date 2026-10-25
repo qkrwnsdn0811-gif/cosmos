@@ -316,6 +316,25 @@ public class GraphQueryRepository {
     ) {
     }
 
+    /** 공시 지분 (V16 company_ownership, nexus ownership 이 채운다). 없으면 빈 값 */
+    public Optional<OwnershipRow> findOwnership(UUID investorCompanyId, UUID investeeCompanyId) {
+        return jdbcTemplate.query("""
+                        SELECT stake_pct, purpose, settled_on, receipt_no
+                        FROM company_ownership
+                        WHERE investor_company_id = :investor AND investee_company_id = :investee
+                        """,
+                Map.of("investor", investorCompanyId, "investee", investeeCompanyId),
+                (rs, rowNum) -> new OwnershipRow(
+                        rs.getBigDecimal("stake_pct"),
+                        rs.getString("purpose"),
+                        rs.getObject("settled_on", java.time.LocalDate.class),
+                        rs.getString("receipt_no")))
+                .stream().findFirst();
+    }
+
+    public record OwnershipRow(BigDecimal stakePct, String purpose, java.time.LocalDate settledOn, String receiptNo) {
+    }
+
     public record RelationshipRow(
             UUID relationshipId,
             UUID sourceCompanyId,

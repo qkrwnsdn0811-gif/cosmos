@@ -3,6 +3,7 @@ package com.cosmos.api.company.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.cosmos.api.company.dto.CompanyFundamentalResponse;
 import com.cosmos.api.company.dto.CompanyMetricHistoryResponse;
 import com.cosmos.api.company.dto.CompanyMetricResponse;
 import com.cosmos.api.company.dto.StockPriceHistoryResponse;
@@ -127,6 +128,49 @@ class CompanyMetricStockIntegrationTest {
     @Test
     void rejectsInactiveCompany() {
         assertThatThrownBy(() -> companyService.findLatestMetric(INACTIVE_COMPANY_ID, "30D"))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(exception -> assertThat(((BusinessException) exception).getErrorCode())
+                        .isEqualTo(CompanyErrorCode.COMPANY_NOT_FOUND));
+    }
+
+    @Test
+    void returnsFundamentalWhenPresent() {
+        jdbcTemplate.update("""
+                        INSERT INTO company_fundamental
+                            (company_id, market_cap, market_cap_rank, size_class, net_income_ttm, equity,
+                             dividend_per_share, close_price, per, pbr, dividend_yield, fiscal_basis, price_date, source)
+                        VALUES (?, 1500000000000, 3, 'LARGE', NULL, 750000000000, 500, 30000, NULL, 2.0, 0.016667,
+                                '2026 2분기 누적 TTM', DATE '2026-10-16', 'test')
+                        """,
+                COMPANY_ID);
+
+        CompanyFundamentalResponse result = companyService.findFundamental(COMPANY_ID);
+
+        assertThat(result.marketCap()).isEqualByComparingTo("1500000000000");
+        assertThat(result.marketCapRank()).isEqualTo(3);
+        assertThat(result.sizeClass()).isEqualTo("LARGE");
+        assertThat(result.per()).isNull();   // 적자 등으로 계산 불가
+        assertThat(result.netIncomeTtm()).isNull();
+        assertThat(result.pbr()).isEqualByComparingTo("2.0");
+        assertThat(result.dividendYield()).isEqualByComparingTo("0.016667");
+        assertThat(result.dividendPerShare()).isEqualByComparingTo("500");
+        assertThat(result.closePrice()).isEqualByComparingTo("30000");
+        assertThat(result.priceDate()).isEqualTo(LocalDate.of(2026, 10, 16));
+        assertThat(result.fiscalBasis()).isEqualTo("2026 2분기 누적 TTM");
+    }
+
+    @Test
+    void returnsNullFundamentalFieldsWhenNoRowExists() {
+        assertThat(companyService.findFundamental(EMPTY_COMPANY_ID)).isEqualTo(CompanyFundamentalResponse.empty());
+    }
+
+    @Test
+    void fundamentalRejectsUnknownOrInactiveCompany() {
+        assertThatThrownBy(() -> companyService.findFundamental(INACTIVE_COMPANY_ID))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(exception -> assertThat(((BusinessException) exception).getErrorCode())
+                        .isEqualTo(CompanyErrorCode.COMPANY_NOT_FOUND));
+        assertThatThrownBy(() -> companyService.findFundamental(UUID.fromString("40000000-0000-0000-0000-000000000099")))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(exception -> assertThat(((BusinessException) exception).getErrorCode())
                         .isEqualTo(CompanyErrorCode.COMPANY_NOT_FOUND));

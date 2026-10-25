@@ -1,12 +1,16 @@
 package com.cosmos.api.company.controller;
 
 import com.cosmos.api.company.dto.CompanyDetailResponse;
+import com.cosmos.api.company.dto.CompanyFundamentalResponse;
 import com.cosmos.api.company.dto.CompanyMetricHistoryResponse;
 import com.cosmos.api.company.dto.CompanyMetricResponse;
+import com.cosmos.api.company.dto.CompanyQuoteListResponse;
 import com.cosmos.api.company.dto.CompanySummaryResponse;
 import com.cosmos.api.company.dto.IndustryListResponse;
+import com.cosmos.api.company.dto.RelatedCompanyListResponse;
 import com.cosmos.api.company.dto.StockPriceHistoryResponse;
 import com.cosmos.api.company.repository.CompanySearchCondition;
+import com.cosmos.api.company.service.CompanyQuoteService;
 import com.cosmos.api.company.service.CompanyService;
 import com.cosmos.api.global.response.CursorPageResponse;
 import jakarta.validation.constraints.Max;
@@ -28,9 +32,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class CompanyController {
 
     private final CompanyService companyService;
+    private final CompanyQuoteService quoteService;
 
-    public CompanyController(CompanyService companyService) {
+    public CompanyController(CompanyService companyService, CompanyQuoteService quoteService) {
         this.companyService = companyService;
+        this.quoteService = quoteService;
     }
 
     @GetMapping("/companies")
@@ -45,9 +51,21 @@ public class CompanyController {
                 new CompanySearchCondition(keyword, market, industryId, cursor, size));
     }
 
+    /** 기업 탭 시세판: 활성 기업 전부의 시세·지표·1년 관계 수 (페이지 없음) */
+    @GetMapping("/companies/quotes")
+    public CompanyQuoteListResponse findQuotes() {
+        return quoteService.findQuotes();
+    }
+
     @GetMapping("/companies/{companyId}")
     public CompanyDetailResponse findCompany(@PathVariable UUID companyId) {
         return companyService.findCompany(companyId);
+    }
+
+    /** 기업 상세의 관계 기업 동향: 공개 스냅샷 1년 관계 기업과 그 시세 */
+    @GetMapping("/companies/{companyId}/related")
+    public RelatedCompanyListResponse findRelated(@PathVariable UUID companyId) {
+        return quoteService.findRelated(companyId);
     }
 
     @GetMapping("/companies/{companyId}/metrics")
@@ -75,6 +93,11 @@ public class CompanyController {
             @RequestParam(defaultValue = "1D") String interval
     ) {
         return companyService.findStockPrices(companyId, period, interval);
+    }
+
+    @GetMapping("/companies/{companyId}/fundamental")
+    public CompanyFundamentalResponse findFundamental(@PathVariable UUID companyId) {
+        return companyService.findFundamental(companyId);
     }
 
     @GetMapping("/industries")

@@ -1,19 +1,23 @@
 import { Component, lazy, Suspense, useEffect, useRef, type ErrorInfo, type ReactNode } from "react";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ApiError } from "@/api";
 import Header from "@/components/Header";
 import Toasts from "@/components/Toasts";
 import AuthDialog from "@/features/auth/AuthDialog";
-import GalaxyPage from "@/features/galaxy/GalaxyPage";
+import InvestPage from "@/features/invest/InvestPage";
+import { GALAXY_PATH } from "@/lib/routes";
 import { useSession } from "@/store/session";
 
-// 은하(/)가 첫 화면이다 — 나머지 탭은 들어갈 때 받는다. 전부 정적으로 묶으면 첫 로드 번들에 뉴스·기업·커뮤니티·내 페이지·실험실 코드와
-// 그 CSS 가 함께 실려 Lighthouse 가 "미사용 JS/CSS" 로 잡았다 (2026-09-18). 각 페이지는 자기 청크(+CSS)로 나뉘어 라우트 진입 시 로드된다
+// 이벤트(/: 뉴스 → 관계 지도 · 영향 종목)가 첫 화면이다 (2026-10-25, 명세서 F10) — 나머지 탭은 들어갈 때 받는다. 전부 정적으로 묶으면 첫 로드 번들에
+// 뉴스·기업·커뮤니티·내 페이지·실험실 코드와 그 CSS 가 함께 실려 Lighthouse 가 "미사용 JS/CSS" 로 잡았다 (2026-09-18).
+// 3D 은하는 탐색 화면(/galaxy)으로 옮기면서 지연 로드한다 — three.js 청크가 첫 화면 전송량에서 빠진다
+const GalaxyPage = lazy(() => import("@/features/galaxy/GalaxyPage"));
 const NewsPage = lazy(() => import("@/features/news/NewsPage"));
 // 검색 팔레트의 "관계 검색"(기업 두 곳을 이어 주는 경로) 결과 화면 — 은하 페이지와 같은 Scene 청크를 쓰므로 여기서도 지연 로드한다
 const PathGalaxyPage = lazy(() => import("@/features/galaxy/PathGalaxyPage"));
 const CompaniesPage = lazy(() => import("@/features/companies/CompaniesPage"));
+const CompanyPage = lazy(() => import("@/features/companies/CompanyPage"));
 const CommunityPage = lazy(() => import("@/features/community/CommunityPage"));
 const MePage = lazy(() => import("@/features/profile/MePage"));
 const MyItemsPage = lazy(() => import("@/features/profile/MyItemsPage"));
@@ -26,6 +30,12 @@ function RouteFallback() {
       불러오는 중
     </div>
   );
+}
+
+/** 예전 이벤트 지도 주소(/events?event=…)를 첫 화면으로 옮긴다. 검색 조건(event 등)은 그대로 넘긴다 */
+function EventsRedirect() {
+  const { search } = useLocation();
+  return <Navigate to={{ pathname: "/", search }} replace />;
 }
 
 /** 동적 import 실패 메시지 — 배포 직후 옛 index.html 이 남아 있으면 해시가 바뀐 청크가 404 다 (Chrome·Firefox·Safari 문구) */
@@ -109,10 +119,14 @@ export default function App() {
           <LazyBoundary>
             <Suspense fallback={<RouteFallback />}>
               <Routes>
-                <Route path="/" element={<GalaxyPage />} />
+                <Route path="/" element={<InvestPage />} />
+                <Route path={GALAXY_PATH} element={<GalaxyPage />} />
                 <Route path="/path" element={<PathGalaxyPage />} />
                 <Route path="/news" element={<NewsPage />} />
+                {/* 뉴스 1건 3D 지도(/events)는 첫 화면에 합쳤다 — 예전 링크(?event=)는 그대로 첫 화면으로 */}
+                <Route path="/events" element={<EventsRedirect />} />
                 <Route path="/companies" element={<CompaniesPage />} />
+                <Route path="/companies/:companyId" element={<CompanyPage />} />
                 <Route path="/community" element={<CommunityPage />} />
                 <Route path="/me" element={<MePage />} />
                 {/* 관심 기업·스크랩한 뉴스 — 내 정보와 분리된 별도 화면. 지금은 분리만, 레이아웃 재설계는 다음 단계 */}

@@ -1,139 +1,118 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import type { Market } from "@/api/types";
-import { fmtDateTime } from "@/lib/format";
-import { fallbackMarketCapKrw } from "@/lib/marketCapFallback";
-import { useCompanyDirectory, useIndustries, useLatestGraph, useToggleWatch, useWatchedSet, useWatchlist } from "@/lib/queries";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import type { CompanyQuote, Market } from "@/api/types";
+import { useCompanyQuotes, useLatestGraph, useMarketIndices, useToggleWatch, useWatchedSet, useWatchlist } from "@/lib/queries";
 import { useSession } from "@/store/session";
 import { useUi } from "@/store/ui";
-import { CompanyAvatar, Empty, ErrorNotice, Icon, IndustryBadge, MarketTag, ScoreBar, Skeleton } from "@/components/ui";
-import CompanyPreviewDialog from "./CompanyPreviewDialog";
+import { CompanyAvatar, Empty, ErrorNotice, Icon, Skeleton } from "@/components/ui";
+import { companyPath } from "@/lib/routes";
+import MarketStrip from "./MarketStrip";
 import OwnershipView from "./OwnershipView";
+import QuoteTable, { type SortState } from "./QuoteTable";
+import WatchStrip from "./WatchStrip";
+import { PRESETS, SIZE_LABEL, applyPreset, fmtPct, sortQuotes, tone, type PresetKey } from "./quoteFormat";
 import "./companies.css";
 
 const MARKETS: { v: Market | ""; label: string }[] = [
   { v: "", label: "전체 시장" },
-  { v: "KOSPI", label: "KOSPI" },
-  { v: "NASDAQ", label: "NASDAQ" },
+  { v: "KOSPI", label: "코스피" },
+  { v: "KOSDAQ", label: "코스닥" },
 ];
 
-type SortKey = "count" | "score";
-type SortState = { key: SortKey; dir: "asc" | "desc" } | null;
-/** 열 헤더(연결 관계·최고 관계 점수) 정렬이 꺼져 있을 때 쓰는 기본 정렬 방식 — 시가총액이 기본이고, 기업명순은 사용자가 명시적으로 고른다 */
-type PrimarySort = "cap" | "name";
+/** "2026-10-23" → "10월 23일" */
+const dayLabel = (iso: string | null | undefined) => (iso ? `${Number(iso.slice(5, 7))}월 ${Number(iso.slice(8, 10))}일` : "-");
 
-/** 기업 (화면구성도 ⑩·⑪). 목록 / 투자·지분 관계 토글. 행을 누르면 전체 은하의 기업 패널이 열린다. */
+/**
+ * 기업 탭 — 반도체 종목 시세판 (토스증권 '주식 골라보기' + Google Finance 시장 요약을 참고).
+ * 시장 띠 → 골라보기 칩 → 필터 → 정렬되는 시세 표. 행을 누르면 기업 상세(/companies/:id). '투자·지분 관계' 보기는 그대로 둔다.
+ */
 export default function CompaniesPage() {
   const navigate = useNavigate();
   const authed = useSession((s) => s.status === "authed");
   const openAuth = useUi((s) => s.openAuth);
+  const [params] = useSearchParams();
   const [view, setView] = useState<"list" | "ownership">("list");
-  const [keywordInput, setKeywordInput] = useState("");
   const [keyword, setKeyword] = useState("");
   const [market, setMarket] = useState<Market | "">("");
-  const [industryId, setIndustryId] = useState("");
-  const [sort, setSort] = useState<SortState>(null);
-  const [primarySort, setPrimarySort] = useState<PrimarySort>("cap");
-  const [previewId, setPreviewId] = useState<string | null>(null);
+  const [industry, setIndustry] = useState("");
+  const [size, setSize] = useState("");
+  const [preset, setPreset] = useState<PresetKey>("all");
+  // 열 머리를 누르면 칩의 정렬 대신 이 정렬을 쓴다. 칩을 바꾸면 풀린다
+  const [sort, setSort] = useState<SortState | null>(null);
 
-  // 입력마다 요청이 나가지 않도록 디바운스한다 (live 모드에서 백엔드 호출 폭주 방지)
+  // 예전 주소(?company=, 영향 종목 카드의 "이 종목의 뉴스 이력")는 기업 상세로 넘긴다
   useEffect(() => {
-    const t = setTimeout(() => setKeyword(keywordInput.trim()), 300);
-    return () => clearTimeout(t);
-  }, [keywordInput]);
+    const id = params.get("company");
+    if (id) navigate(companyPath(id), { replace: true });
+  }, [params, navigate]);
 
-  const industries = useIndustries();
+  const quotes = useCompanyQuotes();
+  const indices = useMarketIndices("3M");
   const universe = useLatestGraph(null);
   const watchlist = useWatchlist();
   const toggleWatch = useToggleWatch();
   const watchedSet = useWatchedSet();
-  const dir = useCompanyDirectory({ keyword: keyword || undefined, market: market || undefined, industryId: industryId || undefined, size: 40 });
-  const rows = useMemo(() => dir.data?.pages.flatMap((p) => p.items) ?? [], [dir.data]);
 
-  /** 스냅샷에서 기업별 관계 수·최고 점수 집계 */
-  const stats = useMemo(() => {
-    const m = new Map<string, { count: number; max: number }>();
-    universe.data?.edges.forEach((e) => {
-      for (const id of [e.sourceCompanyId, e.targetCompanyId]) {
-        const s = m.get(id) ?? { count: 0, max: 0 };
-        s.count += 1;
-        s.max = Math.max(s.max, e.score);
-        m.set(id, s);
-      }
-    });
-    return m;
-  }, [universe.data]);
+  // 시세판은 주가가 있는 종목만 (주가 없는 기업은 국내 범위 밖의 나스닥 기업들이다 — 2026-10-18 국내 종목만으로 정함)
+  const all = useMemo(() => (quotes.data?.items ?? []).filter((q) => q.close != null), [quotes.data]);
+  const byId = useMemo(() => new Map((quotes.data?.items ?? []).map((q) => [q.companyId, q])), [quotes.data]);
+  const industries = useMemo(() => [...new Set(all.map((q) => q.industry).filter((v): v is string => Boolean(v)))].sort((a, b) => a.localeCompare(b, "ko")), [all]);
 
-  /**
-   * 기업별 시가총액(원화 환산) — 스냅샷 노드의 marketCapKrw 를 쓴다(백엔드가 아직 값을 안 채웠으면 null/undefined).
-   * 전체 은하 뷰의 행성 크기가 이미 이 필드를 쓰고 있으므로 여기서도 같은 값을 재사용한다 — 별도 하드코딩 없이 실데이터를 그대로 반영.
-   */
-  const capById = useMemo(() => {
-    const m = new Map<string, number>();
-    universe.data?.nodes.forEach((n) => {
-      if (typeof n.marketCapKrw === "number") m.set(n.companyId, n.marketCapKrw);
-    });
-    return m;
-  }, [universe.data]);
+  const picked = useMemo(() => {
+    const k = keyword.trim().toLowerCase();
+    const filtered = all.filter(
+      (q) =>
+        (!k || q.name.toLowerCase().includes(k) || (q.stockCode ?? "").includes(k)) &&
+        (!market || q.market === market) &&
+        (!industry || q.industry === industry) &&
+        (!size || q.sizeClass === size),
+    );
+    const byPreset = applyPreset(filtered, preset);
+    return sort ? { rows: sortQuotes(byPreset.rows, sort.key, sort.dir), sort } : { rows: byPreset.rows, sort: { key: byPreset.sort, dir: byPreset.dir } };
+  }, [all, keyword, market, industry, size, preset, sort]);
 
-  /** 목록 클릭은 곧바로 은하로 이동하지 않고 가벼운 미리보기를 연다. 관계망 탐색은 미리보기에서 선택한다. */
-  const openPreview = (id: string) => setPreviewId(id);
-  const goToGalaxy = (id: string) => {
-    setPreviewId(null);
-    navigate(`/?company=${id}`);
+  const open = (id: string) => navigate(companyPath(id));
+  const onToggleWatch = (companyId: string, watched: boolean) => {
+    if (!authed) return openAuth("login");
+    toggleWatch.mutate({ companyId, watched });
   };
-
-  /** 지금 불러온 목록 안에서만 정렬한다 — 서버가 관계 수·점수 정렬을 지원하지 않아 전체 정렬은 아직 불가능하다 */
-  const toggleSort = (key: SortKey) => setSort((s) => (s?.key === key ? (s.dir === "desc" ? { key, dir: "asc" } : null) : { key, dir: "desc" }));
-  const sortedRows = useMemo(() => {
-    if (sort) {
-      return rows
-        .slice()
-        .sort((a, b) => {
-          const av = sort.key === "count" ? stats.get(a.companyId)?.count ?? 0 : stats.get(a.companyId)?.max ?? 0;
-          const bv = sort.key === "count" ? stats.get(b.companyId)?.count ?? 0 : stats.get(b.companyId)?.max ?? 0;
-          return sort.dir === "asc" ? av - bv : bv - av;
-        });
-    }
-    // 검색어로 서버가 관련도순을 이미 매겨 준 경우엔 그 순서를 존중한다.
-    if (keyword) return rows;
-    // 사용자가 명시적으로 기업명순을 고르면 가나다순 그대로 — 시가총액 데이터 유무와 무관하게 항상 이름순이다
-    if (primarySort === "name") return rows.slice().sort((a, b) => a.name.localeCompare(b.name, "ko"));
-    // 기본 정렬은 시가총액 내림차순 — 실데이터(스냅샷 marketCapKrw)를 먼저 쓰고,
-    // 그마저 없으면 202개 기업 하드코딩 표(lib/marketCapFallback)를 대체값으로 쓴다. 둘 다 없는 기업만(그 안에서는 이름순으로) 맨 뒤로 밀린다.
-    // (시가총액 데이터가 없는 기업이 많으면 이 꼬리가 길어져 "알파벳순처럼 보인다"는 지적이 있었다 — 그건 데이터 커버리지 문제이지
-    // 정렬 로직 문제가 아니라, 위의 기업명순 버튼을 명시적으로 추가해 "지금 알파벳순으로 보고 있다"를 사용자가 직접 고를 수 있게 했다)
-    return rows
-      .slice()
-      .sort((a, b) => {
-        const av = capById.get(a.companyId) ?? fallbackMarketCapKrw(a.stockCode);
-        const bv = capById.get(b.companyId) ?? fallbackMarketCapKrw(b.stockCode);
-        if (av != null && bv != null) return bv - av;
-        if (av != null) return -1;
-        if (bv != null) return 1;
-        return a.name.localeCompare(b.name, "ko");
-      });
-  }, [rows, stats, capById, sort, keyword, primarySort]);
+  const asOf = quotes.data?.asOf ?? null;
 
   return (
     <div className="page">
       <div className="page-head">
         <div>
-          <span className="pill">기업 데이터</span>
-          <h1>연결 기업 데이터</h1>
-          <p>
-            등록된 기업 목록에 최신 공개 스냅샷의 연결 관계 수·관계 점수를 함께 표시합니다.
-            {universe.data && ` 스냅샷에는 ${universe.data.nodes.length}개 기업이 포함되어 있습니다.`}
-            {universe.isError && " 현재 공개된 관계 스냅샷이 없어 연결 관계·점수는 모두 0으로 표시됩니다."}
-          </p>
+          <span className="pill">기업 · 시세</span>
+          <h1>반도체 종목 시세</h1>
+          <p>뉴스·관계망으로 연결된 반도체 종목의 주가와 투자 지표입니다. 실시간 시세가 아니라 마지막 거래일 종가 기준입니다.</p>
         </div>
         <span className="status-line">
           <i className="dot" />
-          {universe.data ? `스냅샷 ${fmtDateTime(universe.data.asOfAt)} 기준` : universe.isError ? "공개된 관계 스냅샷 없음 — 분석 결과 게시 전" : "스냅샷 확인 중"}
+          {asOf ? `주가 ${asOf} 종가 기준` : quotes.isError ? "시세를 불러오지 못했습니다" : "시세 확인 중"}
         </span>
       </div>
 
-      {/* 관심 기업 — 비로그인 상태에서는 관심 기업이라는 개념 자체가 없으므로 섹션을 통째로 숨긴다 */}
+      {/* 지수를 못 받으면 지수 카드만 빠지고 반도체 등락 카드는 남는다 */}
+      {all.length > 0 && !indices.isLoading ? (
+        <MarketStrip indices={indices.data?.items ?? []} rows={all} asOf={asOf} />
+      ) : (
+        (indices.isLoading || quotes.isLoading) && <Skeleton h={118} style={{ marginTop: 18, borderRadius: 18 }} />
+      )}
+
+      {all.length > 0 && (
+        <WatchStrip
+          rows={all}
+          onOpen={open}
+          onShowAll={() => {
+            setView("list");
+            setPreset("watch");
+            setSort(null);
+            requestAnimationFrame(() => document.querySelector(".dir-card")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+          }}
+        />
+      )}
+
+      {/* 관심 기업 — 로그인했을 때만 */}
       {authed && (
         <section className="card watch-card" aria-label="내 관심 기업">
           <div className="row between wrap">
@@ -148,14 +127,15 @@ export default function CompaniesPage() {
           {watchlist.data?.items.length ? (
             <div className="watch-grid">
               {watchlist.data.items.map((w) => {
-                const s = stats.get(w.companyId);
+                const q = byId.get(w.companyId);
                 return (
-                  <button key={w.companyId} type="button" className="watch-item" onClick={() => openPreview(w.companyId)}>
+                  <button key={w.companyId} type="button" className="watch-item" onClick={() => open(w.companyId)}>
                     <CompanyAvatar name={w.name} stockCode={w.stockCode} market={w.market} industry={w.primaryIndustry?.name} size={40} />
                     <span className="grow">
                       <b>{w.name}</b>
                       <span className="meta num">
-                        {[w.primaryIndustry?.name, `관계 ${s?.count ?? 0}개`].filter(Boolean).join(" · ")}
+                        {q?.close != null ? `${q.close.toLocaleString("ko-KR")}원 ` : ""}
+                        {q && <span className={`tone-${tone(q.change1d)}`}>{fmtPct(q.change1d)}</span>}
                       </span>
                     </span>
                   </button>
@@ -163,44 +143,61 @@ export default function CompaniesPage() {
               })}
             </div>
           ) : (
-            <Empty>아직 관심 기업이 없습니다. 아래 목록의 ★ 을 눌러 추가하세요.</Empty>
+            <Empty>아직 관심 기업이 없습니다. 아래 표의 ★ 을 눌러 추가하세요.</Empty>
           )}
         </section>
       )}
 
-      {/* 디렉터리 */}
-      <section className="card dir-card" aria-label="기업 목록">
+      <section className="card dir-card" aria-label="종목 시세">
         <div className="dir-head">
           <div>
-            <div className="kick">company directory</div>
+            <div className="kick">stock board</div>
             <h2 className="sect" style={{ marginTop: 6 }}>
-              {view === "list" ? "뉴스·관계망 연결 기업" : "투자·지분 관계"}
+              {view === "list" ? "종목 시세" : "투자·지분 관계"}
             </h2>
             <p className="meta mt-8" style={{ fontSize: 13 }}>
-              {view === "list" ? "관계 수와 최고 관계 점수는 최신 공개 스냅샷 기준입니다." : "스냅샷의 투자·지분 유형 관계를 지배 방향(보유 → 피보유)으로 표시합니다. 숫자는 관계 점수입니다."}
+              {view === "list"
+                ? "등락은 거래일 기준(1개월 = 20거래일)입니다. 관계는 공개 은하 스냅샷의 1년 관계 수입니다."
+                : "OpenDART 타법인 출자 현황(공시)의 지분율과 뉴스에서 확인된 지분 관계를 보유 → 피보유 방향으로 표시합니다."}
             </p>
           </div>
           <div className="row" style={{ gap: 12 }}>
             <div className="seg">
               <button type="button" className={view === "list" ? "on" : ""} onClick={() => setView("list")}>
-                목록
+                시세
               </button>
               <button type="button" className={view === "ownership" ? "on" : ""} onClick={() => setView("ownership")}>
                 투자·지분 관계
               </button>
             </div>
-            <span className="pill num">기업 {universe.data?.nodes.length ?? 0}개</span>
+            <span className="pill num">종목 {all.length}개</span>
           </div>
         </div>
 
         {view === "ownership" ? (
-          <OwnershipView graph={universe.data ?? null} onPick={openPreview} />
+          <OwnershipView graph={universe.data ?? null} onPick={open} />
         ) : (
           <>
+            <div className="preset-row" role="group" aria-label="골라보기">
+              {PRESETS.map((p) => (
+                <button
+                  key={p.key}
+                  type="button"
+                  className={`chip ${preset === p.key ? "on" : ""}`}
+                  aria-pressed={preset === p.key}
+                  onClick={() => {
+                    setPreset(p.key);
+                    setSort(null);
+                  }}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
             <div className="dir-tools">
               <label className="field">
                 <Icon.Search />
-                <input placeholder="기업명·영문명·종목코드" value={keywordInput} onChange={(e) => setKeywordInput(e.target.value)} />
+                <input placeholder="기업명·종목코드" value={keyword} onChange={(e) => setKeyword(e.target.value)} />
               </label>
               <select value={market} onChange={(e) => setMarket(e.target.value as Market | "")} aria-label="시장">
                 {MARKETS.map((m) => (
@@ -209,151 +206,53 @@ export default function CompaniesPage() {
                   </option>
                 ))}
               </select>
-              <select value={industryId} onChange={(e) => setIndustryId(e.target.value)} aria-label="산업">
+              <select value={industry} onChange={(e) => setIndustry(e.target.value)} aria-label="산업">
                 <option value="">전체 산업</option>
-                {industries.data?.items.map((i) => (
-                  <option key={i.industryId} value={i.industryId}>
-                    {i.name} ({i.companyCount})
+                {industries.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+              <select value={size} onChange={(e) => setSize(e.target.value)} aria-label="규모">
+                <option value="">전체 규모</option>
+                {Object.entries(SIZE_LABEL).map(([v, label]) => (
+                  <option key={v} value={v}>
+                    {label}
                   </option>
                 ))}
               </select>
               <span className="meta" style={{ marginLeft: "auto" }}>
-                {sort ? `${sort.key === "count" ? "연결 관계" : "최고 관계 점수"} ${sort.dir === "desc" ? "높은순" : "낮은순"} · 불러온 목록 기준` : keyword ? "관련도순" : primarySort === "name" ? "기업명 가나다순" : "시가총액 높은순"}
+                {picked.rows.length}종목
               </span>
-              {/* 열 헤더(연결 관계·최고 관계 점수) 정렬이나 검색어 관련도순이 아닐 때 쓰는 기본 정렬 — 시가총액(기본)과 기업명순을 사용자가 직접 고른다.
-                  둘 중 하나를 누르면 열 헤더 정렬(sort)은 끄고 이 기본 정렬로 돌아온다 */}
-              {!keyword && (
-                <div className="seg" title="목록 기본 정렬">
-                  <button
-                    type="button"
-                    className={!sort && primarySort === "cap" ? "on" : ""}
-                    onClick={() => {
-                      setSort(null);
-                      setPrimarySort("cap");
-                    }}
-                  >
-                    시가총액순
-                  </button>
-                  <button
-                    type="button"
-                    className={!sort && primarySort === "name" ? "on" : ""}
-                    onClick={() => {
-                      setSort(null);
-                      setPrimarySort("name");
-                    }}
-                  >
-                    기업명순
-                  </button>
-                </div>
-              )}
             </div>
-            <div style={{ overflowX: "auto" }}>
-              <table className="dir-table">
-                <thead>
-                  <tr>
-                    <th>기업</th>
-                    <th>산업</th>
-                    <th>시장</th>
-                    <th className={`right sortable ${sort?.key === "count" ? "on" : ""}`} onClick={() => toggleSort("count")} title="불러온 목록 안에서 정렬합니다">
-                      연결 관계
-                      <span className="sort-arrow">{sort?.key === "count" ? (sort.dir === "desc" ? "▼" : "▲") : "▲▼"}</span>
-                    </th>
-                    <th className={`sortable ${sort?.key === "score" ? "on" : ""}`} style={{ width: 220 }} onClick={() => toggleSort("score")} title="불러온 목록 안에서 정렬합니다">
-                      최고 관계 점수
-                      <span className="sort-arrow">{sort?.key === "score" ? (sort.dir === "desc" ? "▼" : "▲") : "▲▼"}</span>
-                    </th>
-                    <th className="right">관심</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {dir.isLoading &&
-                    [0, 1, 2, 3, 4].map((i) => (
-                      <tr key={i}>
-                        <td colSpan={6}>
-                          <Skeleton h={40} />
-                        </td>
-                      </tr>
-                    ))}
-                  {!dir.isLoading && dir.isError && !rows.length && (
-                    <tr>
-                      <td colSpan={6}>
-                        <ErrorNotice message="기업 목록을 불러오지 못했습니다." onRetry={() => dir.refetch()} />
-                      </td>
-                    </tr>
-                  )}
-                  {!dir.isLoading && !dir.isError && !rows.length && (
-                    <tr>
-                      <td colSpan={6}>
-                        <Empty>조건에 맞는 기업이 없습니다.</Empty>
-                      </td>
-                    </tr>
-                  )}
-                  {sortedRows.map((c) => {
-                    const s = stats.get(c.companyId);
-                    const watched = c.watched || watchedSet.has(c.companyId);
-                    return (
-                      <tr key={c.companyId} className="row-btn" onClick={() => openPreview(c.companyId)} tabIndex={0} onKeyDown={(e) => e.key === "Enter" && openPreview(c.companyId)}>
-                        <td>
-                          <div className="co">
-                            <CompanyAvatar name={c.name} stockCode={c.stockCode} market={c.market} industry={c.primaryIndustry?.name} size={36} />
-                            <div>
-                              <b>{c.name}</b>
-                              {/* 종목코드·영문명은 선택 필드라 없는 값은 구분점째로 접는다 */}
-                              <span className="meta num">{[c.stockCode, c.nameEn].filter(Boolean).join(" · ")}</span>
-                            </div>
-                          </div>
-                        </td>
-                        <td>
-                          <IndustryBadge name={c.primaryIndustry?.name} />
-                        </td>
-                        <td>
-                          <MarketTag market={c.market} />
-                        </td>
-                        <td className="right">
-                          <span className="num num-cell">{s?.count ?? 0}</span>
-                          <span className="unit">개</span>
-                        </td>
-                        <td>
-                          <div className="row" style={{ gap: 10 }}>
-                            <ScoreBar score={s?.max ?? 0} />
-                            <span className="num" style={{ width: 32, textAlign: "right", fontWeight: 700 }}>
-                              {s ? Math.round(s.max) : "-"}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="right">
-                          <button
-                            type="button"
-                            className={`star-btn ${watched ? "on" : ""}`}
-                            aria-label={watched ? "관심 해제" : "관심 등록"}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (!authed) return openAuth("login");
-                              toggleWatch.mutate({ companyId: c.companyId, watched });
-                            }}
-                          >
-                            <Icon.Star filled={watched} />
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+
+            {quotes.isLoading && (
+              <div style={{ padding: "12px 22px" }}>
+                {[0, 1, 2, 3, 4].map((i) => (
+                  <Skeleton key={i} h={44} style={{ marginBottom: 8 }} />
+                ))}
+              </div>
+            )}
+            {quotes.isError && <ErrorNotice message="시세를 불러오지 못했습니다." onRetry={() => quotes.refetch()} />}
+            {quotes.data && !picked.rows.length && <Empty>조건에 맞는 종목이 없습니다.</Empty>}
+            {picked.rows.length > 0 && (
+              <QuoteTable rows={picked.rows} sort={picked.sort} onSort={setSort} watched={(id) => watchedSet.has(id)} onToggleWatch={onToggleWatch} onOpen={open} />
+            )}
             <div className="dir-foot">
-              <span className="meta">행을 선택하면 요약 미리보기가 열립니다. 미리보기의 "은하에서 관계 보기"를 누르면 전체 은하의 관계망과 우측 인텔리전스 패널로 이동합니다.</span>
-              {dir.hasNextPage && (
-                <button type="button" className="btn btn-g btn-sm" onClick={() => dir.fetchNextPage()} disabled={dir.isFetchingNextPage}>
-                  {dir.isFetchingNextPage ? "불러오는 중…" : "더 보기"}
-                </button>
-              )}
+              <span className="meta">
+                행을 누르면 종목 상세로 이동합니다. 시가총액·PER·PBR·배당은 KRX 상장 정보와 OpenDART 재무제표로 계산한 값입니다
+                {firstPriceDate(all) ? ` (시가총액 기준 ${dayLabel(firstPriceDate(all))})` : ""}.
+              </span>
             </div>
           </>
         )}
       </section>
-
-      <CompanyPreviewDialog companyId={previewId} onClose={() => setPreviewId(null)} onOpenGalaxy={goToGalaxy} />
     </div>
   );
+}
+
+/** 지표의 주가 기준일 (모든 종목이 같은 날로 계산된다) */
+function firstPriceDate(rows: CompanyQuote[]): string | null {
+  return rows.find((r) => r.priceDate)?.priceDate ?? null;
 }

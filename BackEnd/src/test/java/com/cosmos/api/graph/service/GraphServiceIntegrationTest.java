@@ -26,6 +26,9 @@ class GraphServiceIntegrationTest {
     private static final UUID COMPANY_A = UUID.fromString("50000000-0000-0000-0000-000000000001");
     private static final UUID COMPANY_B = UUID.fromString("50000000-0000-0000-0000-000000000002");
     private static final UUID COMPANY_C = UUID.fromString("50000000-0000-0000-0000-000000000003");
+    private static final UUID COMPANY_D = UUID.fromString("50000000-0000-0000-0000-000000000004");
+    /** 시드 간선이 나스닥 기업 B를 거치므로, 기존 기대값은 나스닥을 명시한 universe로 확인한다 */
+    private static final String KOSPI_AND_NASDAQ = "KOSPI100,NASDAQ100";
     private static final UUID INDUSTRY_ID = UUID.fromString("50000000-0000-0000-0000-000000000010");
     private static final UUID SNAPSHOT_ID = UUID.fromString("50000000-0000-0000-0000-000000000020");
     private static final UUID RELATIONSHIP_AB = UUID.fromString("50000000-0000-0000-0000-000000000031");
@@ -89,8 +92,8 @@ class GraphServiceIntegrationTest {
     }
 
     @Test
-    void returnsLatestPublishedGraphForDefaultUniverse() {
-        LatestGraphResponse result = graphService.findLatestGraph(null, null, "30D");
+    void returnsLatestPublishedGraphForKospiAndNasdaqUniverse() {
+        LatestGraphResponse result = graphService.findLatestGraph(KOSPI_AND_NASDAQ, null, "30D");
 
         assertThat(result.snapshotId()).isEqualTo(SNAPSHOT_ID);
         assertThat(result.asOfAt()).hasToString("2026-09-07T06:00:00Z");
@@ -115,8 +118,19 @@ class GraphServiceIntegrationTest {
     }
 
     @Test
+    void defaultUniverseShowsKospiAndKosdaqButNotNasdaq() {
+        insertCompany(COMPANY_D, "기업D", "D001", "KOSDAQ");
+
+        LatestGraphResponse result = graphService.findLatestGraph(null, null, "30D");
+
+        assertThat(result.nodes()).extracting(node -> node.companyId())
+                .containsExactlyInAnyOrder(COMPANY_A, COMPANY_C, COMPANY_D);
+        assertThat(result.edges()).isEmpty();          // 시드 간선은 모두 나스닥 기업 B가 걸려 있다
+    }
+
+    @Test
     void filtersLatestGraphByIndustry() {
-        LatestGraphResponse result = graphService.findLatestGraph(null, INDUSTRY_ID, "30D");
+        LatestGraphResponse result = graphService.findLatestGraph(KOSPI_AND_NASDAQ, INDUSTRY_ID, "30D");
 
         assertThat(result.nodes()).extracting(node -> node.companyId())
                 .containsExactly(COMPANY_A, COMPANY_B);
@@ -139,7 +153,7 @@ class GraphServiceIntegrationTest {
 
     @Test
     void filtersWholeAndCompanyGraphsByRequestedWindow() {
-        LatestGraphResponse latest = graphService.findLatestGraph(null, null, "1y");
+        LatestGraphResponse latest = graphService.findLatestGraph(KOSPI_AND_NASDAQ, null, "1y");
         CompanyGraphResponse company = graphService.findCompanyGraph(COMPANY_A, 3, "1Y");
 
         assertThat(latest.window()).isEqualTo("1Y");
@@ -177,6 +191,39 @@ class GraphServiceIntegrationTest {
 
         assertThat(result.newsScore()).isEqualByComparingTo("75.000000");
         assertThat(result.disclosureScore()).isNull();
+    }
+
+    // 공시(OpenDART 타법인 출자 현황) 지분 관계는 상세에 지분율·기준일·공시 원문 주소를 함께 준다
+    @Test
+    void investRelationshipCarriesDisclosedOwnership() {
+        UUID relationshipAc = UUID.fromString("50000000-0000-0000-0000-000000000033");
+        jdbcTemplate.update("""
+                INSERT INTO relationship_type (relationship_type_id, code, name, directionality)
+                VALUES (501, 'INVEST', '투자', 'DIRECTED') ON CONFLICT (code) DO NOTHING
+                """);
+        jdbcTemplate.update("""
+                INSERT INTO company_relationship (relationship_id, source_company_id, target_company_id, relationship_type_id, relation_source)
+                VALUES (?, ?, ?, (SELECT relationship_type_id FROM relationship_type WHERE code = 'INVEST'), 'DART')
+                """, relationshipAc, COMPANY_A, COMPANY_C);
+        jdbcTemplate.update("""
+                INSERT INTO relationship_score_current (relationship_id, window_type, snapshot_id, score, news_score,
+                    disclosure_score, confidence, evidence_count, formula_version, as_of_at)
+                VALUES (?, '30D', ?, 23.7, NULL, 23.7, NULL, 0, 'formula-v1', '2026-09-07T06:00:00Z')
+                """, relationshipAc, SNAPSHOT_ID);
+        jdbcTemplate.update("""
+                INSERT INTO company_ownership (investor_company_id, investee_company_id, stake_pct, purpose, settled_on, receipt_no)
+                VALUES (?, ?, 23.7, '경영참여', '2026-06-30', '20260814001234')
+                """, COMPANY_A, COMPANY_C);
+
+        RelationshipDetailResponse invest = graphService.findRelationship(relationshipAc, "30D");
+        RelationshipDetailResponse supply = graphService.findRelationship(RELATIONSHIP_AB, "30D");
+
+        assertThat(invest.ownership()).isNotNull();
+        assertThat(invest.ownership().stakePct()).isEqualByComparingTo("23.7");
+        assertThat(invest.ownership().purpose()).isEqualTo("경영참여");
+        assertThat(invest.ownership().settledOn()).hasToString("2026-06-30");
+        assertThat(invest.ownership().sourceUrl()).isEqualTo("https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260814001234");
+        assertThat(supply.ownership()).isNull();
     }
 
     @Test

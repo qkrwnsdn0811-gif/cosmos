@@ -1,0 +1,68 @@
+{
+ "_note": "합성 데이터. 빅카인즈 /search/news 응답 형식만 따르며 기업명·제목·본문·개체는 모두 지어낸 값이다.",
+ "documents": [
+  {
+   "news_id": "SYN.20261013100000001",
+   "title": "가상전자, 하늘반도체에 장비 공급 확대",
+   "content": "가상전자는 하늘반도체에 식각 장비를 공급한다고 밝혔다. 합성 기사 본문이다.",
+   "published_at": "2026-10-13T00:00:00.000+09:00",
+   "enveloped_at": "2026-10-13T10:00:05.000+09:00",
+   "dateline": "2026-10-13T10:00:00.000+09:00",
+   "provider": "합성일보",
+   "byline": "홍길동",
+   "category": ["경제>반도체", "경제>산업_기업"],
+   "category_incident": [],
+   "provider_link_page": "https://example.com/news/1",
+   "tms_raw_stream": "가상전자\n하늘반도체\n식각 장비\n공급",
+   "tms_ne_organization": "가상전자\n하늘반도체\n정부",
+   "tms_ne_person": "",
+   "tms_ne_location": "",
+   "tms_ne_stream": "가상전자:OG,하늘반도체:OG,3%:QT\n정부:OG"
+  },
+  {
+   "news_id": "SYN.20261013110000002",
+   "title": "바다소재 신규 공장 준공",
+   "content": "바다소재가 새 공장을 준공했다. 합성 기사 본문이다.",
+   "published_at": "2026-10-13T00:00:00.000+09:00",
+   "dateline": "2026-10-13T11:00:00.000+09:00",
+   "provider": "합성경제",
+   "byline": "",
+   "category": ["경제>반도체"],
+   "category_incident": [],
+   "provider_link_page": "https://example.com/news/2",
+   "tms_raw_stream": "",
+   "tms_ne_organization": ""
+  },
+  {
+   "news_id": "SYN.20261013154000003",
+   "title": "메모리 업황 점검 회의 열려",
+   "content": "업계 관계자들이 메모리 업황을 점검했다. 합성 기사 본문이다.",
+   "published_at": "2026-10-13T00:00:00.000+09:00",
+   "dateline": "2026-10-13T15:40:00.000+09:00",
+   "provider": "합성일보",
+   "byline": "김철수",
+   "category": ["경제>반도체"],
+   "category_incident": [],
+   "provider_link_page": "https://example.com/news/3",
+   "tms_raw_stream": "메모리\n업황\n하늘반도체",
+   "tms_ne_organization": "하늘반도체\n업계",
+   "tms_ne_person": "",
+   "tms_ne_location": "",
+   "tms_ne_stream": "하늘반도체:OG\n업계:OG"
+  },
+  {
+   "news_id": "SYN.20261013160000004",
+   "title": "지역 축제 개막",
+   "content": "지역 축제가 개막했다. 합성 기사 본문이다.",
+   "published_at": "2026-10-13T00:00:00.000+09:00",
+   "dateline": "2026-10-13T16:00:00.000+09:00",
+   "provider": "합성신문",
+   "byline": "",
+   "category": ["지역>지역일반"],
+   "category_incident": [],
+   "tms_raw_stream": "지역\n축제",
+   "tms_ne_organization": "시청",
+   "tms_ne_stream": "시청:OG"
+  }
+ ]
+}

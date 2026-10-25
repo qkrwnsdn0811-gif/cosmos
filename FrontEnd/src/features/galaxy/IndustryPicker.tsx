@@ -10,6 +10,8 @@ interface Props {
   loading?: boolean;
   /** 전체 우주 기업 수 — "전체" 항목의 숫자 */
   total: number | undefined;
+  /** 지금 은하에 실제로 뜬 기업 수 (선이 하나도 없는 기업은 뜨지 않는다) — 있으면 버튼 숫자로 쓴다 */
+  shown?: number;
   value: string | null;
   onChange(industryId: string | null): void;
 }
@@ -45,7 +47,7 @@ function groupIndustries(all: Industry[], visible: Industry[]): Section[] {
  * 상단 산업 필터 — 19개 칩이 세 줄로 씬을 덮던 자리를 요약 칩 하나로 접고, 누르면 묶음별 선택판이 열린다.
  * 접혀 있어도 현재 필터(산업명·기업 수·색)는 요약 칩에 남는다. 단일 선택이라 고르면 바로 닫히고, 바깥 클릭·ESC(GalaxyPage)로도 닫힌다.
  */
-export default function IndustryPicker({ industries, loading = false, total, value, onChange }: Props) {
+export default function IndustryPicker({ industries, loading = false, total, shown, value, onChange }: Props) {
   const open = useGalaxy((s) => s.industryOpen);
   const setOpen = useGalaxy((s) => s.setIndustryOpen);
   const ref = useClickOutside<HTMLDivElement>(() => setOpen(false), open);
@@ -70,12 +72,14 @@ export default function IndustryPicker({ industries, loading = false, total, val
         onClick={() => setOpen(!open)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        title={current ? `산업 필터: ${current.name} — 누르면 바꿉니다` : "산업으로 은하를 걸러 봅니다"}
+        title={`${current ? `산업 필터: ${current.name} — 누르면 바꿉니다` : "산업으로 은하를 걸러 봅니다"}${
+          shown !== undefined ? ` · 선이 있어 화면에 뜬 기업 ${shown}개 (전체 ${current ? current.companyCount : total ?? "-"}개)` : ""
+        }`}
       >
         <i style={{ background: current ? industryColor(current.name) : "var(--text-4)" }} />
         <span className="lab">산업</span>
         <b>{current ? current.name : "전체"}</b>
-        <span className="num">{current ? current.companyCount : total ?? "-"}</span>
+        <span className="num">{shown ?? (current ? current.companyCount : total ?? "-")}</span>
         <Icon.Chevron />
       </button>
       {open && (

@@ -11,6 +11,7 @@ import com.cosmos.api.graph.dto.CompanyGraphNodeResponse;
 import com.cosmos.api.graph.dto.GraphEdgeResponse;
 import com.cosmos.api.graph.dto.GraphNodeResponse;
 import com.cosmos.api.graph.dto.LatestGraphResponse;
+import com.cosmos.api.graph.dto.OwnershipDisclosureResponse;
 import com.cosmos.api.graph.dto.RelationshipCompanyResponse;
 import com.cosmos.api.graph.dto.RelationshipDetailResponse;
 import com.cosmos.api.graph.dto.RelationshipEvidenceResponse;
@@ -41,7 +42,12 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
 public class GraphService {
 
-    private static final Set<String> SUPPORTED_UNIVERSES = Set.of("KOSPI100", "NASDAQ100");
+    /** DART 공시 원문 보기 주소 (접수번호를 붙인다) */
+    private static final String DART_VIEWER = "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=";
+
+    /** 빅카인즈 중심 서비스는 국내 상장사만 기본으로 보여준다 — 나스닥은 universe에 명시할 때만 (2026-10-18) */
+    private static final Set<String> SUPPORTED_UNIVERSES = Set.of("KOSPI100", "KOSDAQ", "NASDAQ100");
+    private static final String DEFAULT_UNIVERSES = "KOSPI100,KOSDAQ";
 
     private final GraphQueryRepository graphRepository;
     private final CompanyRepository companyRepository;
@@ -131,7 +137,19 @@ public class GraphService {
                 row.confidence(),
                 row.evidenceCount(),
                 row.asOfAt(),
-                false);
+                false,
+                ownership(row));
+    }
+
+    /** 투자·지분 관계면 공시 지분(지분율·결산일·DART 원문 주소). 공시가 없거나 다른 관계면 null */
+    private OwnershipDisclosureResponse ownership(RelationshipRow row) {
+        if (!"INVEST".equals(row.relationshipType())) {
+            return null;
+        }
+        return graphRepository.findOwnership(row.sourceCompanyId(), row.targetCompanyId())
+                .map(o -> new OwnershipDisclosureResponse(o.stakePct(), o.purpose(), o.settledOn(), o.receiptNo(),
+                        o.receiptNo() == null ? null : DART_VIEWER + o.receiptNo()))
+                .orElse(null);
     }
 
     public CursorPageResponse<RelationshipEvidenceResponse> findRelationshipEvidence(
@@ -174,7 +192,7 @@ public class GraphService {
 
     private List<String> parseUniverses(String universeValue) {
         String resolved = universeValue == null || universeValue.isBlank()
-                ? "KOSPI100,NASDAQ100"
+                ? DEFAULT_UNIVERSES
                 : universeValue;
         LinkedHashSet<String> universes = new LinkedHashSet<>();
         for (String item : resolved.split(",")) {
@@ -188,7 +206,11 @@ public class GraphService {
             throw new BusinessException(CommonErrorCode.VALIDATION_FAILED);
         }
         return universes.stream()
-                .map(universe -> universe.equals("KOSPI100") ? "KOSPI" : "NASDAQ")
+                .map(universe -> switch (universe) {
+                    case "KOSPI100" -> "KOSPI";
+                    case "KOSDAQ" -> "KOSDAQ";
+                    default -> "NASDAQ";
+                })
                 .toList();
     }
 

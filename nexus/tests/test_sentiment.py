@@ -1,0 +1,97 @@
+from dataclasses import replace
+
+import pandas as pd
+import pytest
+
+from nexus.impact.sentiment import article_text, read_sentiment, score_articles, sentiment_labels, to_neg_neu_pos
+from nexus.ingest.normalize import to_article
+
+
+class FakeScorer:
+    def __init__(self, fail_on_call=None):
+        self.batches, self.fail_on_call = [], fail_on_call
+
+    def __call__(self, texts):
+        self.batches.append(len(texts))
+        if self.fail_on_call == len(self.batches):
+            raise RuntimeError("boom")
+        return [(0.1, 0.2, 0.7) for _ in texts]
+
+
+@pytest.fixture
+def articles(synthetic_docs):
+    base = to_article(synthetic_docs[0])
+    return [replace(base, news_id=f"N{i}") for i in range(5)]
+
+
+def test_label_order_by_name():
+    assert to_neg_neu_pos([0.7, 0.2, 0.1], {0: "positive", 1: "negative", 2: "neutral"}) == (0.2, 0.1, 0.7)
+
+
+def test_label_order_falls_back_to_documented_order():
+    assert to_neg_neu_pos([0.6, 0.3, 0.1], {0: "LABEL_0", 1: "LABEL_1", 2: "LABEL_2"}) == (0.6, 0.3, 0.1)
+
+
+def test_article_text_joins_title_and_content(articles):
+    a = articles[0]
+    assert article_text(a) == f"{a.title}\n{a.content}".strip()
+
+
+def test_scores_in_batches_and_writes_parquet(articles, tmp_path):
+    scorer, out = FakeScorer(), tmp_path / "s.parquet"
+    frame = score_articles(articles, scorer, out, batch_size=2)
+    assert scorer.batches == [2, 2, 1]
+    assert sorted(pd.read_parquet(out)["news_id"]) == [f"N{i}" for i in range(5)]
+    assert set(frame["model_revision"]) == {"f8586286cc3161fb648e9fee09a456069fd846d0"}
+
+
+def test_skips_scored_articles_unless_revision_changes(articles, tmp_path):
+    out = tmp_path / "s.parquet"
+    score_articles(articles, FakeScorer(), out)
+    again = FakeScorer()
+    score_articles(articles, again, out)
+    assert again.batches == []
+    other = FakeScorer()
+    score_articles(articles, other, out, revision="other")
+    assert sum(other.batches) == 5
+
+
+def test_duplicate_news_ids_scored_once(articles, tmp_path):
+    scorer = FakeScorer()
+    score_articles(articles + articles[:2], scorer, tmp_path / "s.parquet")
+    assert sum(scorer.batches) == 5
+
+
+def test_partial_save_lets_a_rerun_resume(articles, tmp_path):
+    out = tmp_path / "s.parquet"
+    with pytest.raises(RuntimeError):
+        score_articles(articles, FakeScorer(fail_on_call=3), out, batch_size=2, save_every=1)
+    assert len(pd.read_parquet(out)) == 4
+    rest = FakeScorer()
+    score_articles(articles, rest, out, batch_size=2)
+    assert rest.batches == [1]
+    assert list(read_sentiment(out).columns) == ["p_neg", "p_neu", "p_pos"]
+
+
+def test_sentiment_labels_split_articles_into_thirds_by_relative_tone():
+    # tone = p_pos − p_neg: N1 −0.6, N2 +0.5, N3 +0.1, N4 +0.2, N5 +0.6, N6 −0.1.
+    # the most likely class would give 1 negative · 3 neutral · 2 positive; relative tone gives a third each (2026-10-25)
+    frame = pd.DataFrame({"p_neg": [0.7, 0.1, 0.2, 0.1, 0.1, 0.3], "p_neu": [0.2, 0.3, 0.5, 0.6, 0.2, 0.5],
+                          "p_pos": [0.1, 0.6, 0.3, 0.3, 0.7, 0.2]},
+                         index=pd.Index(["N1", "N2", "N3", "N4", "N5", "N6"], name="news_id"))
+    assert sentiment_labels(frame) == {"N1": "NEGATIVE", "N6": "NEGATIVE", "N3": "NEUTRAL", "N4": "NEUTRAL",
+                                       "N2": "POSITIVE", "N5": "POSITIVE"}
+
+
+def test_sentiment_labels_are_relative_within_each_day():
+    # 10-23 is gloomier than 10-22, yet each day comes out a third each (the day is in the BigKinds id)
+    ids = ["01100101.20261022090000001", "01100101.20261022100000001", "01100101.20261022110000001",
+           "01100101.20261023090000001", "01100101.20261023100000001", "01100101.20261023110000001"]
+    frame = pd.DataFrame({"p_neg": [0.1, 0.0, 0.2, 0.9, 0.6, 0.8], "p_neu": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                          "p_pos": [0.9, 1.0, 0.8, 0.1, 0.4, 0.2]}, index=pd.Index(ids, name="news_id"))
+    labels = sentiment_labels(frame)
+    assert [labels[i] for i in ids] == ["NEUTRAL", "POSITIVE", "NEGATIVE", "NEGATIVE", "POSITIVE", "NEUTRAL"]
+
+
+def test_sentiment_labels_of_nothing():
+    assert sentiment_labels(pd.DataFrame(columns=["p_neg", "p_neu", "p_pos"])) == {}

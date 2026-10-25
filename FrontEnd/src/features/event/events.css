@@ -1,0 +1,43 @@
+/* 뉴스 1건의 3D 관계 지도(EventGalaxy) — 첫 화면(InvestPage)의 뉴스 상세 안에 들어간다 */
+.event-map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+  color: var(--text-3);
+}
+.event-map-legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.event-map-legend .sw {
+  display: inline-block;
+  width: 22px;
+  height: 0;
+  border-top: 2px solid var(--primary);
+}
+
+/* 캔버스는 카드 폭을 채우고 높이는 고정 */
+.event-galaxy-stage {
+  height: 460px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #05070f;
+}
+@media (max-width: 720px) {
+  .event-galaxy-stage {
+    height: 340px;
+  }
+}
+.event-map-legend .star {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #fff1c9;
+  box-shadow: 0 0 8px #ffcf6b;
+}

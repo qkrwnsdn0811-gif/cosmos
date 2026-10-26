@@ -93,6 +93,28 @@ gcloud compute ssh nexus-vm --zone asia-northeast3-a --project cosmos-nexus-1026
 앱 비밀번호는 채팅·저장소·이슈에 남기지 않는다. 새 VM이라 스크립트가 없으면 체크아웃에서 설치한다:
 `sudo install -m 0755 /opt/cosmos/checkouts/cosmos/deploy/gcp/set-mail.sh /usr/local/sbin/cosmos-set-mail`
 
+## 투자 지표 (PER·PBR·EPS·BPS·ROE·배당)
+
+기업 상세의 투자 지표는 `company_fundamental`을 읽는다. 시연 서버는 KRX 목록을 긁지 않고 OpenDART 공식 API와 DB의
+종가로 채운다(`nexus fundamentals-dart`).
+
+| 값 | 출처 |
+|---|---|
+| 순이익(최근 4분기)·자본총계·주당배당금 | OpenDART 재무제표·배당 (`nexus fundamentals`와 같은 계산) |
+| 시가총액 | OpenDART 발행 보통주 수(자본과 같은 보고서) × DB 마지막 일봉 종가 |
+| PER·PBR·배당수익률 | 위 값으로 계산해 저장. EPS·BPS·ROE는 화면이 계산한다("계산값") |
+| 시총 순위·규모 | 비워 둔다(시장 전체 목록이 있어야 계산할 수 있다) |
+
+주가를 새로 넣었거나 새 분기 보고서가 나오면 다시 실행한다. OpenDART 인증키(https://opendart.fss.or.kr 에서 발급, 40자)를
+묻고(화면에 안 보임), [fundamentals.sh](fundamentals.sh)가 임시 Python 컨테이너에서 한 번 돌린다.
+
+```bash
+gcloud compute ssh nexus-vm --zone asia-northeast3-a --project cosmos-nexus-1026 --tunnel-through-iap -- -t sudo /usr/local/sbin/cosmos-fundamentals
+```
+
+인증키는 채팅·저장소에 남기지 않는다. 스크립트가 없으면 체크아웃에서 설치한다:
+`sudo install -m 0755 /opt/cosmos/checkouts/cosmos/deploy/gcp/fundamentals.sh /usr/local/sbin/cosmos-fundamentals`
+
 ## 되돌리기
 
 직전 릴리스 이미지는 서버에 남아 있다.

@@ -26,7 +26,7 @@
 | 리소스 | 값 |
 |---|---|
 | 프로젝트 | `cosmos-nexus-1026` (번호 1043600593127), 결제 계정 '내 결제 계정' |
-| VM | `nexus-vm` (`asia-northeast3-a`, e2-standard-2, Ubuntu 24.04, 30 GB, 삭제 보호 켬) |
+| VM | `nexus-vm` (`asia-northeast3-a`, e2-standard-4(16GB — 2026-10-26 nexus 파이프라인 분석 OOM 으로 올림), Ubuntu 24.04, 30 GB, 삭제 보호 켬) |
 | 고정 IP | `nexus-ip` = 34.158.212.210 |
 | 레지스트리 | `asia-northeast3-docker.pkg.dev/cosmos-nexus-1026/cosmos` |
 | 덤프 버킷 | `gs://cosmos-nexus-1026-dumps` |
@@ -105,7 +105,7 @@ sudo -u cosmos-ci bash -c 'cd /opt/cosmos/checkouts/cosmos && bash deploy/script
 
 ## 시연 뒤 정리
 
-VM은 하루 약 2,800원이다. 시연이 끝나면 프로젝트째 지운다(30일 안에는 `gcloud projects undelete`로 되살릴 수 있다).
+VM은 하루 약 5,600원이다(e2-standard-4). 시연이 끝나면 프로젝트째 지운다(30일 안에는 `gcloud projects undelete`로 되살릴 수 있다).
 
 ```bash
 gcloud projects delete cosmos-nexus-1026

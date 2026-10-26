@@ -15,7 +15,7 @@ services:
       - ../..:/app
       - nexus_data:/app/nexus/data
     networks: [cosmos_app, cosmos_data]
-    mem_limit: 5g
+    mem_limit: 11g     # analyze 가 기사 36만 건을 한 번에 올린다 — 5g 에서 OOM (2026-10-26, VM 을 e2-standard-4 16GB 로 올림)
     logging:
       driver: json-file
       options: { max-size: '10m', max-file: '3' }

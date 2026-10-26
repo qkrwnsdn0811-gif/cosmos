@@ -686,6 +686,33 @@ def cmd_fundamentals(args) -> int:
     return 0
 
 
+def cmd_fundamentals_dart(args) -> int:
+    """PER, PBR and dividend yield without the KRX listing: OpenDART statements and issued shares, the DB's last close."""
+    import psycopg
+    from .config import dart_key
+    from .fundamentals.dart import DartClient, DartError
+    from .fundamentals.dart_only import dart_fundamentals
+    from .load.fundamentals import listed_with_close, write_fundamentals
+    try:
+        dart = DartClient(dart_key())
+        corp = dart.corp_codes()
+    except (DartError, OSError, ValueError) as e:
+        # Only DartError text is ours or OpenDART's message; other errors may quote the URL with the key.
+        sys.exit(f"OpenDART unavailable: {e if isinstance(e, DartError) else type(e).__name__}")
+    print(f"OpenDART: {len(corp):,} listed corp codes", flush=True)
+    with psycopg.connect(args.database_url) as conn:
+        listed = listed_with_close(conn)
+        if not listed:
+            sys.exit("no active KOSPI/KOSDAQ company has a daily close in stock_price_history")
+        rows = dart_fundamentals(listed, dart, corp, datetime.now(KST).date())
+        written = write_fundamentals(conn, rows, price_date=max(c.price_date for c in listed),
+                                     source="OpenDART + DB close")
+    filled = sum(f.net_income_ttm is not None for f in rows.values())
+    with_cap = sum(f.market_cap is not None for f in rows.values())
+    print(f"fundamentals written: {written} (with financials: {filled}, with market cap: {with_cap})")
+    return 0
+
+
 def galaxy_chains() -> list[str]:
     """Value chains that `analyze` has produced relations for; publish-graph puts them in one snapshot."""
     return [chain for chain in CHAINS if (_paths(chain)["analyzed"] / "relations.pkl").is_file()]
@@ -984,6 +1011,8 @@ def main(argv: list[str] | None = None) -> int:
         cmd = sub.add_parser(name)
         cmd.add_argument("--chain", choices=sorted(CHAINS), required=True)
         cmd.add_argument("--database-url", required=True)
+    # KRX-free indicators from OpenDART and the database's own prices (companies come from the database too).
+    sub.add_parser("fundamentals-dart").add_argument("--database-url", required=True)
     for name in ("relation-fragments", "train-relations"):
         sub.add_parser(name).add_argument("--chain", choices=sorted(CHAINS), required=True)
     export = sub.add_parser("sentiment-export")
@@ -1002,7 +1031,8 @@ def main(argv: list[str] | None = None) -> int:
     handler = {"build-master": cmd_build_master, "collect": cmd_collect, "analyze": cmd_analyze,
                "migrate": cmd_migrate, "load": cmd_load, "sentiment": cmd_sentiment,
                "train-impact": cmd_train_impact, "predict-impact": cmd_predict_impact,
-               "publish-graph": cmd_publish_graph, "cases": cmd_cases, "fundamentals": cmd_fundamentals, "evidence": cmd_evidence,
+               "publish-graph": cmd_publish_graph, "cases": cmd_cases, "fundamentals": cmd_fundamentals,
+               "fundamentals-dart": cmd_fundamentals_dart, "evidence": cmd_evidence,
                "ownership": cmd_ownership,
                "relation-fragments": cmd_relation_fragments,
                "train-relations": cmd_train_relations, "realtime": cmd_realtime,

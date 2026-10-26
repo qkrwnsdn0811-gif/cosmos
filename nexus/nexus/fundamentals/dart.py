@@ -118,6 +118,16 @@ def parse_dividend(payload: dict) -> int | None:
     return None
 
 
+def parse_shares(payload: dict) -> int | None:
+    """Issued common shares (주식의 총수 현황, stockTotqySttus): the 보통주 row's 발행주식의 총수 (istc_totqy)."""
+    if payload.get("status") != "000":
+        return None
+    for r in payload.get("list") or []:
+        if str(r.get("se", "")).replace(" ", "").startswith("보통주"):
+            return _amount(r.get("istc_totqy"))
+    return None
+
+
 def interim_candidates(today: date) -> list[tuple[int, str]]:
     """Interim reports of the current year newest first; DART filing deadlines are 45 days after quarter end."""
     y = today.year
@@ -162,3 +172,7 @@ class DartClient:
 
     def dividend(self, corp_code: str, year: int) -> int | None:
         return parse_dividend(self._get("alotMatter.json", corp_code=corp_code, bsns_year=str(year), reprt_code=ANNUAL).json())
+
+    def shares(self, corp_code: str, year: int, report: str) -> int | None:
+        return parse_shares(self._get("stockTotqySttus.json", corp_code=corp_code, bsns_year=str(year),
+                                      reprt_code=report).json())

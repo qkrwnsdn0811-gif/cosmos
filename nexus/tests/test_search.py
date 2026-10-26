@@ -103,3 +103,32 @@ def test_relation_query_adds_relation_words():
     assert {"공급", "협력", "경쟁", "지분", "인수"} <= set(RELATION_TERMS)
     assert (argument["return_size"], argument["hilight"], argument["sort"]) == (100, 200, {"date": "desc"})
     assert len(docs) == 100
+
+
+class TimeoutOnBigPages(FakeClient):
+    """10,000건 페이지는 게이트웨이 시간 초과(504)로 끝나는 서버 (2026-10-26 GCP 에서 본 현상)."""
+
+    def post(self, path, argument, *, cache):
+        if argument.get("return_size", 0) > 5000:
+            self.calls.append((path, argument, cache))
+            raise BigKindsError(None, "gave up after 3 retries: HTTP 504")
+        return super().post(path, argument, cache=cache)
+
+
+def test_gateway_timeout_splits_page_and_keeps_order():
+    client = TimeoutOnBigPages({("2025-02-01", "2025-03-01"): 12000})
+    docs = collect(client, date(2025, 2, 1), date(2025, 3, 1))
+    assert [d["news_id"] for d in docs] == [f"2025-02-01-{i}" for i in range(12000)]
+    sizes = [a["return_size"] for _, a, _ in client.calls if a["return_size"] > 1]
+    assert sizes[:3] == [10000, 5000, 5000]
+
+
+def test_other_errors_are_not_split():
+    class Broken(FakeClient):
+        def post(self, path, argument, *, cache):
+            if argument.get("return_size", 0) > 1:
+                raise BigKindsError(None, "HTTP 401")
+            return super().post(path, argument, cache=cache)
+
+    with pytest.raises(BigKindsError):
+        collect(Broken({("2025-02-01", "2025-03-01"): 12000}), date(2025, 2, 1), date(2025, 3, 1))

@@ -9,6 +9,7 @@ from .client import BigKindsError
 PATH = "/search/news"
 PAGE_SIZE = 10000
 MAX_WINDOW_HITS = 30000   # return_from caps at 20000, return_size at 10000
+MIN_PAGE_SIZE = 1000      # 10,000건 페이지가 게이트웨이 시간 초과(504)로 끝나면 반씩 나눠 이 크기까지 내려간다 (2026-10-26 서버에서 관찰)
 
 DOC_FIELDS = [
     "title", "content", "published_at", "enveloped_at", "dateline", "provider",
@@ -52,10 +53,8 @@ def search_documents(client, *, start: date, end: date, category: list[str] | No
         for return_from in range(0, MAX_WINDOW_HITS, PAGE_SIZE):
             if received >= total:
                 break
-            page = client.post(PATH, _argument(start, end, query=query, category=category,
-                                               return_from=return_from, return_size=PAGE_SIZE,
-                                               fields=DOC_FIELDS), cache=cache)
-            docs = page.get("documents", [])
+            docs = _page(client, start, end, query=query, category=category, return_from=return_from,
+                         size=PAGE_SIZE, cache=cache)
             if not docs:
                 break
             received += len(docs)
@@ -67,6 +66,28 @@ def search_documents(client, *, start: date, end: date, category: list[str] | No
     mid = start + timedelta(days=days // 2)
     yield from search_documents(client, start=start, end=mid, category=category, query=query, today=today)
     yield from search_documents(client, start=mid, end=end, category=category, query=query, today=today)
+
+
+def _is_gateway_timeout(exc: BigKindsError) -> bool:
+    return "HTTP 504" in str(exc.reason)
+
+
+def _page(client, start: date, end: date, *, query: str, category: list[str] | None, return_from: int, size: int,
+          cache: bool) -> list[dict]:
+    """[return_from, return_from + size) 구간의 문서. 504 면 두 구간으로 나눠 받는다 (같은 문서를 같은 순서로 준다)."""
+    try:
+        page = client.post(PATH, _argument(start, end, query=query, category=category, return_from=return_from,
+                                           return_size=size, fields=DOC_FIELDS), cache=cache)
+        return page.get("documents", [])
+    except BigKindsError as exc:
+        if not _is_gateway_timeout(exc) or size // 2 < MIN_PAGE_SIZE:
+            raise
+    half = size // 2
+    first = _page(client, start, end, query=query, category=category, return_from=return_from, size=half, cache=cache)
+    if len(first) < half:
+        return first
+    return first + _page(client, start, end, query=query, category=category, return_from=return_from + half,
+                         size=size - half, cache=cache)
 
 
 def fetch_details(client, news_ids: list[str], *, batch: int = 100) -> list[dict]:

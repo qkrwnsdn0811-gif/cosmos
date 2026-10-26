@@ -1,0 +1,31 @@
+# NEXUS 파이프라인 (실시간 수집 · 밤 전체 갱신). 앱 배포(deploy/compose.yml, 프로젝트 `cosmos`)와 따로 띄우고
+# 그 네트워크에 붙는다: cosmos_data 로 postgres 에, cosmos_app 으로 바깥(빅카인즈·FinanceDataReader·OpenDART)에 나간다.
+# 상시 서비스가 아니라 run.sh 가 `docker compose run --rm` 으로 한 번씩 부른다.
+name: nexus
+
+services:
+  nexus:
+    build:
+      context: ../..
+      dockerfile: deploy/nexus-realtime/Dockerfile
+    image: nexus-pipeline:local
+    env_file:
+      - /etc/cosmos/nexus.env     # BIGKINDS_ACCESS_KEY, (있으면) DART_API_KEY — 0640, 저장소에 넣지 않는다
+    volumes:
+      - ../..:/app
+      - nexus_data:/app/nexus/data
+    networks: [cosmos_app, cosmos_data]
+    mem_limit: 5g
+    logging:
+      driver: json-file
+      options: { max-size: '10m', max-file: '3' }
+
+networks:
+  cosmos_app:
+    external: true
+  cosmos_data:
+    external: true
+
+volumes:
+  nexus_data:
+    name: nexus_data

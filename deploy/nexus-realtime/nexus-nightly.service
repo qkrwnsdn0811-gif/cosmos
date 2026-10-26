@@ -1,0 +1,10 @@
+[Unit]
+Description=NEXUS nightly full refresh (collect · analyze · load · cases · graph)
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+Environment=NEXUS_DB=cosmos
+ExecStart=/opt/nexus-pipeline/deploy/nexus-realtime/run.sh nightly
+TimeoutStartSec=4h

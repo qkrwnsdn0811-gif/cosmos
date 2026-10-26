@@ -1,0 +1,11 @@
+[Unit]
+Description=NEXUS BigKinds realtime collection (changed articles only)
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+Environment=NEXUS_DB=cosmos
+ExecStart=/opt/nexus-pipeline/deploy/nexus-realtime/run.sh realtime
+# 평소는 수 분이지만, 첫 전체 실행(bootstrap)이 아직이면 이 서비스가 그것을 돌린다 (1~3시간)
+TimeoutStartSec=8h

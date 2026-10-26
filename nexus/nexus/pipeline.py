@@ -401,6 +401,65 @@ def cmd_sentiment(args) -> int:
     return 0
 
 
+def cmd_sentiment_export(args) -> int:
+    """(서버) 감성 점수가 없는 이벤트 기사를 JSONL 로 내보낸다 — GPU 가 있는 PC 가 `sentiment-score` 로 점수를 매긴다."""
+    import json
+    from .impact.sentiment import article_text, read_sentiment
+    bundles = _load_bundles(args.chain)
+    scored = set(read_sentiment(_paths(args.chain)["analyzed"] / "sentiment.parquet").index)
+    todo = {b.article.news_id: article_text(b.article) for b in bundles if b.article.news_id not in scored}
+    out = Path(args.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    with out.open("w", encoding="utf-8") as f:
+        for news_id, text in todo.items():
+            f.write(json.dumps({"news_id": news_id, "text": text}, ensure_ascii=False) + "\n")
+    print(f"unscored articles exported: {len(todo):,} of {len(bundles):,} → {out}")
+    return 0
+
+
+def cmd_sentiment_score(args) -> int:
+    """(GPU PC) `sentiment-export` 파일에 KR-FinBERT 점수를 매겨 Parquet 으로 쓴다. torch 가 GPU 를 보면 GPU 로 돈다."""
+    import json
+    import pandas as pd
+    from .impact.sentiment import COLUMNS, MODEL_REVISION, load_finbert
+    items = [json.loads(line) for line in Path(args.input).read_text(encoding="utf-8").splitlines() if line.strip()]
+    rows = []
+    if items:
+        scorer = load_finbert(args.threads)
+        started = time.monotonic()
+        for i in range(0, len(items), args.batch_size):
+            batch = items[i:i + args.batch_size]
+            for item, (neg, neu, pos) in zip(batch, scorer([x["text"] for x in batch])):
+                rows.append((item["news_id"], neg, neu, pos, MODEL_REVISION))
+            if (i // args.batch_size) % 100 == 0:
+                print(f"  scored {len(rows):,}/{len(items):,} ({time.monotonic() - started:,.0f}s)", flush=True)
+    pd.DataFrame(rows, columns=COLUMNS).to_parquet(args.out, index=False)
+    print(f"scores written: {len(rows):,} → {args.out}")
+    return 0
+
+
+def cmd_sentiment_import(args) -> int:
+    """(서버) `sentiment-score` 결과를 감성 캐시(analyzed/sentiment.parquet)에 합치고, 뉴스 화면 논조 라벨을 DB 에 다시 쓴다.
+    밤 `load` 도 이 캐시를 읽으므로 다음 전체 갱신에서도 점수가 유지된다."""
+    import pandas as pd
+    from .impact.sentiment import COLUMNS, _write
+    path = _paths(args.chain)["analyzed"] / "sentiment.parquet"
+    incoming = pd.read_parquet(args.input)[COLUMNS]
+    current = pd.read_parquet(path)[COLUMNS] if path.is_file() else pd.DataFrame(columns=COLUMNS)
+    key = ["news_id", "model_revision"]
+    merged = pd.concat([current, incoming], ignore_index=True).drop_duplicates(key, keep="last")
+    _write(merged, path)
+    print(f"sentiment cache: +{len(incoming):,} → {len(merged):,} rows", flush=True)
+    if args.database_url:
+        import psycopg
+        from .load.postgres import write_sentiment_labels
+        labels = _feed_tone(path, _load_bundles(args.chain))
+        with psycopg.connect(args.database_url) as conn:
+            print(f"news tone labels written: {write_sentiment_labels(conn, labels):,} "
+                  f"({Counter(labels.values()).most_common()})", flush=True)
+    return 0
+
+
 def impact_dataset(bundles: list[EventBundle], companies: dict[str, Company], sentiment, prices: PriceCache,
                    vocab: list[str] | None, *, today: date):
     """Feature table for training (vocab=None: categories from the training period) or prediction (the model's vocab)."""
@@ -811,6 +870,93 @@ def cmd_train_relations(args) -> int:
     return 0
 
 
+PRICE_REFRESH_AT = (18, 40)      # KST. 확정 일봉이 올라온 뒤 하루 한 번 주가·과거 사례를 다시 쓴다
+
+
+def cmd_realtime(args) -> int:
+    """빅카인즈 /changeTracker/news 로 바뀐 기사만 받아 분석·적재한다. 서버에서 15분마다 돈다 (deploy/nexus-realtime).
+
+    한 번 실행 = 변경이력 조회 → 상세 조회 → 대상 분류만 골라 하루 파티션에 저장 → 지난 `analyze` 의 관계 그래프로 새 기사만
+    분석 → 이벤트 적재·취소 기사 내리기 → (새 이벤트가 있으면) 과거 사례·방향 표시 다시 계산. 18:40 이후 첫 실행은 주가도 갱신한다.
+    관계 그래프(analyzed/relations.pkl)와 전체 이벤트(events.pkl)는 밤 `analyze` 가 다시 만든다.
+    """
+    import argparse as _argparse
+    import psycopg
+    from .load.postgres import PIPELINE_VERSION, ensure_companies, load_events, load_prices
+    from .realtime import state as st
+    from .realtime.tracker import changes, fetch_documents, in_categories
+    from .relations.graph import BaseGraph
+
+    cfg, p = CHAINS[args.chain], _paths(args.chain)
+    state_path = p["data"] / "realtime" / f"{args.chain}.json"
+    relations_pkl, events_pkl = p["analyzed"] / "relations.pkl", p["analyzed"] / "events.pkl"
+    if not relations_pkl.is_file():
+        sys.exit("analyzed/relations.pkl is missing — run `analyze` once first (it builds the company graph)")
+    started = time.monotonic()
+    now = datetime.now(KST)
+    state = st.load_state(state_path)
+    since = st.tracker_since(state, now)
+    client = _client()
+
+    found = changes(client, since)
+    docs = [d for d in fetch_documents(client, found.updated) if in_categories(d, cfg["category"])]
+    articles = [to_article(d) for d in docs]
+    print(f"[{now:%Y-%m-%d %H:%M}] changes since {since:%m-%d %H:%M}: updated {len(found.updated):,}, "
+          f"cancelled {len(found.cancelled):,}, {cfg['label']} {len(articles):,}", flush=True)
+
+    store = ArticleStore(p["articles"])
+    if articles:
+        part = st.realtime_partition(args.chain, now.date())
+        existing = store.read([part]) if part in store.partitions() else []
+        store.write(st.merge_articles(existing, articles), partition=part)
+
+    companies, recognizer = _load_master(args.chain)
+    with relations_pkl.open("rb") as f:
+        edges, _ = pickle.load(f)
+    prices = PriceCache(p["prices"])
+    fresh = run_analyze(articles, recognizer, companies, BaseGraph(edges), prices, value_chain=cfg["value_chain"])
+    cancelled = set(found.cancelled)
+    bundles = st.read_bundles(events_pkl)
+    known = {b.article.news_id for b in bundles}
+    merged = st.merge_bundles(bundles, fresh, cancelled, {a.news_id for a in articles})
+    dropped = (known - {b.article.news_id for b in merged})
+
+    refresh_prices = (now.hour, now.minute) >= PRICE_REFRESH_AT and state.prices_date != now.date()
+    with psycopg.connect(args.database_url) as conn:
+        ids = ensure_companies(conn, list(companies.values()))
+        if fresh:
+            load_events(conn, fresh, ids)
+            with conn.transaction():   # 취소됐다가 다시 살아난 기사 (load_events 는 상태를 건드리지 않는다)
+                conn.execute("UPDATE news_event SET status = 'ACTIVE' WHERE bigkinds_news_id = ANY(%s) "
+                             "AND status = 'CANCELLED'", ([b.article.news_id for b in fresh],))
+        if dropped:
+            with conn.transaction():
+                n = conn.execute("UPDATE news_event SET status = 'CANCELLED' WHERE value_chain = %s "
+                                 "AND bigkinds_news_id = ANY(%s) AND status <> 'CANCELLED'",
+                                 (cfg["value_chain"], sorted(dropped))).rowcount
+                # 뉴스 화면(기사-기업 행)에서도 내린다
+                conn.execute("DELETE FROM company_document WHERE model_version = %s AND document_id IN "
+                             "(SELECT document_id FROM news_event WHERE bigkinds_news_id = ANY(%s))",
+                             (PIPELINE_VERSION, sorted(dropped)))
+            print(f"events withdrawn (cancelled or no company left): {n}", flush=True)
+        if refresh_prices:
+            first = min((b.article.published_date for b in merged), default=now.date())
+            bars = {c.key: prices.bars(c.ticker, first - PRICE_LOOKBACK, now.date())
+                    for c in companies.values() if c.market in BENCHMARK}
+            print(f"price rows written: {load_prices(conn, ids, bars):,}", flush=True)
+    st.write_bundles(events_pkl, merged)
+    print(f"events: +{len(fresh):,} new/updated, -{len(dropped):,} withdrawn, total {len(merged):,}", flush=True)
+
+    if fresh or dropped or refresh_prices:
+        sub = _argparse.Namespace(chain=args.chain, database_url=args.database_url)
+        cmd_cases(sub)
+        if refresh_prices:
+            cmd_evidence(sub)
+    st.save_state(state_path, st.advance(state, now, now.date() if refresh_prices else None))
+    print(f"realtime done ({time.monotonic() - started:,.0f}s)", flush=True)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m nexus")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -834,12 +980,24 @@ def main(argv: list[str] | None = None) -> int:
     predict.add_argument("--chain", choices=sorted(CHAINS), required=True)
     predict.add_argument("--database-url", required=True)
     sub.add_parser("publish-graph").add_argument("--database-url", required=True)
-    for name in ("cases", "fundamentals", "evidence", "ownership"):
+    for name in ("cases", "fundamentals", "evidence", "ownership", "realtime"):
         cmd = sub.add_parser(name)
         cmd.add_argument("--chain", choices=sorted(CHAINS), required=True)
         cmd.add_argument("--database-url", required=True)
     for name in ("relation-fragments", "train-relations"):
         sub.add_parser(name).add_argument("--chain", choices=sorted(CHAINS), required=True)
+    export = sub.add_parser("sentiment-export")
+    export.add_argument("--chain", choices=sorted(CHAINS), required=True)
+    export.add_argument("--out", required=True)
+    score = sub.add_parser("sentiment-score")
+    score.add_argument("--input", required=True)
+    score.add_argument("--out", required=True)
+    score.add_argument("--threads", type=int, default=8)
+    score.add_argument("--batch-size", type=int, default=64)
+    imp = sub.add_parser("sentiment-import")
+    imp.add_argument("--chain", choices=sorted(CHAINS), required=True)
+    imp.add_argument("--input", required=True)
+    imp.add_argument("--database-url")
     args = parser.parse_args(argv)
     handler = {"build-master": cmd_build_master, "collect": cmd_collect, "analyze": cmd_analyze,
                "migrate": cmd_migrate, "load": cmd_load, "sentiment": cmd_sentiment,
@@ -847,5 +1005,7 @@ def main(argv: list[str] | None = None) -> int:
                "publish-graph": cmd_publish_graph, "cases": cmd_cases, "fundamentals": cmd_fundamentals, "evidence": cmd_evidence,
                "ownership": cmd_ownership,
                "relation-fragments": cmd_relation_fragments,
-               "train-relations": cmd_train_relations}[args.command]
+               "train-relations": cmd_train_relations, "realtime": cmd_realtime,
+               "sentiment-export": cmd_sentiment_export, "sentiment-score": cmd_sentiment_score,
+               "sentiment-import": cmd_sentiment_import}[args.command]
     return handler(args)

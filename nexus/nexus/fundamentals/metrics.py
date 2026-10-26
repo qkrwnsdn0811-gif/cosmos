@@ -57,3 +57,11 @@ def compute(market_cap: int | None, rank: tuple[int, str] | None, close: float |
     yield_ = round(dps / close, 6) if dps is not None and close else None
     return Fundamental(market_cap, rank[0] if rank else None, rank[1] if rank else None, net_income, equity, dps, close,
                        per, pbr, yield_, basis)
+
+
+def compute_from_shares(shares: int | None, close: float | None, net_income: int | None, equity: int | None,
+                        dps: int | None, basis: str) -> Fundamental:
+    """Without the KRX listing: market cap = issued common shares × close. Rank and size class need the whole market,
+    so they stay empty."""
+    market_cap = round(shares * close) if shares and close else None
+    return compute(market_cap, None, close, net_income, equity, dps, basis)

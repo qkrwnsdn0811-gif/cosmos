@@ -54,6 +54,13 @@ export const liveApi: CosmosApi = {
       tokenStore.set(res.accessToken);
       return res;
     },
+    googleConfig: () => request("/auth/google/config"),
+    // 처음 온 Google 계정은 서버가 이 호출에서 바로 가입시킨다
+    googleLogin: async (credential) => {
+      const res = await request<T.TokenResponse>("/auth/google", { method: "POST", body: { credential }, retry: false });
+      tokenStore.set(res.accessToken);
+      return res;
+    },
     // retry 를 막지 않는다 — 만료된 access 토큰으로 오면 서버 필터가 컨트롤러 앞에서 401 을 내 refresh 토큰이 폐기되지 않으므로,
     // client.ts 의 TOKEN_EXPIRED → refresh → 1회 재시도를 타서 실제로 서버 세션을 끝낸다
     logout: async () => {

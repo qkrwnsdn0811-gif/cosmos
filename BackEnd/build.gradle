@@ -30,6 +30,8 @@ dependencies {
 	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
 	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
 	implementation 'org.springframework.security:spring-security-crypto'
+	// Google 로그인 ID 토큰 서명 검증 (Google 공개키 JWKS)
+	implementation 'org.springframework.security:spring-security-oauth2-jose'
 	compileOnly 'org.projectlombok:lombok'
 	runtimeOnly 'org.postgresql:postgresql'
 	annotationProcessor 'org.projectlombok:lombok'

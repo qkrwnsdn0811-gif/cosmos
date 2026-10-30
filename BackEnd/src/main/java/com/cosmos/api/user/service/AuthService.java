@@ -8,6 +8,7 @@ import com.cosmos.api.user.dto.LoginRequest;
 import com.cosmos.api.user.entity.User;
 import com.cosmos.api.user.error.UserErrorCode;
 import com.cosmos.api.user.repository.UserRepository;
+import java.security.SecureRandom;
 import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -23,6 +24,10 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshTokenStore refreshTokenStore;
+    private final GoogleIdTokenVerifier googleIdTokenVerifier;
+
+    private static final SecureRandom RANDOM = new SecureRandom();
+    private static final int NICKNAME_MAX = 30;
 
     /** 로그인 성공 시 발급한 토큰 두 개. Refresh는 컨트롤러가 쿠키에 담는다. */
     public record LoginResult(String accessToken, String refreshToken) {
@@ -37,15 +42,65 @@ public class AuthService {
         User user = userRepository.findByEmail(request.email().toLowerCase(Locale.ROOT))
                 .orElseThrow(() -> new BusinessException(UserErrorCode.INVALID_CREDENTIALS));
 
-        if (!passwordEncoder.matches(request.password(), user.getPassword())) {
+        // Google 로만 가입한 회원은 비밀번호가 없다 — 같은 오류로 막는다
+        if (user.getPassword() == null || !passwordEncoder.matches(request.password(), user.getPassword())) {
             throw new BusinessException(UserErrorCode.INVALID_CREDENTIALS);
         }
 
+        return issueTokens(user);
+    }
+
+    /**
+     * Google 로그인. 브라우저가 받은 Google ID 토큰을 검증한 뒤
+     * ① 이 Google 계정이 연결된 회원 → ② 같은 이메일의 회원(연결) → ③ 없으면 새로 가입 순으로 회원을 정하고 토큰을 발급한다.
+     * 누구나 쓸 수 있다 — Google 계정이 있으면 따로 가입하지 않아도 된다.
+     */
+    @Transactional
+    public LoginResult loginWithGoogle(String credential) {
+        GoogleIdTokenVerifier.GoogleProfile profile = googleIdTokenVerifier.verify(credential);
+        User user = userRepository.findByGoogleSub(profile.sub()).orElse(null);
+        if (user == null) {
+            if (!profile.emailVerified()) {
+                throw new BusinessException(UserErrorCode.GOOGLE_EMAIL_UNVERIFIED);
+            }
+            String email = profile.email().toLowerCase(Locale.ROOT);
+            user = userRepository.findByEmail(email).orElse(null);
+            if (user != null) {
+                user.linkGoogle(profile.sub());
+            } else {
+                user = userRepository.save(User.createWithGoogle(email, uniqueNickname(profile.name(), email), profile.sub()));
+            }
+        }
+        return issueTokens(user);
+    }
+
+    private LoginResult issueTokens(User user) {
         String accessToken = jwtTokenProvider.createAccessToken(user.getUserId(), user.getRole());
         String refreshToken = jwtTokenProvider.createRefreshToken(user.getUserId());
         refreshTokenStore.save(user.getUserId(), refreshToken);
-
         return new LoginResult(accessToken, refreshToken);
+    }
+
+    /** Google 이름(없으면 이메일 앞부분)으로 닉네임을 만들고, 겹치면 뒤에 숫자 4자리를 붙인다. 닉네임은 나중에 바꿀 수 있다. */
+    String uniqueNickname(String name, String email) {
+        String base = name == null ? "" : name.strip().replaceAll("\\s+", " ");
+        if (base.length() < 2) {
+            base = email.substring(0, Math.max(0, email.indexOf('@'))).strip();
+        }
+        if (base.length() < 2) {
+            base = "cosmos";
+        }
+        base = base.substring(0, Math.min(base.length(), NICKNAME_MAX - 5));
+        if (!userRepository.existsByNickname(base)) {
+            return base;
+        }
+        for (int i = 0; i < 20; i++) {
+            String candidate = base + "-" + (1000 + RANDOM.nextInt(9000));
+            if (!userRepository.existsByNickname(candidate)) {
+                return candidate;
+            }
+        }
+        return base.substring(0, Math.min(base.length(), NICKNAME_MAX - 13)) + "-" + Long.toString(System.nanoTime(), 36);
     }
 
     /**

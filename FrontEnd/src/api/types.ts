@@ -44,6 +44,10 @@ export interface LoginRequest {
   email: string;
   password: string;
 }
+export interface GoogleConfig {
+  enabled: boolean;
+  clientId: string | null;
+}
 export interface TokenResponse {
   accessToken: string;
 }

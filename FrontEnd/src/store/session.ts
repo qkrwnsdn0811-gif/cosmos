@@ -40,6 +40,8 @@ interface SessionState {
   sessionKey: string;
   bootstrap(): Promise<void>;
   login(email: string, password: string): Promise<void>;
+  /** Google ID 토큰으로 로그인 (처음이면 서버가 가입까지 한다) */
+  loginWithGoogle(credential: string): Promise<void>;
   /** 가입은 성공했지만 자동 로그인(login/me)이 실패할 수 있어 결과를 알려 준다 */
   signup(email: string, password: string, nickname: string): Promise<{ autoLogin: boolean }>;
   logout(): Promise<void>;
@@ -86,6 +88,13 @@ export const useSession = create<SessionState>((set, get) => ({
 
   async login(email, password) {
     await api.auth.login({ email, password });
+    const me = await api.users.me();
+    setHint();
+    set({ status: "authed", user: me, sessionKey: String(me.userId) });
+  },
+
+  async loginWithGoogle(credential) {
+    await api.auth.googleLogin(credential);
     const me = await api.users.me();
     setHint();
     set({ status: "authed", user: me, sessionKey: String(me.userId) });

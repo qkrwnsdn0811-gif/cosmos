@@ -673,7 +673,7 @@ function SignupForm() {
 
   return (
     <form onSubmit={submit} noValidate>
-      <h2 id="auth-title">탐사대에 합류하세요</h2>
+      <h2 id="auth-title">COSMOS 회원가입</h2>
       <p className="hint">이메일 인증을 마친 뒤 닉네임과 비밀번호로 가입합니다. 비밀번호는 8~64자, 영문과 숫자를 각 1자 이상 포함합니다.</p>
       <div className="form">
         <div className="field-row">

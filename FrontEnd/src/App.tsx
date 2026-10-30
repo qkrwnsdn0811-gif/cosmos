@@ -15,6 +15,8 @@ import { useSession } from "@/store/session";
 // 3D 은하는 탐색 화면(/galaxy)으로 옮기면서 지연 로드한다 — three.js 청크가 첫 화면 전송량에서 빠진다
 const GalaxyPage = lazy(() => import("@/features/galaxy/GalaxyPage"));
 const NewsPage = lazy(() => import("@/features/news/NewsPage"));
+const PrivacyPage = lazy(() => import("@/features/legal/LegalPage").then((m) => ({ default: m.PrivacyPage })));
+const TermsPage = lazy(() => import("@/features/legal/LegalPage").then((m) => ({ default: m.TermsPage })));
 // 검색 팔레트의 "관계 검색"(기업 두 곳을 이어 주는 경로) 결과 화면 — 은하 페이지와 같은 Scene 청크를 쓰므로 여기서도 지연 로드한다
 const PathGalaxyPage = lazy(() => import("@/features/galaxy/PathGalaxyPage"));
 const CompaniesPage = lazy(() => import("@/features/companies/CompaniesPage"));
@@ -134,6 +136,8 @@ export default function App() {
                 <Route path="/me/watchlist" element={<MyItemsPage />} />
                 {/* 아트 디렉션 실험 페이지 — 내비게이션 미노출 */}
                 <Route path="/lab/art" element={<ArtLabPage />} />
+                <Route path="/privacy" element={<PrivacyPage />} />
+                <Route path="/terms" element={<TermsPage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Suspense>

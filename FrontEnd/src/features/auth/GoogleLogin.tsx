@@ -101,6 +101,10 @@ export default function GoogleLogin() {
       <div ref={box} className="google-btn" />
       {busy && <div className="hint" style={{ textAlign: "center" }}>Google 계정 확인 중…</div>}
       {err && <div className="form-err">{err}</div>}
+      <p className="legal-note">
+        계속하면 <a href="/terms" target="_blank" rel="noreferrer">이용약관</a>과{" "}
+        <a href="/privacy" target="_blank" rel="noreferrer">개인정보처리방침</a>에 동의하는 것으로 봅니다.
+      </p>
     </div>
   );
 }

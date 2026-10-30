@@ -36,8 +36,11 @@ public class User {
     @Column(nullable = false)
     private String email;
 
-    @Column(nullable = false)
+    /** Google 로만 가입한 회원은 null (비밀번호 로그인 불가). */
     private String password;
+
+    /** Google 계정 고유 ID(ID 토큰의 sub). Google 로그인을 쓴 적 없으면 null. */
+    private String googleSub;
 
     @Column(nullable = false, length = 30)
     private String nickname;
@@ -71,6 +74,22 @@ public class User {
     public static User create(String email, String encodedPassword, String nickname) {
         // ux_users_email 인덱스가 lower(email) 기준이므로 저장 전 소문자 정규화
         return new User(email.toLowerCase(), encodedPassword, nickname, Role.ROLE_USER);
+    }
+
+    /** Google 로 처음 로그인한 사람을 비밀번호 없이 가입시킨다. Google 이 확인한 이메일이므로 인증 완료로 둔다. */
+    public static User createWithGoogle(String email, String nickname, String googleSub) {
+        User user = new User(email.toLowerCase(), null, nickname, Role.ROLE_USER);
+        user.googleSub = googleSub;
+        user.emailVerifiedAt = Instant.now();
+        return user;
+    }
+
+    /** 이메일로 가입한 회원이 같은 이메일의 Google 계정으로 로그인하면 그 계정을 연결한다. */
+    public void linkGoogle(String googleSub) {
+        this.googleSub = googleSub;
+        if (this.emailVerifiedAt == null) {
+            this.emailVerifiedAt = Instant.now();
+        }
     }
 
     public void verifyEmail() {

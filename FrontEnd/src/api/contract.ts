@@ -9,6 +9,8 @@ export interface CosmosApi {
     checkEmail(email: string): Promise<T.Availability>;
     checkNickname(nickname: string): Promise<T.Availability>;
     login(body: T.LoginRequest): Promise<T.TokenResponse>;
+    googleConfig(): Promise<T.GoogleConfig>;
+    googleLogin(credential: string): Promise<T.TokenResponse>;
     logout(): Promise<void>;
     refresh(): Promise<T.TokenResponse>;
     signup(body: T.SignupRequest): Promise<T.SignupResponse>;

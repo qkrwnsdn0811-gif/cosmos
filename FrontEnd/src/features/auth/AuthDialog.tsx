@@ -3,6 +3,7 @@ import { ApiError, api } from "@/api";
 import { useSession } from "@/store/session";
 import { useUi } from "@/store/ui";
 import { Icon } from "@/components/ui";
+import GoogleLogin from "./GoogleLogin";
 
 /** 로그인 / 회원가입 모달. 화면 이동 없이 은하 위에서 처리한다. */
 export default function AuthDialog() {
@@ -25,6 +26,7 @@ export default function AuthDialog() {
           </button>
         </div>
         {kind === "login" ? <LoginForm /> : <SignupForm />}
+        <GoogleLogin />
       </div>
     </div>
   );

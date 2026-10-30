@@ -5,6 +5,6 @@ import org.springframework.context.annotation.Configuration;
 
 /** app.email-verification 설정을 EmailVerificationProperties 로 읽어들인다. */
 @Configuration
-@EnableConfigurationProperties(EmailVerificationProperties.class)
+@EnableConfigurationProperties({EmailVerificationProperties.class, GoogleAuthProperties.class})
 public class EmailVerificationConfig {
 }

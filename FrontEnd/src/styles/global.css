@@ -1026,6 +1026,34 @@ button:disabled {
   accent-color: var(--primary);
   cursor: pointer;
 }
+/* 로그인 창의 "Google 로 계속하기" (GoogleLogin.tsx) */
+.google-login {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+.google-login[hidden] {
+  display: none;
+}
+.or-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--text-3);
+}
+.or-line::before,
+.or-line::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+.google-btn {
+  display: flex;
+  justify-content: center;
+  min-height: 44px;
+}
 
 /* 뉴스 카드 · 세로 목록 · 더 보기 — 관계 은하 패널, 뉴스 화면, 관심 목록이 함께 쓴다.
    예전에는 galaxy.css 에 있어서, 화면별 CSS 청크가 나뉜 뒤 뉴스 화면으로 바로 들어오면(은하를 거치지 않으면) 카드 테두리·여백·간격이

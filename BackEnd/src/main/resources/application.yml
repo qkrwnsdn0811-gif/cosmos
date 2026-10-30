@@ -62,6 +62,9 @@ jwt:
   refresh-token-validity: ${JWT_REFRESH_TOKEN_VALIDITY:P14D}
 
 app:
+  # Google 로그인. 클라이언트 ID(웹 애플리케이션 OAuth 클라이언트)가 비어 있으면 Google 로그인 버튼을 숨긴다.
+  google:
+    client-id: ${GOOGLE_CLIENT_ID:}
   # Refresh Token 쿠키. 로컬(http)은 secure=false, 배포(https)는 true로 덮어쓴다.
   # 프론트와 API가 다른 도메인이면 same-site를 None으로 (이때 secure는 반드시 true).
   auth-cookie:

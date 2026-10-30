@@ -7,12 +7,15 @@ import com.cosmos.api.user.dto.EmailSendCodeRequest;
 import com.cosmos.api.user.dto.EmailSendCodeResponse;
 import com.cosmos.api.user.dto.EmailVerifyCodeRequest;
 import com.cosmos.api.user.dto.EmailVerifyCodeResponse;
+import com.cosmos.api.user.dto.GoogleConfigResponse;
+import com.cosmos.api.user.dto.GoogleLoginRequest;
 import com.cosmos.api.user.dto.LoginRequest;
 import com.cosmos.api.user.dto.SignupRequest;
 import com.cosmos.api.user.dto.TokenResponse;
 import com.cosmos.api.user.dto.UserResponse;
 import com.cosmos.api.user.service.AuthService;
 import com.cosmos.api.user.service.EmailVerificationService;
+import com.cosmos.api.user.service.GoogleIdTokenVerifier;
 import com.cosmos.api.user.service.UserService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
@@ -42,11 +45,32 @@ public class AuthController {
     private final AuthService authService;
     private final EmailVerificationService emailVerificationService;
     private final RefreshTokenCookie refreshTokenCookie;
+    private final GoogleIdTokenVerifier googleIdTokenVerifier;
 
     /** 로그인. Access Token은 본문으로, Refresh Token은 httpOnly 쿠키(Set-Cookie)로 내려준다. */
     @PostMapping("/login")
     public ResponseEntity<TokenResponse> login(@Valid @RequestBody LoginRequest request) {
         AuthService.LoginResult result = authService.login(request);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, refreshTokenCookie.create(result.refreshToken()).toString())
+                .body(new TokenResponse(result.accessToken()));
+    }
+
+    /** Google 로그인 설정. 클라이언트 ID 가 없으면 enabled=false 이고 프론트는 버튼을 숨긴다. */
+    @GetMapping("/google/config")
+    public GoogleConfigResponse googleConfig() {
+        return googleIdTokenVerifier.enabled()
+                ? new GoogleConfigResponse(true, googleIdTokenVerifier.clientId())
+                : new GoogleConfigResponse(false, null);
+    }
+
+    /**
+     * Google 로그인. Google ID 토큰을 검증하고, 처음이면 가입까지 한 뒤 /login 과 같은 방식으로 토큰을 준다.
+     * 토큰 오류 401 GOOGLE_TOKEN_INVALID, 이메일 미확인 계정 403 GOOGLE_EMAIL_UNVERIFIED, 설정 없음 503 GOOGLE_LOGIN_DISABLED.
+     */
+    @PostMapping("/google")
+    public ResponseEntity<TokenResponse> googleLogin(@Valid @RequestBody GoogleLoginRequest request) {
+        AuthService.LoginResult result = authService.loginWithGoogle(request.credential());
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, refreshTokenCookie.create(result.refreshToken()).toString())
                 .body(new TokenResponse(result.accessToken()));

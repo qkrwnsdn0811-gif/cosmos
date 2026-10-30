@@ -1054,6 +1054,10 @@ button:disabled {
   justify-content: center;
   min-height: 44px;
 }
+/* 페이지는 color-scheme: dark 인데 Google 버튼 iframe 은 light 라, 둘이 다르면 브라우저가 iframe 뒤에 흰 바탕을 깐다 */
+.google-btn iframe {
+  color-scheme: light;
+}
 
 /* 뉴스 카드 · 세로 목록 · 더 보기 — 관계 은하 패널, 뉴스 화면, 관심 목록이 함께 쓴다.
    예전에는 galaxy.css 에 있어서, 화면별 CSS 청크가 나뉜 뒤 뉴스 화면으로 바로 들어오면(은하를 거치지 않으면) 카드 테두리·여백·간격이

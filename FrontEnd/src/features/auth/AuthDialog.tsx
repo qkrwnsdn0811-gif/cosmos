@@ -204,7 +204,7 @@ function LoginForm() {
 
   return (
     <form onSubmit={submit} noValidate>
-      <h2 id="auth-title">다시 만나서 반가워요</h2>
+      <h2 id="auth-title">COSMOS 로그인</h2>
       <p className="hint">로그인하면 관심 기업, 뉴스 스크랩, 내 은하를 사용할 수 있습니다.</p>
       <div className="form">
         {prefill?.notice && <div className="form-note">{prefill.notice}</div>}
